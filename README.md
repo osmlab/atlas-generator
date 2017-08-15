@@ -20,7 +20,7 @@ gradle clean shaded fat
 
 Download the country boundaries and the sharding tree files from the respective sub-folders available [here](https://apple.box.com/s/3k3wcc0lq1fhqgozxr4mdi0llf95byo3). We will then call `file:///path/to/boundaries/world_boundaries_osm_20170424.txt` and `file:///path/to/sharding/tree-6-14-100000.txt` the boundaries and sharding files just downloaded. Finally download the latest `.osm.pbf` from geofabrik [here](http://download.geofabrik.de/central-america/belize-latest.osm.pbf). We will call the folder that contains it `file:///path/to/pbf`.
 
-We will also trick the program into thinking that the 3 shards Belize intersects with this sharding tree each have a corresponding `.osm.pbf` file, which will each just be the same copy of the file that was downloaded from geofabrik:
+We will also trick the program into thinking that the 3 shards Belize intersects with in this sharding tree each have a corresponding `.osm.pbf` file, which will each just be the same copy of the file that was downloaded from geofabrik:
 
 ```
 cp /path/to/pbf/belize-latest.osm.pbf /path/to/pbf/7-32-57.pbf
@@ -30,7 +30,7 @@ cp /path/to/pbf/belize-latest.osm.pbf /path/to/pbf/8-65-117.pbf
 
 ### Run
 
-The `AtlasGenerator` is a `SparkJob` that can be run directly from a simple java command. Assuming `/path/to/jars` contains a fat jar version built from this project here is a sample commands that can run locally.
+The `AtlasGenerator` is a `SparkJob` that can be run directly from a simple java command. Assuming `/path/to/jars` contains a fat jar version built from this project here is a sample command that can run locally.
 
 ```
 java -classpath "/path/to/jars/*" \
