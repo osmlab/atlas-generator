@@ -33,7 +33,7 @@ cp /path/to/pbf/belize-latest.osm.pbf /path/to/pbf/8-65-117.pbf
 The `AtlasGenerator` is a `SparkJob` that can be run directly from a simple java command. Assuming `/path/to/jars` contains a fat jar version built from this project here is a sample command that can run locally.
 
 ```
-java -classpath "/path/to/jars/*" \
+java -classpath "/path/to/jars/*" org.openstreetmap.atlas.generator.AtlasGenerator \
     -output=file:///path/to/BLZ/output \
     -master=local \
     -startedFolder=file:///path/to/BLZ/started \
