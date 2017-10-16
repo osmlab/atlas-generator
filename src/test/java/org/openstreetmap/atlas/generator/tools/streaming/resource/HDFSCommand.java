@@ -11,6 +11,8 @@ import org.openstreetmap.atlas.streaming.NotifyingIOUtils.IOProgressListener;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StreamOfResourceStreams;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sample program showing how to use the HDFSWalker utility class
@@ -61,6 +63,8 @@ public class HDFSCommand extends HDFSArgumentsCommand
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(HDFSCommand.class);
+
     public static void main(final String... args)
     {
         new HDFSCommand().runWithoutQuitting(args);
@@ -70,10 +74,11 @@ public class HDFSCommand extends HDFSArgumentsCommand
     protected int onRun(final CommandMap command)
     {
         super.onRun(command);
-        HDFSWalker.walk(getRoot()).map(HDFSWalker.debug(System.out)).forEach(status ->
-        {
-            // Do something with the HDFS FileStatus
-        });
+        HDFSWalker.walk(getRoot()).map(HDFSWalker.debug(path -> logger.info("{}", path)))
+                .forEach(status ->
+                {
+                    // Do something with the HDFS FileStatus
+                });
 
         final AtomicLong iosize = new AtomicLong();
         try (InputStream stream = new StreamOfResourceStreams(HDFSWalker.walk(getRoot())

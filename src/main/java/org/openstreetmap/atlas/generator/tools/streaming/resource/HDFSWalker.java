@@ -1,12 +1,12 @@
 package org.openstreetmap.atlas.generator.tools.streaming.resource;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -98,12 +98,12 @@ public final class HDFSWalker
         }
     }
 
-    public static Function<FileStatus, FileStatus> debug(final PrintStream stream)
+    public static Function<FileStatus, FileStatus> debug(final Consumer<String> printer)
     {
         return status ->
         {
             final char type = status.isSymlink() ? 'S' : status.isDirectory() ? 'D' : 'F';
-            stream.printf("[%c] %s\n", type, status.getPath());
+            printer.accept(String.format("[%c] %s", type, status.getPath()));
             return status;
         };
     }

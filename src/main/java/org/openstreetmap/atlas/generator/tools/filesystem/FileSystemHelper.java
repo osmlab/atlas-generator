@@ -20,6 +20,8 @@ import org.openstreetmap.atlas.streaming.resource.OutputStreamWritableResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
 import org.openstreetmap.atlas.utilities.collections.Maps;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class that helps generating {@link Resource} and {@link WritableResource} from a Hadoop
@@ -30,6 +32,7 @@ import org.openstreetmap.atlas.utilities.collections.Maps;
  */
 public final class FileSystemHelper
 {
+    private static final Logger logger = LoggerFactory.getLogger(FileSystemHelper.class);
     private static final Map<String, String> DEFAULT = Maps.hashMap("fs.file.impl",
             RawLocalFileSystem.class.getCanonicalName());
 
@@ -74,38 +77,39 @@ public final class FileSystemHelper
         final List<Resource> resources = new ArrayList<>();
         final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
 
-        HDFSWalker.walk(new Path(directory)).map(HDFSWalker.debug(System.out)).forEach(status ->
-        {
-            final Path path = status.getPath();
-            if (filter == null || filter.accept(path))
-            {
-                try
+        HDFSWalker.walk(new Path(directory)).map(HDFSWalker.debug(path -> logger.info("{}", path)))
+                .forEach(status ->
                 {
-                    final InputStreamResource resource = new InputStreamResource(() ->
+                    final Path path = status.getPath();
+                    if (filter == null || filter.accept(path))
                     {
                         try
                         {
-                            return fileSystem.open(path);
+                            final InputStreamResource resource = new InputStreamResource(() ->
+                            {
+                                try
+                                {
+                                    return fileSystem.open(path);
+                                }
+                                catch (final Exception e)
+                                {
+                                    throw new CoreException("Unable to open {}", path, e);
+                                }
+                            }).withName(path.getName());
+
+                            if (path.getName().endsWith(FileSuffix.GZIP.toString()))
+                            {
+                                resource.setDecompressor(Decompressor.GZIP);
+                            }
+
+                            resources.add(resource);
                         }
                         catch (final Exception e)
                         {
-                            throw new CoreException("Unable to open {}", path, e);
+                            throw new CoreException("Unable to read {}", path, e);
                         }
-                    }).withName(path.getName());
-
-                    if (path.getName().endsWith(FileSuffix.GZIP.toString()))
-                    {
-                        resource.setDecompressor(Decompressor.GZIP);
                     }
-
-                    resources.add(resource);
-                }
-                catch (final Exception e)
-                {
-                    throw new CoreException("Unable to read {}", path, e);
-                }
-            }
-        });
+                });
 
         return resources;
     }
