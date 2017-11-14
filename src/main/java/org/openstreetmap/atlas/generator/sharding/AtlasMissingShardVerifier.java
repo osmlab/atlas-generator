@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.sharding;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,6 +43,8 @@ public class AtlasMissingShardVerifier extends Command
             Optionality.REQUIRED);
     private static final Switch<File> MISSING_SHARDS = new Switch<>("shards",
             "Country shards that are listed as missing", File::new, Optionality.REQUIRED);
+    private static final Switch<String> OVERPASS_SERVER = new Switch<>("server",
+            "The overpass server to query from", value -> value, Optionality.OPTIONAL);
 
     public static void main(final String[] args)
     {
@@ -58,11 +61,13 @@ public class AtlasMissingShardVerifier extends Command
     }
 
     public int verifier(final CountryBoundaryMap boundaries,
-            final Set<CountryShard> missingCountryShards, final File output)
+            final Set<CountryShard> missingCountryShards, final File output, final String server)
     {
         int returnCode = 0;
         try (SafeBufferedWriter writer = output.writer())
         {
+            final OverpassClient client = new OverpassClient(server);
+            final List<CountryShard> verifiedMissingShards = new ArrayList<>();
             for (final CountryShard countryShard : missingCountryShards)
             {
                 logger.info(countryShard.toString());
@@ -74,7 +79,6 @@ public class AtlasMissingShardVerifier extends Command
                 }
                 final MultiPolygon clipMulti = clip.getClipMultiPolygon();
                 final Rectangle clipBounds = clipMulti.bounds();
-                final OverpassClient client = new OverpassClient();
                 // Take in list of all nodes, then filter out nodes that aren't ingested into
                 // Atlas
                 final Time nodeStart = Time.now();
@@ -111,9 +115,19 @@ public class AtlasMissingShardVerifier extends Command
                                 "Boundary/Shard intersection zone: " + clipMulti.toString());
                         writer.writeLine("Id of relevant node geometry: " + node.getIdentifier());
                         writer.writeLine("Node Location: " + nodeLocation.toString() + "\n");
+                        verifiedMissingShards.add(countryShard);
                         break;
                     }
                 }
+            }
+            if (verifiedMissingShards.isEmpty())
+            {
+                logger.info("No shards are missing!");
+            }
+            else
+            {
+                verifiedMissingShards
+                        .forEach(value -> logger.info(value.toString() + " is missing!"));
             }
         }
         catch (final Exception e)
@@ -131,11 +145,12 @@ public class AtlasMissingShardVerifier extends Command
         final File output = (File) command.get(OUTPUT);
         final Set<CountryShard> missingCountryShards = missingShardFile.linesList().stream()
                 .map(CountryShard::forName).collect(Collectors.toSet());
+        final String server = (String) command.get(OVERPASS_SERVER);
         final Time fullStart = Time.now();
         final int returnCode;
         try
         {
-            returnCode = verifier(boundaries, missingCountryShards, output);
+            returnCode = verifier(boundaries, missingCountryShards, output, server);
         }
         catch (final Exception e)
         {
@@ -148,6 +163,6 @@ public class AtlasMissingShardVerifier extends Command
     @Override
     protected SwitchList switches()
     {
-        return new SwitchList().with(BOUNDARIES, OUTPUT, MISSING_SHARDS);
+        return new SwitchList().with(BOUNDARIES, OUTPUT, MISSING_SHARDS, OVERPASS_SERVER);
     }
 }

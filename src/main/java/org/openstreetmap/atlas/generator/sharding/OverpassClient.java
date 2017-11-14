@@ -14,6 +14,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.streaming.resource.http.GetResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -24,7 +26,10 @@ import org.xml.sax.SAXException;
  */
 public class OverpassClient
 {
-    private static final String BASE_QUERY = "http://overpass.kumi.systems/api/interpreter/?data=";
+    private static final Logger logger = LoggerFactory.getLogger(OverpassClient.class);
+
+    private static String SERVER = "-api.de";
+    private static String BASE_QUERY;
     private static final String END_QUERY = ");out body;";
 
     public static String buildCompoundQuery(final String type, final String key, final String value,
@@ -50,6 +55,20 @@ public class OverpassClient
     {
         return bounds.lowerLeft().getLatitude() + "," + bounds.upperLeft().getLongitude() + ","
                 + bounds.upperRight().getLatitude() + "," + bounds.lowerRight().getLongitude();
+    }
+
+    public OverpassClient()
+    {
+        initializeBaseQuery();
+    }
+
+    public OverpassClient(final String server)
+    {
+        if (server != null)
+        {
+            SERVER = server;
+        }
+        initializeBaseQuery();
     }
 
     public CloseableHttpResponse getResponse(final String specificQuery)
@@ -184,5 +203,11 @@ public class OverpassClient
             }
             return osmWays;
         }
+    }
+
+    private void initializeBaseQuery()
+    {
+        BASE_QUERY = "http://overpass" + SERVER + "/api/interpreter/?data=";
+        logger.info("Overpass Server Queried: " + BASE_QUERY);
     }
 }
