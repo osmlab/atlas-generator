@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
  * Sample program showing how to use the HDFSWalker utility class
  *
  * @author cstaylor
+ * @author jklamer
  */
 public class HDFSCommand extends HDFSArgumentsCommand
 {
@@ -74,14 +75,14 @@ public class HDFSCommand extends HDFSArgumentsCommand
     protected int onRun(final CommandMap command)
     {
         super.onRun(command);
-        HDFSWalker.walk(getRoot()).map(HDFSWalker.debug(path -> logger.info("{}", path)))
+        new HDFSWalker().walk(getRoot()).map(HDFSWalker.debug(path -> logger.info("{}", path)))
                 .forEach(status ->
                 {
                     // Do something with the HDFS FileStatus
                 });
 
         final AtomicLong iosize = new AtomicLong();
-        try (InputStream stream = new StreamOfResourceStreams(HDFSWalker.walk(getRoot())
+        try (InputStream stream = new StreamOfResourceStreams(new HDFSWalker().walk(getRoot())
                 .filter(FileStatus::isFile).map(HDFSWalker.size(iosize)).map(HDFSWalker::convert)
                 .collect(Collectors.toList()).toArray(new Resource[0])))
         {

@@ -21,8 +21,8 @@ public class HDFSWalkerTest
     {
         final List<FileStatus> fileStatusList = new ArrayList<>();
         final List<String> debugStrings = new ArrayList<>();
-        HDFSWalker.walk(new Path(directory.getPath())).map(HDFSWalker.debug(debugStrings::add))
-                .forEach(status ->
+        new HDFSWalker().walk(new Path(directory.getPath()))
+                .map(HDFSWalker.debug(debugStrings::add)).forEach(status ->
                 {
                     fileStatusList.add(status);
                 });

@@ -26,6 +26,7 @@ import com.google.common.collect.AbstractIterator;
  * convert them to HDFSFile objects.
  *
  * @author cstaylor
+ * @author jklamer
  */
 public final class HDFSWalker
 {
@@ -40,7 +41,7 @@ public final class HDFSWalker
 
         private final FileSystem fileSystem;
 
-        private HDFSIterator(final Path root)
+        private HDFSIterator(final Path root, final Configuration configuration)
         {
             if (root == null)
             {
@@ -50,7 +51,7 @@ public final class HDFSWalker
             try
             {
                 this.currentPaths = new LinkedList<>();
-                this.fileSystem = root.getFileSystem(new Configuration());
+                this.fileSystem = root.getFileSystem(configuration);
                 Stream.of(this.fileSystem.listStatus(root))
                         .forEach(status -> this.currentPaths.add(status));
             }
@@ -83,8 +84,9 @@ public final class HDFSWalker
             }
             return returnValue;
         }
-
     }
+
+    private Configuration configuration;
 
     public static HDFSFile convert(final FileStatus status)
     {
@@ -117,19 +119,25 @@ public final class HDFSWalker
         };
     }
 
-    public static Stream<FileStatus> walk(final Path root)
+    public HDFSWalker usingConfiguration(final Configuration configuration)
     {
-        return StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(new HDFSIterator(root), Spliterator.ORDERED),
-                false);
+        this.configuration = configuration;
+        return this;
     }
 
-    public static Stream<HDFSFile> walkFiles(final Path root)
+    public Stream<FileStatus> walk(final Path root)
+    {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
+                new HDFSIterator(root, getConfiguration()), Spliterator.ORDERED), false);
+    }
+
+    public Stream<HDFSFile> walkFiles(final Path root)
     {
         return walk(root).filter(FileStatus::isFile).map(HDFSWalker::convert);
     }
 
-    private HDFSWalker()
+    private Configuration getConfiguration()
     {
+        return this.configuration == null ? new Configuration() : this.configuration;
     }
 }
