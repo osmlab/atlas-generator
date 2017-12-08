@@ -11,9 +11,11 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.http.HttpHost;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.entity.ContentType;
 import org.openstreetmap.atlas.geography.Rectangle;
-import org.openstreetmap.atlas.streaming.resource.http.GetResource;
+import org.openstreetmap.atlas.streaming.resource.http.PostResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -28,9 +30,15 @@ public class OverpassClient
 {
     private static final Logger logger = LoggerFactory.getLogger(OverpassClient.class);
 
-    private static String SERVER = "-api.de";
     private static String BASE_QUERY;
     private static final String END_QUERY = ");out body;";
+    private String server = "-api.de";
+    private HttpHost proxy;
+
+    public static String buildCompactQuery(final String type, final Rectangle bounds)
+    {
+        return type + "(" + constructBoundingBox(bounds) + ");<;";
+    }
 
     public static String buildCompoundQuery(final String type, final String key, final String value,
             final Rectangle bounds)
@@ -66,16 +74,33 @@ public class OverpassClient
     {
         if (server != null)
         {
-            SERVER = server;
+            this.server = server;
         }
+        initializeBaseQuery();
+    }
+
+    public OverpassClient(final String server, final HttpHost proxy)
+    {
+        if (server != null)
+        {
+            this.server = server;
+        }
+        this.proxy = proxy;
         initializeBaseQuery();
     }
 
     public CloseableHttpResponse getResponse(final String specificQuery)
             throws UnsupportedEncodingException
     {
-        final String query = BASE_QUERY + URLEncoder.encode(specificQuery, "UTF-8");
-        return new GetResource(query).getResponse();
+        // post request to handle long overpass queries, get request has limit on URI length
+        final PostResource post = new PostResource(BASE_QUERY);
+        if (this.proxy != null)
+        {
+            post.setProxy(this.proxy);
+        }
+        post.setStringBody("data=" + URLEncoder.encode(specificQuery, "UTF-8"),
+                ContentType.APPLICATION_FORM_URLENCODED);
+        return post.getResponse();
     }
 
     /**
@@ -138,10 +163,12 @@ public class OverpassClient
         final DocumentBuilder builder = factory.newDocumentBuilder();
         try (CloseableHttpResponse response = this.getResponse(query))
         {
+            logger.info("Parsing node query response...");
             final Document doc = builder.parse(response.getEntity().getContent());
             final NodeList nodelist = doc.getElementsByTagName("node");
-            final List<OverpassOsmNode> osmNodes = new ArrayList<>();
-            for (int i = 0; i < nodelist.getLength(); i++)
+            final int nodeListLength = nodelist.getLength();
+            final List<OverpassOsmNode> osmNodes = new ArrayList<>(nodeListLength);
+            for (int i = 0; i < nodeListLength; i++)
             {
                 final String osmIdentifier = nodelist.item(i).getAttributes().item(0)
                         .getNodeValue();
@@ -149,6 +176,7 @@ public class OverpassClient
                 final String longitude = nodelist.item(i).getAttributes().item(2).getNodeValue();
                 osmNodes.add(new OverpassOsmNode(osmIdentifier, latitude, longitude));
             }
+            logger.info("Parsed all nodes.");
             return osmNodes;
         }
     }
@@ -178,36 +206,41 @@ public class OverpassClient
         final DocumentBuilder builder = factory.newDocumentBuilder();
         try (CloseableHttpResponse response = this.getResponse(query))
         {
-            final List<OverpassOsmWay> osmWays = new ArrayList<>();
+            logger.info("Parsing way query response...");
             final Document document = builder.parse(response.getEntity().getContent());
             final NodeList wayNodeList = document.getElementsByTagName("way");
-            for (int i = 0; i < wayNodeList.getLength(); i++)
+            final int wayListLength = wayNodeList.getLength();
+            final List<OverpassOsmWay> osmWays = new ArrayList<>(wayListLength);
+            for (int i = 0; i < wayListLength; i++)
             {
                 final Element wayElement = (Element) wayNodeList.item(i);
                 final String wayIdentifier = wayElement.getAttributes().item(0).getNodeValue();
                 final NodeList nodeNodeList = wayElement.getElementsByTagName("nd");
-                final List<String> nodeIdentifiers = new ArrayList<>();
-                for (int j = 0; j < nodeNodeList.getLength(); j++)
+                final int nodeListLength = nodeNodeList.getLength();
+                final List<String> nodeIdentifiers = new ArrayList<>(nodeListLength);
+                for (int j = 0; j < nodeListLength; j++)
                 {
                     nodeIdentifiers
                             .add(nodeNodeList.item(j).getAttributes().item(0).getNodeValue());
                 }
                 final NodeList tagNodeList = wayElement.getElementsByTagName("tag");
-                final HashMap<String, String> tags = new HashMap<>();
-                for (int j = 0; j < tagNodeList.getLength(); j++)
+                final int tagListLength = tagNodeList.getLength();
+                final HashMap<String, String> tags = new HashMap<>(tagListLength);
+                for (int j = 0; j < tagListLength; j++)
                 {
                     tags.put(tagNodeList.item(j).getAttributes().item(0).getNodeValue(),
                             tagNodeList.item(j).getAttributes().item(1).getNodeValue());
                 }
                 osmWays.add(new OverpassOsmWay(wayIdentifier, nodeIdentifiers, tags));
             }
+            logger.info("Parsed all ways.");
             return osmWays;
         }
     }
 
     private void initializeBaseQuery()
     {
-        BASE_QUERY = "http://overpass" + SERVER + "/api/interpreter/?data=";
+        BASE_QUERY = "http://overpass" + this.server + "/api/interpreter/";
         logger.info("Overpass Server Queried: " + BASE_QUERY);
     }
 }
