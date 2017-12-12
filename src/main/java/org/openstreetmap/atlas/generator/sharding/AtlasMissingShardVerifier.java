@@ -33,7 +33,7 @@ import com.vividsolutions.jts.index.strtree.STRtree;
 /**
  * Checks intersection of country boundary and shards to validate missing shards.
  *
- * @author james_gage
+ * @author jwpgage
  */
 public class AtlasMissingShardVerifier extends Command
 {

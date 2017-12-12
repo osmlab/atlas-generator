@@ -7,7 +7,7 @@ import java.util.Map;
  * This node represents an Osm Node returned from an overpass query. The node identifier, Location,
  * and tags are stored.
  *
- * @author james-gage
+ * @author jwpgage
  */
 public class OverpassOsmNode
 {

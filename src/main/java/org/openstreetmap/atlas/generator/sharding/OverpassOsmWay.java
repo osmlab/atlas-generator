@@ -7,7 +7,7 @@ import java.util.List;
  * This way represents an osm way returned from an overpass query. The way identifier, the list of
  * node identifiers that comprise the way, and the tags are stored.
  *
- * @author jamesgage
+ * @author jwpgage
  */
 public class OverpassOsmWay
 {

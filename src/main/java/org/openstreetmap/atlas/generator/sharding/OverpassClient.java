@@ -24,7 +24,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
- * @author james-gage
+ * @author jwpgage
  */
 public class OverpassClient
 {
