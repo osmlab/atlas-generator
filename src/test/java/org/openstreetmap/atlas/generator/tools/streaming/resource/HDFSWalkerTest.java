@@ -16,23 +16,28 @@ import org.openstreetmap.atlas.utilities.tuples.Tuple;
  * @author mkalender
  * @author sbhalekar
  */
-public class HDFSWalkerTest {
-	private static Tuple<List<FileStatus>, List<String>> test(final File directory) {
+public class HDFSWalkerTest
+{
+	private static Tuple<List<FileStatus>, List<String>> test(final File directory)
+	{
 		return test(directory, HDFSWalker.WALK_ALL);
 	}
 
-	private static Tuple<List<FileStatus>, List<String>> test(final File directory, final int depth) {
+	private static Tuple<List<FileStatus>, List<String>> test(final File directory, final int depth)
+	{
 		final List<FileStatus> fileStatusList = new ArrayList<>();
 		final List<String> debugStrings = new ArrayList<>();
 		new HDFSWalker(depth).walk(new Path(directory.getPath())).map(HDFSWalker.debug(debugStrings::add))
-				.forEach(status -> {
+				.forEach(status ->
+				{
 					fileStatusList.add(status);
 				});
 		return Tuple.createTuple(fileStatusList, debugStrings);
 	}
 
 	@Test
-	public void testDirectoryListingWithMaxDepth() {
+	public void testDirectoryListingWithMaxDepth()
+	{
 		final File rootDirectory = File.temporaryFolder();
 		final File pathOne = rootDirectory.child("test-a");
 		final File pathTwo = rootDirectory.child("test-b");
@@ -58,7 +63,8 @@ public class HDFSWalkerTest {
 	}
 
 	@Test
-	public void testDirectoryWithAFile() {
+	public void testDirectoryWithAFile()
+	{
 		final File directory = File.temporaryFolder();
 		directory.child("test.tmp").writeAndClose("test file");
 		final Tuple<List<FileStatus>, List<String>> results = test(directory);
@@ -78,7 +84,8 @@ public class HDFSWalkerTest {
 	}
 
 	@Test
-	public void testDirectoryWithAFileInsideAChildDirectory() {
+	public void testDirectoryWithAFileInsideAChildDirectory()
+	{
 		final File directory = File.temporaryFolder();
 		directory.child("test.tmp").writeAndClose("test file");
 		final File childDirectory = directory.child("child-directory");
@@ -105,7 +112,8 @@ public class HDFSWalkerTest {
 	}
 
 	@Test
-	public void testEmptyDirectory() {
+	public void testEmptyDirectory()
+	{
 		final File emptyDirectory = File.temporaryFolder();
 		final Tuple<List<FileStatus>, List<String>> results = test(emptyDirectory);
 

@@ -29,27 +29,32 @@ import com.google.common.collect.AbstractIterator;
  * @author jklamer
  * @author sbhalekar
  */
-public final class HDFSWalker {
+public final class HDFSWalker
+{
 	/**
 	 * Collection of hadoop file status object and it's corresponding depth in
 	 * the filesystem hierarchy
 	 *
 	 * @author sbhalekar
 	 */
-	private static final class FileStatusAtDepth {
+	private static final class FileStatusAtDepth
+	{
 		private final FileStatus fileStatus;
 		private final int fileDepth;
 
-		private FileStatusAtDepth(final FileStatus fileStatus, final int fileLevel) {
+		private FileStatusAtDepth(final FileStatus fileStatus, final int fileLevel)
+		{
 			this.fileStatus = fileStatus;
 			this.fileDepth = fileLevel;
 		}
 
-		public int getFileDepth() {
+		public int getFileDepth()
+		{
 			return this.fileDepth;
 		}
 
-		public FileStatus getFileStatus() {
+		public FileStatus getFileStatus()
+		{
 			return this.fileStatus;
 		}
 	}
@@ -59,7 +64,8 @@ public final class HDFSWalker {
 	 *
 	 * @author cstaylor
 	 */
-	private static final class HDFSIterator extends AbstractIterator<FileStatus> {
+	private static final class HDFSIterator extends AbstractIterator<FileStatus>
+	{
 
 		/**
 		 * This variable represents the depth for all the children of root
@@ -78,30 +84,38 @@ public final class HDFSWalker {
 		 */
 		private final int maxDepth;
 
-		private HDFSIterator(final Path root, final Configuration configuration) {
+		private HDFSIterator(final Path root, final Configuration configuration)
+		{
 			this(root, configuration, HDFSWalker.WALK_ALL);
 		}
 
-		private HDFSIterator(final Path root, final Configuration configuration, int maxDepth) {
-			if (root == null) {
+		private HDFSIterator(final Path root, final Configuration configuration, int maxDepth)
+		{
+			if (root == null)
+			{
 				throw new CoreException("Error when creating an HDFSIterator: root can't be null");
 			}
 			this.maxDepth = maxDepth;
 
-			try {
+			try 
+			{
 				this.currentPaths = new LinkedList<>();
 				this.fileSystem = root.getFileSystem(configuration);
 				// Files at depth 1 will be traversed all the time
 				Stream.of(this.fileSystem.listStatus(root))
 						.forEach(status -> this.currentPaths.add(new FileStatusAtDepth(status, ONE)));
-			} catch (final IOException oops) {
+			} 
+			catch (final IOException oops)
+			{
 				throw new CoreException("Error when creating an HDFSIterator", oops);
 			}
 		}
 
 		@Override
-		protected FileStatus computeNext() {
-			if (this.currentPaths.isEmpty()) {
+		protected FileStatus computeNext()
+		{
+			if (this.currentPaths.isEmpty())
+			{
 				return endOfData();
 			}
 
@@ -109,17 +123,23 @@ public final class HDFSWalker {
 			final FileStatus currentFileStatus = returnValue.getFileStatus();
 			final int currentFileDepth = returnValue.getFileDepth();
 
-			if (currentFileStatus.isDirectory()) {
+			if (currentFileStatus.isDirectory())
+			{
 				int childDepth = currentFileDepth + ONE;
 				// Add the children only if they are below the threshold depth
 				// or the threshold is not specified at all
 				if (this.maxDepth == HDFSWalker.WALK_ALL || childDepth <= this.maxDepth)
-					try {
+				{
+					try
+					{
 						Stream.of(this.fileSystem.listStatus(currentFileStatus.getPath()))
 								.forEach(status -> this.currentPaths.add(new FileStatusAtDepth(status, childDepth)));
-					} catch (final IOException oops) {
+					}
+					catch (final IOException oops)
+					{
 						throw new CoreException("Can't locate children of {}", currentFileStatus, oops);
 					}
+				}
 			}
 			return currentFileStatus;
 		}
@@ -129,52 +149,66 @@ public final class HDFSWalker {
 	private final int maxDepth;
 	public static final int WALK_ALL = -1;
 
-	public HDFSWalker() {
+	public HDFSWalker()
+	{
 		this.maxDepth = WALK_ALL;
 	}
 
-	public HDFSWalker(int maxDepth) {
+	public HDFSWalker(int maxDepth)
+	{
 		this.maxDepth = maxDepth;
 	}
 
-	public static HDFSFile convert(final FileStatus status) {
-		try {
+	public static HDFSFile convert(final FileStatus status)
+	{
+		try
+		{
 			return new HDFSFile(status.getPath());
-		} catch (final IOException oops) {
+		}
+		catch (final IOException oops)
+		{
 			throw new CoreException("Error when converting FileStatus to HDFSFile", oops);
 		}
 	}
 
-	public static Function<FileStatus, FileStatus> debug(final Consumer<String> printer) {
-		return status -> {
+	public static Function<FileStatus, FileStatus> debug(final Consumer<String> printer)
+	{
+		return status ->
+		{
 			final char type = status.isSymlink() ? 'S' : status.isDirectory() ? 'D' : 'F';
 			printer.accept(String.format("[%c] %s", type, status.getPath()));
 			return status;
 		};
 	}
 
-	public static Function<FileStatus, FileStatus> size(final AtomicLong value) {
-		return status -> {
+	public static Function<FileStatus, FileStatus> size(final AtomicLong value)
+	{
+		return status ->
+		{
 			value.addAndGet(status.getLen());
 			return status;
 		};
 	}
 
-	public HDFSWalker usingConfiguration(final Configuration configuration) {
+	public HDFSWalker usingConfiguration(final Configuration configuration)
+	{
 		this.configuration = configuration;
 		return this;
 	}
 
-	public Stream<FileStatus> walk(final Path root) {
+	public Stream<FileStatus> walk(final Path root)
+	{
 		return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
 				new HDFSIterator(root, getConfiguration(), this.maxDepth), Spliterator.ORDERED), false);
 	}
 
-	public Stream<HDFSFile> walkFiles(final Path root) {
+	public Stream<HDFSFile> walkFiles(final Path root)
+	{
 		return walk(root).filter(FileStatus::isFile).map(HDFSWalker::convert);
 	}
 
-	private Configuration getConfiguration() {
+	private Configuration getConfiguration()
+	{
 		return this.configuration == null ? new Configuration() : this.configuration;
 	}
 }
