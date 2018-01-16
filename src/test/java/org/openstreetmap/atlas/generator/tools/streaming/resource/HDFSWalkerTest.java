@@ -14,14 +14,20 @@ import org.openstreetmap.atlas.utilities.tuples.Tuple;
  * Tests for {@link HDFSWalker}.
  *
  * @author mkalender
+ * @author sbhalekar
  */
 public class HDFSWalkerTest
 {
     private static Tuple<List<FileStatus>, List<String>> test(final File directory)
     {
+        return HDFSWalkerTest.test(directory, HDFSWalker.WALK_ALL);
+    }
+
+    private static Tuple<List<FileStatus>, List<String>> test(final File directory, final int depth)
+    {
         final List<FileStatus> fileStatusList = new ArrayList<>();
         final List<String> debugStrings = new ArrayList<>();
-        new HDFSWalker().walk(new Path(directory.getPath()))
+        new HDFSWalker(depth).walk(new Path(directory.getPath()))
                 .map(HDFSWalker.debug(debugStrings::add)).forEach(status ->
                 {
                     fileStatusList.add(status);
@@ -30,11 +36,38 @@ public class HDFSWalkerTest
     }
 
     @Test
+    public void testDirectoryListingWithMaxDepth()
+    {
+        final File rootDirectory = File.temporaryFolder();
+        final File pathOne = rootDirectory.child("test-a");
+        final File pathTwo = rootDirectory.child("test-b");
+        pathOne.mkdirs();
+        pathTwo.mkdirs();
+        pathOne.child("test-a.tmp").writeAndClose("test file");
+        pathTwo.child("test-b.tmp").writeAndClose("test file");
+
+        // This should return only 2 child directories of the rootDirectory
+        Tuple<List<FileStatus>, List<String>> results = HDFSWalkerTest.test(rootDirectory, 1);
+
+        Assert.assertFalse(results.getFirst().isEmpty());
+        Assert.assertEquals(2, results.getFirst().size());
+
+        // This should list all the directories and files in those directories
+        // in the root hierarchy
+        results = HDFSWalkerTest.test(rootDirectory);
+
+        Assert.assertFalse(results.getFirst().isEmpty());
+        Assert.assertEquals(4, results.getFirst().size());
+
+        pathOne.deleteRecursively();
+    }
+
+    @Test
     public void testDirectoryWithAFile()
     {
         final File directory = File.temporaryFolder();
         directory.child("test.tmp").writeAndClose("test file");
-        final Tuple<List<FileStatus>, List<String>> results = test(directory);
+        final Tuple<List<FileStatus>, List<String>> results = HDFSWalkerTest.test(directory);
 
         // Verify file statuses
         Assert.assertFalse(results.getFirst().isEmpty());
@@ -61,7 +94,7 @@ public class HDFSWalkerTest
         childDirectory.child("file-in-child-directory.tmp").writeAndClose("test child file");
 
         // Verify file statuses
-        final Tuple<List<FileStatus>, List<String>> results = test(directory);
+        final Tuple<List<FileStatus>, List<String>> results = HDFSWalkerTest.test(directory);
         Assert.assertFalse(results.getFirst().isEmpty());
         Assert.assertEquals(3, results.getFirst().size());
 
@@ -83,7 +116,7 @@ public class HDFSWalkerTest
     public void testEmptyDirectory()
     {
         final File emptyDirectory = File.temporaryFolder();
-        final Tuple<List<FileStatus>, List<String>> results = test(emptyDirectory);
+        final Tuple<List<FileStatus>, List<String>> results = HDFSWalkerTest.test(emptyDirectory);
 
         // Verify status and debug strings are empty
         Assert.assertTrue(results.getFirst().isEmpty());
