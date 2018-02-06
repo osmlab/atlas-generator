@@ -59,6 +59,7 @@ public class SparkInputTest
     @Test
     public void testBinaryFileReader()
     {
+        // Re-use the same binary file as the one for testing the sequence file
         final JavaPairRDD<String, PortableDataStream> result = SparkInput.binaryFile(this.context,
                 PATH);
         Assert.assertEquals(1L, result.count());
