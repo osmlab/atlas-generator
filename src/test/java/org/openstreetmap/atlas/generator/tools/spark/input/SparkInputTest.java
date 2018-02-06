@@ -78,6 +78,7 @@ public class SparkInputTest
             {
                 throw new CoreException("Error copying streams", e);
             }
+            // This will be the raw binary version of the contents of the test sequence file
             final String gathered = gatherer.readAndClose();
             logger.info("{}", gathered);
             Assert.assertEquals(181, gatherer.length());
