@@ -20,12 +20,17 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.SequenceFile.Reader.Option;
 import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.hadoop.mapreduce.lib.input.CombineFileSplit;
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.input.PortableDataStream;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemCreator;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
@@ -88,6 +93,49 @@ public final class SparkInput
                     return Iterables.stream(result)
                             .map(atlasResult -> new Tuple2<>(0, atlasResult));
                 }).values();
+    }
+
+    /**
+     * Get an RDD from a binary file input
+     *
+     * @param context
+     *            The context from Spark
+     * @param path
+     *            The path to a set of binary files
+     * @return An RDD made of pairs of names to values from the binary files read.
+     */
+    public static JavaPairRDD<String, PortableDataStream> binaryFile(final JavaSparkContext context,
+            final String path)
+    {
+        // Call the transform method
+        return transform(context, path,
+                // The first method: case of an elastic file system.
+                // For each path, we return the single binary file that is at this path.
+                // This lambda needs to be serializable.
+                (BiFunction<Path, Map<String, String>, Iterable<Tuple2<String, PortableDataStream>>> & Serializable) (
+                        elasticPath, map) ->
+                {
+                    final TaskAttemptContext taskAttemptContext = new TaskAttemptContextImpl(
+                            toHadoop(map), new TaskAttemptID());
+                    final long fileLength;
+                    try
+                    {
+                        fileLength = getFileSystemCreator().get(elasticPath.toString(), map)
+                                .getFileStatus(elasticPath).getLen();
+                    }
+                    catch (final IOException e)
+                    {
+                        throw new CoreException("Unable to get file length for {}",
+                                elasticPath.toString(), e);
+                    }
+                    final CombineFileSplit split = new CombineFileSplit(new Path[] { elasticPath },
+                            new long[] { fileLength });
+                    final PortableDataStream result = new PortableDataStream(split,
+                            taskAttemptContext, 0);
+                    return Iterables.from(new Tuple2<>(elasticPath.toString(), result));
+                },
+                // In case of a non elastic file system, like HDFS, use the standard method.
+                otherPath -> context.binaryFiles(otherPath));
     }
 
     /**
