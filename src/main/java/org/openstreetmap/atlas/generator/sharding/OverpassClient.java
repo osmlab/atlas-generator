@@ -1,6 +1,7 @@
 package org.openstreetmap.atlas.generator.sharding;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +32,6 @@ public class OverpassClient
 
     private static String BASE_QUERY;
     private static final String END_QUERY = ");out body;";
-    private static boolean tooMuchResponseData = false;
     private String server = "-api.de";
     private HttpHost proxy;
 
@@ -57,16 +57,6 @@ public class OverpassClient
     {
         return type + "[\"" + key + "\"=\"" + value + "\"](" + constructBoundingBox(bounds)
                 + END_QUERY;
-    }
-
-    private static void checkForTooMuchData(final Document document)
-    {
-        if (document.getDocumentElement().getElementsByTagName("remark").item(0) != null
-                && document.getDocumentElement().getElementsByTagName("remark").item(0)
-                        .getTextContent().contains("runtime error: Query ran out of memory"))
-        {
-            tooMuchResponseData = true;
-        }
     }
 
     private static String constructBoundingBox(final Rectangle bounds)
@@ -100,8 +90,7 @@ public class OverpassClient
     }
 
     public CloseableHttpResponse getResponse(final String specificQuery)
-            throws ParserConfigurationException, UnsupportedOperationException, SAXException,
-            IOException
+            throws UnsupportedEncodingException
     {
         // post request to handle long overpass queries, get request has limit on URI length
         final PostResource post = new PostResource(BASE_QUERY);
@@ -112,11 +101,6 @@ public class OverpassClient
         post.setStringBody("data=" + URLEncoder.encode(specificQuery, "UTF-8"),
                 ContentType.APPLICATION_FORM_URLENCODED);
         return post.getResponse();
-    }
-
-    public boolean hasTooMuchResponseData()
-    {
-        return this.tooMuchResponseData;
     }
 
     /**
@@ -180,9 +164,8 @@ public class OverpassClient
         try (CloseableHttpResponse response = this.getResponse(query))
         {
             logger.info("Parsing node query response...");
-            final Document document = builder.parse(response.getEntity().getContent());
-            checkForTooMuchData(document);
-            final NodeList nodelist = document.getElementsByTagName("node");
+            final Document doc = builder.parse(response.getEntity().getContent());
+            final NodeList nodelist = doc.getElementsByTagName("node");
             final int nodeListLength = nodelist.getLength();
             final List<OverpassOsmNode> osmNodes = new ArrayList<>(nodeListLength);
             for (int i = 0; i < nodeListLength; i++)
@@ -225,7 +208,6 @@ public class OverpassClient
         {
             logger.info("Parsing way query response...");
             final Document document = builder.parse(response.getEntity().getContent());
-            checkForTooMuchData(document);
             final NodeList wayNodeList = document.getElementsByTagName("way");
             final int wayListLength = wayNodeList.getLength();
             final List<OverpassOsmWay> osmWays = new ArrayList<>(wayListLength);
