@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpHost;
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Rectangle;
@@ -167,6 +168,11 @@ public class AtlasMissingShardVerifier extends Command
         {
             final List<OverpassOsmNode> nodes = client.nodesFromQuery(masterQuery);
             final List<OverpassOsmWay> ways = client.waysFromQuery(masterQuery);
+            if (client.hasTooMuchResponseData())
+            {
+                throw new CoreException(
+                        "The overpass query returned too much data. This means that there are large amounts of data missing! Check the missing shard list for outliers.");
+            }
             final STRtree nodeTree = initializeNodeTree(nodes);
             final STRtree wayTree = initializeWayTree(nodes, ways);
             for (final CountryShard countryShard : missingCountryShards)
