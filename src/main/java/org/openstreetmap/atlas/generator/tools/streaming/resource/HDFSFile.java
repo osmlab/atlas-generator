@@ -116,7 +116,7 @@ public class HDFSFile extends AbstractWritableResource
         }
     }
 
-    public void mkdirs(final boolean clean) throws IOException
+    public void mkdirs(final boolean clean)
     {
         new Retry(this.retries, this.retryWait).run(() ->
         {
@@ -128,11 +128,32 @@ public class HDFSFile extends AbstractWritableResource
                 }
                 this.system.mkdirs(this.path);
             }
-            catch (final IOException e)
+            catch (final IOException oops)
             {
-                throw new CoreException(
-                        "Could not create directories in HDFS for location {} due to error {}",
-                        this.path.toString(), e.getMessage());
+                throw new CoreException("Could not create directories in HDFS for location {}",
+                        this.path, oops);
+            }
+        });
+    }
+
+    /**
+     * CAUTION: Please use this wisely in case of removing directories recursively
+     *
+     * @param recursive
+     *            true to recursively delete a directory
+     */
+    public void remove(final boolean recursive)
+    {
+        new Retry(this.retries, this.retryWait).run(() ->
+        {
+            try
+            {
+                this.system.delete(this.path, recursive);
+            }
+            catch (final IOException oops)
+            {
+                throw new CoreException("Could not delete path in HDFS location {}", this.path,
+                        oops);
             }
         });
     }

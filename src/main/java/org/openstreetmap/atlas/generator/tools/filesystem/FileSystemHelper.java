@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,9 +33,9 @@ import org.slf4j.LoggerFactory;
  */
 public final class FileSystemHelper
 {
-    private static final Logger logger = LoggerFactory.getLogger(FileSystemHelper.class);
     private static final Map<String, String> DEFAULT = Maps.hashMap("fs.file.impl",
             RawLocalFileSystem.class.getCanonicalName());
+    private static final Logger logger = LoggerFactory.getLogger(FileSystemHelper.class);
 
     /**
      * Deletes given path using given configuration settings.
@@ -77,39 +78,34 @@ public final class FileSystemHelper
         final List<Resource> resources = new ArrayList<>();
         final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
 
-        HDFSWalker.walk(new Path(directory)).map(HDFSWalker.debug(path -> logger.info("{}", path)))
-                .forEach(status ->
+        streamPathsRecursively(directory, configuration, filter).forEach(path ->
+        {
+            try
+            {
+                final InputStreamResource resource = new InputStreamResource(() ->
                 {
-                    final Path path = status.getPath();
-                    if (filter == null || filter.accept(path))
+                    try
                     {
-                        try
-                        {
-                            final InputStreamResource resource = new InputStreamResource(() ->
-                            {
-                                try
-                                {
-                                    return fileSystem.open(path);
-                                }
-                                catch (final Exception e)
-                                {
-                                    throw new CoreException("Unable to open {}", path, e);
-                                }
-                            }).withName(path.getName());
-
-                            if (path.getName().endsWith(FileSuffix.GZIP.toString()))
-                            {
-                                resource.setDecompressor(Decompressor.GZIP);
-                            }
-
-                            resources.add(resource);
-                        }
-                        catch (final Exception e)
-                        {
-                            throw new CoreException("Unable to read {}", path, e);
-                        }
+                        return fileSystem.open(path);
                     }
-                });
+                    catch (final Exception e)
+                    {
+                        throw new CoreException("Unable to open {}", path, e);
+                    }
+                }).withName(path.getName());
+
+                if (path.getName().endsWith(FileSuffix.GZIP.toString()))
+                {
+                    resource.setDecompressor(Decompressor.GZIP);
+                }
+
+                resources.add(resource);
+            }
+            catch (final Exception e)
+            {
+                throw new CoreException("Unable to read {}", path, e);
+            }
+        });
 
         return resources;
     }
@@ -283,6 +279,24 @@ public final class FileSystemHelper
         }
 
         return resources;
+    }
+
+    /**
+     * @param directory
+     *            The directory from which to recursively stream paths
+     * @param configuration
+     *            The configuration (containing the filesystem definition)
+     * @param filter
+     *            The path filter. If null, all the paths will be returned.
+     * @return a stream of {@link Path}s
+     */
+    public static Stream<Path> streamPathsRecursively(final String directory,
+            final Map<String, String> configuration, final PathFilter filter)
+    {
+        final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
+        return new HDFSWalker().usingConfiguration(fileSystem.getConf()).walk(new Path(directory))
+                .map(HDFSWalker.debug(path -> logger.info("{}", path))).map(FileStatus::getPath)
+                .filter(path -> filter == null || filter.accept(path));
     }
 
     /**
