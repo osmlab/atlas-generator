@@ -1,6 +1,7 @@
 package org.openstreetmap.atlas.generator.sharding;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -100,8 +101,7 @@ public class OverpassClient
     }
 
     public CloseableHttpResponse getResponse(final String specificQuery)
-            throws ParserConfigurationException, UnsupportedOperationException, SAXException,
-            IOException
+            throws UnsupportedEncodingException
     {
         // post request to handle long overpass queries, get request has limit on URI length
         final PostResource post = new PostResource(BASE_QUERY);
