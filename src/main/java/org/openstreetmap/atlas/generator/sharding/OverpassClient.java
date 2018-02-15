@@ -33,6 +33,7 @@ public class OverpassClient
     private static String BASE_QUERY;
     private static final String END_QUERY = ");out body;";
     private static boolean tooMuchResponseData = false;
+    private static boolean unknownError = false;
     private String server = "-api.de";
     private HttpHost proxy;
 
@@ -60,13 +61,19 @@ public class OverpassClient
                 + END_QUERY;
     }
 
-    private static void checkForTooMuchData(final Document document)
+    private static void checkForErrors(final Document document)
     {
         if (document.getDocumentElement().getElementsByTagName("remark").item(0) != null
                 && document.getDocumentElement().getElementsByTagName("remark").item(0)
                         .getTextContent().contains("runtime error: Query ran out of memory"))
         {
             tooMuchResponseData = true;
+        }
+        else if (document.getDocumentElement().getElementsByTagName("remark").item(0) != null
+                && document.getDocumentElement().getElementsByTagName("remark").item(0)
+                        .getTextContent().contains("error"))
+        {
+            unknownError = true;
         }
     }
 
@@ -117,6 +124,11 @@ public class OverpassClient
     public boolean hasTooMuchResponseData()
     {
         return tooMuchResponseData;
+    }
+
+    public boolean hasUnknownError()
+    {
+        return unknownError;
     }
 
     /**
@@ -181,7 +193,11 @@ public class OverpassClient
         {
             logger.info("Parsing node query response...");
             final Document document = builder.parse(response.getEntity().getContent());
-            checkForTooMuchData(document);
+            checkForErrors(document);
+            if (tooMuchResponseData || unknownError)
+            {
+                return new ArrayList<>();
+            }
             final NodeList nodelist = document.getElementsByTagName("node");
             final int nodeListLength = nodelist.getLength();
             final List<OverpassOsmNode> osmNodes = new ArrayList<>(nodeListLength);
@@ -225,7 +241,11 @@ public class OverpassClient
         {
             logger.info("Parsing way query response...");
             final Document document = builder.parse(response.getEntity().getContent());
-            checkForTooMuchData(document);
+            checkForErrors(document);
+            if (tooMuchResponseData || unknownError)
+            {
+                return new ArrayList<>();
+            }
             final NodeList wayNodeList = document.getElementsByTagName("way");
             final int wayListLength = wayNodeList.getLength();
             final List<OverpassOsmWay> osmWays = new ArrayList<>(wayListLength);

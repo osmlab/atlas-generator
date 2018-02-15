@@ -173,6 +173,11 @@ public class AtlasMissingShardVerifier extends Command
                 throw new CoreException(
                         "The overpass query returned too much data. This means that there are large amounts of data missing! Check the missing shard list for outliers.");
             }
+            if (client.hasUnknownError())
+            {
+                throw new CoreException(
+                        "The overpass query encountered an error. Validation has failed.");
+            }
             final STRtree nodeTree = initializeNodeTree(nodes);
             final STRtree wayTree = initializeWayTree(nodes, ways);
             for (final CountryShard countryShard : missingCountryShards)
