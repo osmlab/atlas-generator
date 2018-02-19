@@ -41,7 +41,7 @@ public class WorldAtlasGenerator extends Command
     private static final Switch<File> STATISTICS = new Switch<>("statistics",
             "The file that will contain the statistics", File::new, Optionality.OPTIONAL);
     public static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
-            "The boundary map to use", value -> new CountryBoundaryMap(new File(value)),
+            "The boundary map to use", value -> CountryBoundaryMap.fromPlainText(new File(value)),
             Optionality.REQUIRED);
     public static final Switch<String> CODE_VERSION = new Switch<>("codeVersion",
             "The code version", StringConverter.IDENTITY, Optionality.OPTIONAL, "unknown");

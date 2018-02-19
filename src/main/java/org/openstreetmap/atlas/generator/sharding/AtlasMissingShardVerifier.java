@@ -86,7 +86,7 @@ public class AtlasMissingShardVerifier extends Command
     {
         final Time start = Time.now();
         logger.info("Loading boundaries");
-        final CountryBoundaryMap result = new CountryBoundaryMap(new File(value));
+        final CountryBoundaryMap result = CountryBoundaryMap.fromPlainText(new File(value));
         logger.info("Loaded boundaries in {}", start.elapsedSince());
         return result;
     }
