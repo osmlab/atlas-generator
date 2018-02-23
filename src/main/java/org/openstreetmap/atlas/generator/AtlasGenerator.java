@@ -22,6 +22,7 @@ import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutp
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
+import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
@@ -128,6 +129,68 @@ public class AtlasGenerator extends SparkJob
         new AtlasGenerator().run(args);
     }
 
+    /**
+     * @param shard
+     *            The {@link Shard} to test
+     * @param boundaries
+     *            The set of country boundaries to test the shard with
+     * @return {@code true} when the shard partially or fully intersects at least one of the country
+     *         boundaries in the set.
+     */
+    protected static boolean filterShards(final Shard shard, final List<CountryBoundary> boundaries)
+    {
+        boolean result = false;
+        for (final CountryBoundary boundary : boundaries)
+        {
+            final MultiPolygon boundaryShape = boundary.getBoundary();
+            for (final Polygon outer : boundaryShape.outers())
+            {
+                if (outer.overlaps(shard.bounds()))
+                {
+                    result = true;
+                    for (final Polygon inner : boundaryShape.innersOf(outer))
+                    {
+                        if (inner.fullyGeometricallyEncloses(shard.bounds()))
+                        {
+                            result = false;
+                            break;
+                        }
+                    }
+                    if (result)
+                    {
+                        break;
+                    }
+                }
+            }
+            if (result)
+            {
+                break;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Get a rough idea of all the shards for a specific country, by using the country's bounds to
+     * find all the shards. It some cases, this list will contain a lot of false positives.
+     *
+     * @param sharding
+     *            The sharding tree to consider
+     * @param countryBoundary
+     *            The country boundary for which to find the shards
+     * @return The rough tally of shards
+     */
+    protected static Set<Shard> roughShards(final Sharding sharding,
+            final CountryBoundary countryBoundary)
+    {
+        final Set<Shard> shards = new HashSet<>();
+        for (final Polygon subBoundary : countryBoundary.getBoundary().outers())
+        {
+            sharding.shards(subBoundary.bounds()).forEach(shards::add);
+        }
+        return shards;
+    }
+
     private static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
             final Configuration configuration)
     {
@@ -143,20 +206,6 @@ public class AtlasGenerator extends SparkJob
                 throw new CoreException("Unable to read configuration from {}", path, e);
             }
         })));
-    }
-
-    /**
-     * Iterate through outers of country boundary to avoid unnecessary overlap checks.
-     */
-    private static Set<Shard> shards(final Sharding sharding, final CountryBoundary countryBoundary)
-    {
-        final Set<Shard> shards = new HashSet<>();
-        for (final Polygon subBoundary : countryBoundary.getBoundary().outers())
-        {
-            shards.addAll(Iterables.asList(Iterables.filter(sharding.shards(subBoundary.bounds()),
-                    shard -> subBoundary.overlaps(shard.bounds()))));
-        }
-        return shards;
     }
 
     @Override
@@ -220,7 +269,9 @@ public class AtlasGenerator extends SparkJob
         final JavaRDD<String> countriesRDD = getContext().parallelize(Iterables.asList(countries),
                 countries.size());
 
-        final JavaPairRDD<String, Shard> preCountryShardsRDD = countriesRDD
+        // Get a list of country shard pairs, with a lot of false positives
+        // TODO Leverage country boundary map grid index when ready
+        final List<Tuple2<String, Shard>> roughCountryShards = countriesRDD
                 .flatMapToPair(countryName ->
                 {
                     // For each country boundary
@@ -240,13 +291,25 @@ public class AtlasGenerator extends SparkJob
                     {
                         // Identify all the shards in the country's bounding box and filter out
                         // those that do not intersect
-                        shards.addAll(shards(sharding, boundary));
+                        shards.addAll(roughShards(sharding, boundary));
                     }
                     // Assign the country name / shard couples to the countryShards list to be
                     // parallelized
                     final List<Tuple2<String, Shard>> countryShards = new ArrayList<>();
                     shards.forEach(shard -> countryShards.add(new Tuple2<>(countryName, shard)));
                     return countryShards;
+                }).collect();
+
+        // Get a RDD of country shards without any false positives
+        // TODO Leverage country boundary map grid index when ready
+        final JavaPairRDD<String, Shard> preCountryShardsRDD = getContext()
+                .parallelizePairs(roughCountryShards, roughCountryShards.size()).filter(tuple ->
+                {
+                    final String countryName = tuple._1();
+                    final Shard shard = tuple._2();
+                    final List<CountryBoundary> boundaries = worldBoundaries
+                            .countryBoundary(countryName);
+                    return filterShards(shard, boundaries);
                 });
 
         // Collect and re-parallelize so the code below is as parallel as there are countries/shard
