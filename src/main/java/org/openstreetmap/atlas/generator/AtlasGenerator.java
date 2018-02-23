@@ -270,6 +270,7 @@ public class AtlasGenerator extends SparkJob
                 countries.size());
 
         // Get a list of country shard pairs, with a lot of false positives
+        // TODO Leverage country boundary map grid index when ready
         final List<Tuple2<String, Shard>> roughCountryShards = countriesRDD
                 .flatMapToPair(countryName ->
                 {
@@ -300,6 +301,7 @@ public class AtlasGenerator extends SparkJob
                 }).collect();
 
         // Get a RDD of country shards without any false positives
+        // TODO Leverage country boundary map grid index when ready
         final JavaPairRDD<String, Shard> preCountryShardsRDD = getContext()
                 .parallelizePairs(roughCountryShards, roughCountryShards.size()).filter(tuple ->
                 {
