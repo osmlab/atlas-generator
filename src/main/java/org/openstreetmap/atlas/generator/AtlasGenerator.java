@@ -263,7 +263,7 @@ public class AtlasGenerator extends SparkJob
                 .read(countryBoundaries);
         logger.info("Done Reading {} country boundaries from {}", worldBoundaries.size(),
                 countryShapes);
-        if (worldBoundaries.getGridIndex() == null)
+        if (!worldBoundaries.hasGridIndex())
         {
             logger.warn(
                     "Given country boundary file didn't have grid index. Initializing grid index for {}.",
