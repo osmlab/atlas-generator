@@ -22,11 +22,11 @@ public class AtlasGeneratorTest
     @Test
     public void testRoughFilterShards()
     {
-        final CountryBoundaryMap countryBoundaryMapHTI = new CountryBoundaryMap(
-                new InputStreamResource(
+        final CountryBoundaryMap countryBoundaryMapHTI = CountryBoundaryMap
+                .fromPlainText(new InputStreamResource(
                         () -> AtlasGeneratorTest.class.getResourceAsStream("HTI.txt")));
-        final CountryBoundaryMap countryBoundaryMapJAM = new CountryBoundaryMap(
-                new InputStreamResource(
+        final CountryBoundaryMap countryBoundaryMapJAM = CountryBoundaryMap
+                .fromPlainText(new InputStreamResource(
                         () -> AtlasGeneratorTest.class.getResourceAsStream("JAM.txt")));
 
         final List<CountryBoundary> countryBoundaryHTI = countryBoundaryMapHTI

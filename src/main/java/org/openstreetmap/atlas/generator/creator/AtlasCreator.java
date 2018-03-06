@@ -28,7 +28,7 @@ import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 public class AtlasCreator extends Command
 {
     public static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
-            "The boundary map to use", value -> new CountryBoundaryMap(new File(value)),
+            "The boundary map to use", value -> CountryBoundaryMap.fromPlainText(new File(value)),
             Optionality.REQUIRED);
     public static final Switch<String> COUNTRY = new Switch<>("country", "The country code",
             StringConverter.IDENTITY, Optionality.REQUIRED);

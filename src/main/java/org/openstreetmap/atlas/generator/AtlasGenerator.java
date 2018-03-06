@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -262,6 +263,13 @@ public class AtlasGenerator extends SparkJob
                 .read(countryBoundaries);
         logger.info("Done Reading {} country boundaries from {}", worldBoundaries.size(),
                 countryShapes);
+        if (!worldBoundaries.hasGridIndex())
+        {
+            logger.warn(
+                    "Given country boundary file didn't have grid index. Initializing grid index for {}.",
+                    countries);
+            worldBoundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
+        }
 
         // ****** SPARK CODE BELOW ****** //
 
