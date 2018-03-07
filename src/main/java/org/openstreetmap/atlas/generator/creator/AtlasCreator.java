@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.creator;
 
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.openstreetmap.atlas.generator.AtlasGenerator;
@@ -15,7 +16,6 @@ import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
-import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.openstreetmap.atlas.utilities.runtime.Command;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 
@@ -54,10 +54,11 @@ public class AtlasCreator extends Command
     public Atlas generateAtlas(final CountryBoundaryMap map, final Shard tile, final String pbfPath,
             final Sharding sharding, final String countryName)
     {
-        final PbfLoader loader = new PbfLoader(new PbfContext(pbfPath, sharding),
-                new HashMap<>(), map, AtlasLoadingOption.createOptionWithAllEnabled(map)
+        final PbfLoader loader = new PbfLoader(new PbfContext(pbfPath, sharding), new HashMap<>(),
+                map,
+                AtlasLoadingOption.createOptionWithAllEnabled(map)
                         .setAdditionalCountryCodes(countryName),
-                "dummyCodeVersion", "dummyDataVersion", new MultiMap<>());
+                "dummyCodeVersion", "dummyDataVersion", Collections.emptyList());
         return loader.load(countryName, tile);
     }
 
