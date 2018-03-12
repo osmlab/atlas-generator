@@ -20,6 +20,7 @@ import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutp
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
+import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -40,6 +41,7 @@ import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
+import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -155,9 +157,17 @@ public class AtlasGenerator extends SparkJob
             // Extract shards
             countryBoundaries.forEach(countryBoundary ->
             {
-                sharding.shards(countryBoundary.getBoundary()).forEach(shard ->
+                sharding.shards(countryBoundary.getBoundary().bounds()).forEach(shard ->
                 {
-                    countryToShardMap.add(country, shard);
+                    // Skip a shard if
+                    // - there is no corresponding grid for given country
+                    // - or given country boundary doesn't overlap with shard bounds
+                    final Rectangle shardBounds = shard.bounds();
+                    if (boundaryMap.countryCodesOverlappingWith(shardBounds).contains(country)
+                            && countryBoundary.getBoundary().overlaps(shardBounds))
+                    {
+                        countryToShardMap.add(country, shard);
+                    }
                 });
             });
         });
@@ -259,8 +269,10 @@ public class AtlasGenerator extends SparkJob
             worldBoundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
         }
 
-        // Extract country shard tuples
+        // Generate country-shard generation tasks
+        final Time timer = Time.now();
         final List<AtlasGenerationTask> tasks = generateTasks(countries, worldBoundaries, sharding);
+        logger.debug("Generated {} tasks in {}.", tasks.size(), timer.elapsedSince());
 
         // Transform the map country name to shard to country name to Atlas
         // This is not enforced, but it has to be a 1-1 mapping here.
