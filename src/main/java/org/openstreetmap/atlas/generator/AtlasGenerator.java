@@ -6,8 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -20,7 +23,6 @@ import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutp
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
-import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -41,6 +43,7 @@ import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
+import org.openstreetmap.atlas.utilities.threads.Pool;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +145,8 @@ public class AtlasGenerator extends SparkJob
     protected static List<AtlasGenerationTask> generateTasks(final StringList countries,
             final CountryBoundaryMap boundaryMap, final Sharding sharding)
     {
-        // First create country-shard map
+        // Extract country boundaries and queue them
+        final BlockingQueue<CountryBoundary> queue = new LinkedBlockingQueue<>();
         final MultiMap<String, Shard> countryToShardMap = new MultiMap<>();
         countries.stream().forEach(country ->
         {
@@ -154,23 +158,24 @@ public class AtlasGenerator extends SparkJob
                 return;
             }
 
-            // Extract shards
-            countryBoundaries.forEach(countryBoundary ->
-            {
-                sharding.shards(countryBoundary.getBoundary().bounds()).forEach(shard ->
-                {
-                    // Skip a shard if
-                    // - there is no corresponding grid for given country
-                    // - or given country boundary doesn't overlap with shard bounds
-                    final Rectangle shardBounds = shard.bounds();
-                    if (boundaryMap.countryCodesOverlappingWith(shardBounds).contains(country)
-                            && countryBoundary.getBoundary().overlaps(shardBounds))
-                    {
-                        countryToShardMap.add(country, shard);
-                    }
-                });
-            });
+            // Queue boundary for processing
+            countryBoundaries.forEach(countryBoundary -> queue.add(countryBoundary));
         });
+
+        // Use all available processors except one (used by main thread)
+        final int threadCount = Runtime.getRuntime().availableProcessors() - 1;
+        logger.info("Generating tasks with {} processors (threads).", threadCount);
+
+        // Start the execution pool to generate tasks
+        try (Pool processPool = new Pool(threadCount, "Atlas Task Generator"))
+        {
+            // Generate processors
+            IntStream.range(0, threadCount).forEach(index ->
+            {
+                processPool.queue(new AtlasGeneratorTaskProcessor(queue, sharding, boundaryMap,
+                        countryToShardMap));
+            });
+        }
 
         // Generate tasks from country-shard map
         final List<AtlasGenerationTask> tasks = new ArrayList<>();
