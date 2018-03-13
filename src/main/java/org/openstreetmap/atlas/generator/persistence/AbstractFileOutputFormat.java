@@ -1,4 +1,4 @@
-package org.openstreetmap.atlas.generator.tools.persistence;
+package org.openstreetmap.atlas.generator.persistence;
 
 import java.io.IOException;
 
@@ -14,6 +14,7 @@ import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.streaming.Streams;
 import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.resource.AbstractWritableResource;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.OutputStreamWritableResource;
 import org.openstreetmap.atlas.utilities.runtime.Retry;
 import org.openstreetmap.atlas.utilities.scalars.Duration;
@@ -35,9 +36,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
     {
         return new RecordWriter<String, T>()
         {
-            private final boolean isCompressed = getCompressOutput(job);
-            private final String resourceName = name + "." + fileExtension()
-                    + (this.isCompressed ? ".gz" : "");
+            private final String resourceName = getQualifiedFileNameWithExtension(name);
             private final Path path = FileOutputFormat.getTaskOutputPath(job, this.resourceName);
             private final FileSystem fileSystem = this.path.getFileSystem(job);
             private FSDataOutputStream dataOutputStream;
@@ -60,7 +59,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
                         final AbstractWritableResource out = new OutputStreamWritableResource(
                                 this.dataOutputStream);
                         out.setName(this.path.toString());
-                        if (this.isCompressed)
+                        if (isCompressed())
                         {
                             out.setCompressor(Compressor.GZIP);
                         }
@@ -78,10 +77,24 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
 
     protected abstract String fileExtension();
 
+    protected abstract boolean isCompressed();
+
     protected Retry retry()
     {
         return new Retry(RETRY_NUMBER, Duration.seconds(2));
     }
 
     protected abstract void save(T value, AbstractWritableResource out);
+
+    private String getQualifiedFileNameWithExtension(final String name)
+    {
+        if (this.isCompressed())
+        {
+            return String.format("%s%s%s", name, this.fileExtension(), FileSuffix.GZIP.toString());
+        }
+        else
+        {
+            return String.format("%s%s", name, this.fileExtension());
+        }
+    }
 }
