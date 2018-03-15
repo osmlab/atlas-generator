@@ -3,7 +3,6 @@ package org.openstreetmap.atlas.generator;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +42,7 @@ import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
+import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
 import org.openstreetmap.atlas.utilities.threads.Pool;
@@ -149,7 +149,7 @@ public class AtlasGenerator extends SparkJob
     {
         // Extract country boundaries and queue them
         final BlockingQueue<CountryBoundary> queue = new LinkedBlockingQueue<>();
-        final Map<String, Set<Shard>> countryToShardMap = new HashMap<>();
+        final MultiMapWithSet<String, Shard> countryToShardMap = new MultiMapWithSet<>();
         countries.stream().forEach(country ->
         {
             // Initialize country-shard map

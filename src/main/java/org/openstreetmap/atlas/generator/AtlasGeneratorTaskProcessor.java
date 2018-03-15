@@ -9,6 +9,7 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
+import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ class AtlasGeneratorTaskProcessor implements Runnable
     private final BlockingQueue<CountryBoundary> queue;
     private final Sharding sharding;
     private final CountryBoundaryMap boundaryMap;
-    private final Map<String, Set<Shard>> countryToShardMap;
+    private final MultiMapWithSet<String, Shard> countryToShardMap;
 
     /**
      * Default constructor.
@@ -36,10 +37,11 @@ class AtlasGeneratorTaskProcessor implements Runnable
      * @param boundaryMap
      *            {@link CountryBoundaryMap} to eliminate false positives
      * @param countryToShardMap
-     *            {@link Map} of country names to {@link List} of {@link Shard}s
+     *            {@link Map} of country names to {@link Set} of {@link Shard}s
      */
     AtlasGeneratorTaskProcessor(final BlockingQueue<CountryBoundary> queue, final Sharding sharding,
-            final CountryBoundaryMap boundaryMap, final Map<String, Set<Shard>> countryToShardMap)
+            final CountryBoundaryMap boundaryMap,
+            final MultiMapWithSet<String, Shard> countryToShardMap)
     {
         this.queue = queue;
         this.sharding = sharding;
