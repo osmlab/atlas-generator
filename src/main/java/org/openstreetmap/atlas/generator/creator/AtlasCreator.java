@@ -58,7 +58,7 @@ public class AtlasCreator extends Command
                 map,
                 AtlasLoadingOption.createOptionWithAllEnabled(map)
                         .setAdditionalCountryCodes(countryName),
-                "dummyCodeVersion", "dummyDataVersion", Collections.emptyList());
+                "dummyCodeVersion", "dummyDataVersion", Collections.emptySet());
         return loader.load(countryName, tile);
     }
 

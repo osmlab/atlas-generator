@@ -1,6 +1,7 @@
 package org.openstreetmap.atlas.generator;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.Assert;
@@ -88,7 +89,7 @@ public class AtlasGeneratorTest
     private void verifyAllShardEquality(final List<AtlasGenerationTask> tasks)
     {
         final String referenceCountry = tasks.get(0).getCountry();
-        final List<Shard> referenceShards = tasks.get(0).getAllShards();
+        final Set<Shard> referenceShards = tasks.get(0).getAllShards();
         tasks.stream().skip(1).forEach(otherTask ->
         {
             Assert.assertEquals(referenceCountry, otherTask.getCountry());
@@ -98,9 +99,9 @@ public class AtlasGeneratorTest
 
     private void verifyNoShardIsMissing(final List<AtlasGenerationTask> tasks)
     {
-        final List<Shard> referenceShards = tasks.get(0).getAllShards();
-        final List<Shard> taskShards = tasks.stream().map(task -> task.getShard())
-                .collect(Collectors.toList());
+        final Set<Shard> referenceShards = tasks.get(0).getAllShards();
+        final Set<Shard> taskShards = tasks.stream().map(task -> task.getShard())
+                .collect(Collectors.toSet());
         Assert.assertEquals(referenceShards, taskShards);
     }
 }

@@ -3,9 +3,12 @@ package org.openstreetmap.atlas.generator;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
@@ -40,7 +43,6 @@ import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
-import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
 import org.openstreetmap.atlas.utilities.threads.Pool;
@@ -147,9 +149,12 @@ public class AtlasGenerator extends SparkJob
     {
         // Extract country boundaries and queue them
         final BlockingQueue<CountryBoundary> queue = new LinkedBlockingQueue<>();
-        final MultiMap<String, Shard> countryToShardMap = new MultiMap<>();
+        final Map<String, Set<Shard>> countryToShardMap = new HashMap<>();
         countries.stream().forEach(country ->
         {
+            // Initialize country-shard map
+            countryToShardMap.put(country, new HashSet<>());
+
             // Fetch boundaries
             final List<CountryBoundary> countryBoundaries = boundaryMap.countryBoundary(country);
             if (countryBoundaries == null)
@@ -181,7 +186,7 @@ public class AtlasGenerator extends SparkJob
         final List<AtlasGenerationTask> tasks = new ArrayList<>();
         countryToShardMap.keySet().forEach(country ->
         {
-            final List<Shard> shards = countryToShardMap.get(country);
+            final Set<Shard> shards = countryToShardMap.get(country);
             if (!shards.isEmpty())
             {
                 shards.forEach(shard -> tasks.add(new AtlasGenerationTask(country, shard, shards)));

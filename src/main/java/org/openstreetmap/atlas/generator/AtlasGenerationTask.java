@@ -1,7 +1,7 @@
 package org.openstreetmap.atlas.generator;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.openstreetmap.atlas.geography.sharding.Shard;
@@ -17,7 +17,7 @@ final class AtlasGenerationTask implements Serializable
 
     private final String country;
     private final Shard shard;
-    private final List<Shard> allShards;
+    private final Set<Shard> allShards;
 
     /**
      * Default constructor
@@ -29,14 +29,14 @@ final class AtlasGenerationTask implements Serializable
      * @param allShards
      *            All {@link Shard}s for country
      */
-    AtlasGenerationTask(final String country, final Shard shard, final List<Shard> allShards)
+    AtlasGenerationTask(final String country, final Shard shard, final Set<Shard> allShards)
     {
         this.country = country;
         this.shard = shard;
         this.allShards = allShards;
     }
 
-    List<Shard> getAllShards()
+    Set<Shard> getAllShards()
     {
         return this.allShards;
     }

@@ -1,5 +1,7 @@
 package org.openstreetmap.atlas.generator;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 import org.openstreetmap.atlas.geography.Rectangle;
@@ -7,13 +9,12 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Worker that acts like both producer and consumer. Takes an {@link CountryBoundary} from work
- * queue and processes it.
+ * Worker that acts like both producer and consumer. Takes a {@link CountryBoundary} from work queue
+ * and processes it.
  *
  * @author mkalender
  */
@@ -23,7 +24,7 @@ class AtlasGeneratorTaskProcessor implements Runnable
     private final BlockingQueue<CountryBoundary> queue;
     private final Sharding sharding;
     private final CountryBoundaryMap boundaryMap;
-    private final MultiMap<String, Shard> countryToShardMap;
+    private final Map<String, Set<Shard>> countryToShardMap;
 
     /**
      * Default constructor.
@@ -38,7 +39,7 @@ class AtlasGeneratorTaskProcessor implements Runnable
      *            {@link Map} of country names to {@link List} of {@link Shard}s
      */
     AtlasGeneratorTaskProcessor(final BlockingQueue<CountryBoundary> queue, final Sharding sharding,
-            final CountryBoundaryMap boundaryMap, final MultiMap<String, Shard> countryToShardMap)
+            final CountryBoundaryMap boundaryMap, final Map<String, Set<Shard>> countryToShardMap)
     {
         this.queue = queue;
         this.sharding = sharding;
@@ -82,9 +83,10 @@ class AtlasGeneratorTaskProcessor implements Runnable
             if (this.boundaryMap.countryCodesOverlappingWith(shardBounds).contains(country)
                     && item.getBoundary().overlaps(shardBounds))
             {
-                synchronized (this.countryToShardMap)
+                final Set<Shard> shards = this.countryToShardMap.get(country);
+                synchronized (shards)
                 {
-                    this.countryToShardMap.add(country, shard);
+                    shards.add(shard);
                 }
             }
         });

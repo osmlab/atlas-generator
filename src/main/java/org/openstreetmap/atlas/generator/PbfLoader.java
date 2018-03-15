@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.openstreetmap.atlas.generator.PbfLocator.LocatedPbf;
@@ -45,7 +46,7 @@ public class PbfLoader implements Serializable
     private final AtlasLoadingOption atlasLoadingOption;
     private final String codeVersion;
     private final String dataVersion;
-    private final List<Shard> countryShards;
+    private final Set<Shard> countryShards;
 
     public static void setAtlasSaveFolder(final File atlasSaveFolder)
     {
@@ -68,11 +69,11 @@ public class PbfLoader implements Serializable
      * @param dataVersion
      *            The version of the data in the PBFs
      * @param countryShards
-     *            List of {@link Shard}s for the Atlas meta data
+     *            {@link Set} of {@link Shard}s for the Atlas meta data
      */
     public PbfLoader(final PbfContext pbfContext, final Map<String, String> sparkContext,
             final CountryBoundaryMap boundaries, final AtlasLoadingOption atlasLoadingOption,
-            final String codeVersion, final String dataVersion, final List<Shard> countryShards)
+            final String codeVersion, final String dataVersion, final Set<Shard> countryShards)
     {
         this.boundaries = boundaries;
         this.atlasLoadingOption = atlasLoadingOption;
