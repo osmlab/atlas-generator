@@ -503,6 +503,32 @@ public class SparkFileHelper implements Serializable
      * @param filename
      *            the name of the file
      * @param content
+     *            file content in byte array form
+     */
+    public void write(final String directory, final String filename, final byte[] content)
+    {
+        IO_RETRY.run(() ->
+        {
+            try
+            {
+                FileSystemHelper.writableResource(combine(directory, filename), this.sparkContext)
+                        .writeAndClose(content);
+            }
+            catch (final Exception e)
+            {
+                throw new CoreException(String.format("Could not save into %s.", filename), e);
+            }
+        });
+    }
+
+    /**
+     * Writes given content into given directory with given filename
+     *
+     * @param directory
+     *            a directory path to write files into
+     * @param filename
+     *            the name of the file
+     * @param content
      *            file content
      */
     public void write(final String directory, final String filename, final String content)
