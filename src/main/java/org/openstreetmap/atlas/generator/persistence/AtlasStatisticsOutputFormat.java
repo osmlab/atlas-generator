@@ -1,9 +1,9 @@
 package org.openstreetmap.atlas.generator.persistence;
 
 import org.apache.hadoop.mapred.FileOutputFormat;
-import org.openstreetmap.atlas.generator.tools.persistence.AbstractFileOutputFormat;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.streaming.resource.AbstractWritableResource;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 
 /**
  * {@link FileOutputFormat} that writes an {@link AtlasStatistics}.
@@ -15,7 +15,13 @@ public class AtlasStatisticsOutputFormat extends AbstractFileOutputFormat<AtlasS
     @Override
     protected String fileExtension()
     {
-        return "csv";
+        return FileSuffix.CSV.toString();
+    }
+
+    @Override
+    protected boolean isCompressed()
+    {
+        return true;
     }
 
     @Override
