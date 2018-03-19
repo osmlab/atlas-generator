@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.openstreetmap.atlas.generator.PbfLocator.LocatedPbf;
 import org.openstreetmap.atlas.geography.MultiPolygon;
@@ -21,9 +23,7 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Maps;
-import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.Configuration;
-import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ public class PbfLoader implements Serializable
     private final AtlasLoadingOption atlasLoadingOption;
     private final String codeVersion;
     private final String dataVersion;
-    private final MultiMap<String, Shard> countryToShardMap;
+    private final Set<Shard> countryShards;
 
     public static void setAtlasSaveFolder(final File atlasSaveFolder)
     {
@@ -69,13 +69,12 @@ public class PbfLoader implements Serializable
      *            The version of the code used
      * @param dataVersion
      *            The version of the data in the PBFs
-     * @param countryToShardMap
-     *            The map from country to shards for the Atlas meta data
+     * @param countryShards
+     *            {@link Set} of {@link Shard}s for the Atlas meta data
      */
     public PbfLoader(final Configuration pbfConfiguration, final Map<String, String> sparkContext,
             final CountryBoundaryMap boundaries, final AtlasLoadingOption atlasLoadingOption,
-            final String codeVersion, final String dataVersion,
-            final MultiMap<String, Shard> countryToShardMap)
+            final String codeVersion, final String dataVersion, final Set<Shard> countryShards)
     {
         this.boundaries = boundaries;
         this.atlasLoadingOption = atlasLoadingOption;
@@ -83,7 +82,7 @@ public class PbfLoader implements Serializable
         this.locator = new PbfLocator(pbfConfiguration, sparkContext);
         this.codeVersion = codeVersion;
         this.dataVersion = dataVersion;
-        this.countryToShardMap = countryToShardMap;
+        this.countryShards = countryShards;
     }
 
     /**
@@ -128,16 +127,14 @@ public class PbfLoader implements Serializable
     {
         final List<Atlas> atlases = new ArrayList<>();
         final Map<String, String> metaDataTags = Maps.hashMap();
-        if (this.countryToShardMap.containsKey(country))
-        {
-            final StringList shardList = new StringList();
-            this.countryToShardMap
-                    .get(country).stream().map(countryShard -> country
-                            + CountryShard.COUNTRY_SHARD_SEPARATOR + countryShard.getName())
-                    .forEach(shardList::add);
-            metaDataTags.put("countryShards", shardList.join(","));
-            metaDataTags.put(shard.getName() + "_boundary", loadingArea.toString());
-        }
+
+        // Add shard information to the meta data
+        metaDataTags.put("countryShards",
+                this.countryShards.stream().map(countryShard -> country
+                        + CountryShard.COUNTRY_SHARD_SEPARATOR + countryShard.getName())
+                        .collect(Collectors.joining(",")));
+        metaDataTags.put(shard.getName() + "_boundary", loadingArea.toString());
+
         pbfs.forEach(locatedPbf ->
         {
             final MultiPolygon pbfLoadingArea = locatedPbf.bounds().clip(loadingArea, ClipType.AND)
