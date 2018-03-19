@@ -91,8 +91,8 @@ public class AtlasGenerator extends SparkJob
             value -> StringList.split(value, ","), Optionality.REQUIRED);
     public static final Switch<String> COUNTRY_SHAPES = new Switch<>("countryShapes",
             "Shape file containing the countries", StringConverter.IDENTITY, Optionality.REQUIRED);
-    public static final Switch<String> PBFS_URL = new Switch<>("pbfs",
-            "The path to the folder that contains the pbf map data", StringConverter.IDENTITY,
+    public static final Switch<String> PBF_CONFIGURATION = new Switch<>("pbfConfiguration",
+            "The path to the resource containing the PBF configuration", StringConverter.IDENTITY,
             Optionality.REQUIRED);
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
@@ -239,9 +239,7 @@ public class AtlasGenerator extends SparkJob
         final StringList countries = (StringList) command.get(COUNTRIES);
         final String countryShapes = (String) command.get(COUNTRY_SHAPES);
         final String previousOutputForDelta = (String) command.get(PREVIOUS_OUTPUT_FOR_DELTA);
-        final String pbfsUrl = (String) command.get(PBFS_URL);
-        // The PBF URL, including the version
-        final String pbfPath = pbfsUrl;
+        final String pbfConfiguration = (String) command.get(PBF_CONFIGURATION);
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final String codeVersion = (String) command.get(CODE_VERSION);

@@ -22,6 +22,7 @@ import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.utilities.configuration.Configuration;
 import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class PbfLoader implements Serializable
     /**
      * Construct
      *
-     * @param pbfContext
+     * @param pbfConfiguration
      *            The context explaining where to find the PBFs
      * @param sparkContext
      *            The context from Spark
@@ -71,7 +72,7 @@ public class PbfLoader implements Serializable
      * @param countryToShardMap
      *            The map from country to shards for the Atlas meta data
      */
-    public PbfLoader(final PbfContext pbfContext, final Map<String, String> sparkContext,
+    public PbfLoader(final Configuration pbfConfiguration, final Map<String, String> sparkContext,
             final CountryBoundaryMap boundaries, final AtlasLoadingOption atlasLoadingOption,
             final String codeVersion, final String dataVersion,
             final MultiMap<String, Shard> countryToShardMap)
@@ -79,7 +80,7 @@ public class PbfLoader implements Serializable
         this.boundaries = boundaries;
         this.atlasLoadingOption = atlasLoadingOption;
         atlasLoadingOption.setCountryBoundaryMap(boundaries);
-        this.locator = new PbfLocator(pbfContext, sparkContext);
+        this.locator = new PbfLocator(pbfConfiguration, sparkContext);
         this.codeVersion = codeVersion;
         this.dataVersion = dataVersion;
         this.countryToShardMap = countryToShardMap;
