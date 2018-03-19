@@ -17,9 +17,8 @@ import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.sharding.SlippyTileSharding;
+import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
-
-import com.amazonaws.util.StringInputStream;
 
 /**
  * @author matthieun
@@ -72,7 +71,7 @@ public class PbfLocatorTest
         try (ResourceFileSystem resourceFileSystem = new ResourceFileSystem();
                 OutputStream output = resourceFileSystem
                         .create(new Path("resource://" + version + "/" + name));
-                InputStream input = new StringInputStream("test"))
+                InputStream input = new StringResource("test").read())
         {
             IOUtils.copy(input, output);
         }
