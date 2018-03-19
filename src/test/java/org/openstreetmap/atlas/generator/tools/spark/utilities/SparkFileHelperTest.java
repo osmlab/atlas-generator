@@ -11,6 +11,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 
@@ -186,5 +187,27 @@ public class SparkFileHelperTest
         TEST_HELPER.rename(tempFile.getAbsolutePath(), tempFile2.getAbsolutePath());
         Assert.assertFalse(tempFile.exists());
         Assert.assertTrue(tempFile2.exists());
+    }
+
+    @Test
+    public void testWrite() throws IOException
+    {
+        final String testBytesFileName = "write_test_bytes";
+        final String testStringFileName = "write_test_string";
+        final byte[] testBytes = { 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, };
+        final String testString = "OsmRocks!";
+        final File testFolder = this.temporaryFolder.newFolder();
+        TEST_HELPER.write(testFolder.getAbsolutePath(), testBytesFileName, testBytes);
+
+        final String testByteResource = SparkFileHelper.combine(testFolder.getAbsolutePath(),
+                testBytesFileName);
+        Assert.assertArrayEquals("SparkFileHelper write with byteArray failed", testBytes,
+                FileSystemHelper.resource(testByteResource).readBytesAndClose());
+
+        TEST_HELPER.write(testFolder.getAbsolutePath(), testStringFileName, testString);
+        final String testStringResource = SparkFileHelper.combine(testFolder.getAbsolutePath(),
+                testStringFileName);
+        Assert.assertEquals("SparkFileHelper write with string failed", testString,
+                FileSystemHelper.resource(testStringResource).all());
     }
 }
