@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.openstreetmap.atlas.generator.AtlasGenerator;
-import org.openstreetmap.atlas.generator.PbfContext;
 import org.openstreetmap.atlas.generator.PbfLoader;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
@@ -39,8 +38,14 @@ public class AtlasCreator extends Command
                 result.mkdirs();
                 return result;
             }, Optionality.REQUIRED);
-    public static final Switch<String> PBF_PATH = new Switch<>("pbfPath",
-            "The pbf path, without the zoom", StringConverter.IDENTITY, Optionality.REQUIRED);
+    public static final Switch<String> PBF_PATH = new Switch<>("pbfs", "The path to PBFs",
+            StringConverter.IDENTITY, Optionality.REQUIRED);
+    public static final Switch<String> PBF_SCHEME = new Switch<>("pbfScheme",
+            "The folder structure of the PBF", StringConverter.IDENTITY, Optionality.OPTIONAL,
+            "<z>-<x>-<y>.pbf");
+    public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
+            "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.REQUIRED);
     public static final Switch<Shard> TILE = new Switch<>("tile", "The SlippyTile name to use",
@@ -52,9 +57,10 @@ public class AtlasCreator extends Command
     }
 
     public Atlas generateAtlas(final CountryBoundaryMap map, final Shard tile, final String pbfPath,
-            final Sharding sharding, final String countryName)
+            final String pbfScheme, final Sharding pbfSharding, final Sharding sharding,
+            final String countryName)
     {
-        final PbfLoader loader = new PbfLoader(new PbfContext(pbfPath, sharding), new HashMap<>(),
+        final PbfLoader loader = new PbfLoader(pbfPath, pbfScheme, pbfSharding, new HashMap<>(),
                 map,
                 AtlasLoadingOption.createOptionWithAllEnabled(map)
                         .setAdditionalCountryCodes(countryName),
@@ -68,12 +74,17 @@ public class AtlasCreator extends Command
         final CountryBoundaryMap map = (CountryBoundaryMap) command.get(BOUNDARIES);
         final Shard tile = (Shard) command.get(TILE);
         final String pbfPath = (String) command.get(PBF_PATH);
-        final String shardingType = (String) command.get(SHARDING_TYPE);
-        final Sharding sharding = AtlasSharding.forString(shardingType, Maps.stringMap());
+        final String pbfScheme = (String) command.get(PBF_SCHEME);
+        final String pbfShardingName = (String) command.get(PBF_SHARDING);
+        final String shardingName = (String) command.get(SHARDING_TYPE);
+        final Sharding sharding = AtlasSharding.forString(shardingName, Maps.stringMap());
+        final Sharding pbfSharding = pbfShardingName != null
+                ? AtlasSharding.forString(shardingName, Maps.stringMap()) : sharding;
         final String countryName = (String) command.get(COUNTRY);
         final File output = (File) command.get(OUTPUT);
         PbfLoader.setAtlasSaveFolder(output);
-        final Atlas atlas = generateAtlas(map, tile, pbfPath, sharding, countryName);
+        final Atlas atlas = generateAtlas(map, tile, pbfPath, pbfScheme, pbfSharding, sharding,
+                countryName);
         atlas.save(output.child(countryName + "_" + tile.getName() + ".atlas"));
         atlas.saveAsGeoJson(output.child(countryName + "_" + tile.getName() + ".geojson"));
         return 0;
@@ -82,6 +93,7 @@ public class AtlasCreator extends Command
     @Override
     protected SwitchList switches()
     {
-        return new SwitchList().with(BOUNDARIES, TILE, SHARDING_TYPE, PBF_PATH, COUNTRY, OUTPUT);
+        return new SwitchList().with(BOUNDARIES, TILE, SHARDING_TYPE, PBF_PATH, PBF_SCHEME,
+                PBF_SHARDING, COUNTRY, OUTPUT);
     }
 }

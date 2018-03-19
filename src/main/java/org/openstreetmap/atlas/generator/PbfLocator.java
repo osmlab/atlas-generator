@@ -22,7 +22,6 @@ import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
-import org.openstreetmap.atlas.utilities.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,9 +64,10 @@ public class PbfLocator implements Serializable
 
     private static final Logger logger = LoggerFactory.getLogger(PbfLocator.class);
 
-    public static final String PBF_PATH = "pbfPath";
-    public static final String PBF_SHARDING = "pbfSharding";
-    public static final String PBF_FOLDER_STRUCTURE = "pbfFolderStructure";
+    public static final String ZOOM = "zz";
+    public static final String X_INDEX = "xx";
+    public static final String Y_INDEX = "yy";
+    public static final String DEFAULT_SCHEME = ZOOM + "-" + X_INDEX + "-" + Y_INDEX + ".pbf";
 
     private final String pbfPath;
     private final Sharding sharding;
@@ -76,30 +76,27 @@ public class PbfLocator implements Serializable
     /**
      * Construct
      *
-     * @param pbfConfiguration
-     *            The context for the PBF input
+     * @param pbfPath
+     *            The path where to find the PBFs
+     * @param pbfScheme
+     *            The folder structure inside the pbf path
+     * @param pbfSharding
+     *            The sharding tree for the PBFs
      * @param spark
      *            The spark context that will help connect to the data source
      */
-    public PbfLocator(final Configuration pbfConfiguration, final Map<String, String> spark)
+    public PbfLocator(final String pbfPath, final String pbfScheme, final Sharding pbfSharding,
+            final Map<String, String> spark)
     {
-        this.pbfPath = (String) pbfConfiguration.get(PBF_PATH).valueOption().orElseThrow(
-                () -> new CoreException("PBF Configuration {} does not contain a {} entry.",
-                        pbfConfiguration, PBF_PATH));
-        this.sharding = (Sharding) pbfConfiguration
-                .get(PBF_SHARDING, (Function<String, Sharding>) Sharding::forString).valueOption()
-                .orElseThrow(
-                        () -> new CoreException("PBF Configuration {} does not contain a {} entry.",
-                                pbfConfiguration, PBF_SHARDING));
-        final String folderStructure = (String) pbfConfiguration.get(PBF_FOLDER_STRUCTURE)
-                .valueOption().orElse("<z>-<x>-<y>.pbf");
+        this.pbfPath = pbfPath;
+        this.sharding = pbfSharding;
         final FileSystem fileSystem = new FileSystemCreator().get(this.pbfPath, spark);
         this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
             final Path pbfName = new Path(this.pbfPath + "/"
-                    + folderStructure.replaceAll("<z>", String.valueOf(shard.getZoom()))
-                            .replaceAll("<x>", String.valueOf(shard.getX()))
-                            .replaceAll("<y>", String.valueOf(shard.getY())));
+                    + pbfScheme.replaceAll(ZOOM, String.valueOf(shard.getZoom()))
+                            .replaceAll(X_INDEX, String.valueOf(shard.getX()))
+                            .replaceAll(Y_INDEX, String.valueOf(shard.getY())));
             try
             {
                 if (!fileSystem.exists(pbfName))

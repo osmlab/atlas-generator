@@ -38,9 +38,8 @@ public class PbfLocatorTest
     @Test
     public void testTileFinder()
     {
-        final PbfContext pbfContext = new PbfContext("resource://" + version,
-                new SlippyTileSharding(10));
-        final PbfLocator locator = new PbfLocator(pbfContext,
+        final PbfLocator locator = new PbfLocator("resource://" + version,
+                PbfLocator.DEFAULT_SCHEME, new SlippyTileSharding(10),
                 ResourceFileSystem.simpleconfiguration());
         final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
                 Location.forString("25.131896,-77.207033"));
