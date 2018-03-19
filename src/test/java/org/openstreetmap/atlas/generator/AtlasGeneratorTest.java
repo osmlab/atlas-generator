@@ -6,52 +6,102 @@ import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
+import org.openstreetmap.atlas.utilities.collections.StringList;
 
 /**
+ * Tests for {@link AtlasGenerator}.
+ *
  * @author matthieun
+ * @author mkalender
  */
 public class AtlasGeneratorTest
 {
+    private static final Sharding SHARDING = new DynamicTileSharding(new InputStreamResource(
+            () -> AtlasGenerator.class.getResourceAsStream("tree-6-14-100000.txt")));
+    private static final CountryBoundaryMap HTI_BOUNDARY_MAP = CountryBoundaryMap.fromPlainText(
+            new InputStreamResource(() -> AtlasGeneratorTest.class.getResourceAsStream("HTI.txt")));
+    private static final CountryBoundaryMap JAM_BOUNDARY_MAP = CountryBoundaryMap.fromPlainText(
+            new InputStreamResource(() -> AtlasGeneratorTest.class.getResourceAsStream("JAM.txt")));
+
     @Test
-    public void testRoughFilterShards()
+    public void testGenerateTasksEmptyBoundary()
     {
-        final CountryBoundaryMap countryBoundaryMapHTI = CountryBoundaryMap
-                .fromPlainText(new InputStreamResource(
-                        () -> AtlasGeneratorTest.class.getResourceAsStream("HTI.txt")));
-        final CountryBoundaryMap countryBoundaryMapJAM = CountryBoundaryMap
-                .fromPlainText(new InputStreamResource(
-                        () -> AtlasGeneratorTest.class.getResourceAsStream("JAM.txt")));
+        final CountryBoundaryMap boundaryMap = new CountryBoundaryMap();
+        Assert.assertTrue(AtlasGenerator.generateTasks(new StringList("HTI"), boundaryMap, SHARDING)
+                .isEmpty());
+    }
 
-        final List<CountryBoundary> countryBoundaryHTI = countryBoundaryMapHTI
-                .countryBoundary("HTI");
-        final List<CountryBoundary> countryBoundaryJAM = countryBoundaryMapJAM
-                .countryBoundary("JAM");
+    @Test
+    public void testGenerateTasksEmptyBoundaryAndCountryList()
+    {
+        final CountryBoundaryMap boundaryMap = new CountryBoundaryMap();
+        Assert.assertTrue(
+                AtlasGenerator.generateTasks(new StringList(), boundaryMap, SHARDING).isEmpty());
+    }
 
-        final Sharding sharding = new DynamicTileSharding(new InputStreamResource(
-                () -> AtlasGenerator.class.getResourceAsStream("tree-6-14-100000.txt")));
+    @Test
+    public void testGenerateTasksEmptyCountryList()
+    {
+        Assert.assertTrue(AtlasGenerator.generateTasks(new StringList(), HTI_BOUNDARY_MAP, SHARDING)
+                .isEmpty());
+    }
 
-        final Set<Shard> shardsHTI = AtlasGenerator.roughShards(sharding,
-                countryBoundaryHTI.get(0));
-        final Set<Shard> filteredOutHTI = shardsHTI.stream()
-                .filter(shard -> !AtlasGenerator.filterShards(shard, countryBoundaryHTI))
+    @Test
+    public void testGenerateTasksHTI()
+    {
+        // HTI boundary should have generated 36 tasks
+        testCountry(new StringList("HTI"), HTI_BOUNDARY_MAP, 36);
+    }
+
+    @Test
+    public void testGenerateTasksJAM()
+    {
+        // JAM boundary should have generated 6 tasks
+        testCountry(new StringList("JAM"), JAM_BOUNDARY_MAP, 6);
+    }
+
+    @Test
+    public void testGenerateTasksWrongCountryList()
+    {
+        Assert.assertTrue(AtlasGenerator
+                .generateTasks(new StringList("ABC", "XYZ"), JAM_BOUNDARY_MAP, SHARDING).isEmpty());
+    }
+
+    private void testCountry(final StringList countries, final CountryBoundaryMap boundaryMap,
+            final int expectedTaskSize)
+    {
+        final List<AtlasGenerationTask> tasks = AtlasGenerator.generateTasks(countries, boundaryMap,
+                SHARDING);
+        Assert.assertEquals(expectedTaskSize, tasks.size());
+
+        // Verify that tasks have the same set of shards for the country
+        verifyAllShardEquality(tasks);
+
+        // Verify no shard is missed from tasks
+        verifyNoShardIsMissing(tasks);
+    }
+
+    private void verifyAllShardEquality(final List<AtlasGenerationTask> tasks)
+    {
+        final String referenceCountry = tasks.get(0).getCountry();
+        final Set<Shard> referenceShards = tasks.get(0).getAllShards();
+        tasks.stream().skip(1).forEach(otherTask ->
+        {
+            Assert.assertEquals(referenceCountry, otherTask.getCountry());
+            Assert.assertEquals(referenceShards, otherTask.getAllShards());
+        });
+    }
+
+    private void verifyNoShardIsMissing(final List<AtlasGenerationTask> tasks)
+    {
+        final Set<Shard> referenceShards = tasks.get(0).getAllShards();
+        final Set<Shard> taskShards = tasks.stream().map(task -> task.getShard())
                 .collect(Collectors.toSet());
-        Assert.assertEquals(2, filteredOutHTI.size());
-        Assert.assertTrue(filteredOutHTI.contains(new SlippyTile(74, 115, 8)));
-        Assert.assertTrue(filteredOutHTI.contains(new SlippyTile(77, 115, 8)));
-
-        final Set<Shard> shardsJAM = AtlasGenerator.roughShards(sharding,
-                countryBoundaryJAM.get(0));
-        final Set<Shard> filteredOutJAM = shardsJAM.stream()
-                .filter(shard -> !AtlasGenerator.filterShards(shard, countryBoundaryJAM))
-                .collect(Collectors.toSet());
-        Assert.assertEquals(1, filteredOutJAM.size());
-        Assert.assertTrue(filteredOutJAM.contains(new SlippyTile(74, 114, 8)));
+        Assert.assertEquals(referenceShards, taskShards);
     }
 }

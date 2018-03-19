@@ -8,23 +8,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
-import org.openstreetmap.atlas.geography.MultiPolygon;
-import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -39,13 +39,14 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
-import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
-import org.openstreetmap.atlas.utilities.maps.MultiMap;
+import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
+import org.openstreetmap.atlas.utilities.threads.Pool;
+import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +59,7 @@ import scala.Tuple2;
  */
 public class AtlasGenerator extends SparkJob
 {
+
     /**
      * @author matthieun
      */
@@ -131,65 +133,71 @@ public class AtlasGenerator extends SparkJob
     }
 
     /**
-     * @param shard
-     *            The {@link Shard} to test
-     * @param boundaries
-     *            The set of country boundaries to test the shard with
-     * @return {@code true} when the shard partially or fully intersects at least one of the country
-     *         boundaries in the set.
-     */
-    protected static boolean filterShards(final Shard shard, final List<CountryBoundary> boundaries)
-    {
-        boolean result = false;
-        for (final CountryBoundary boundary : boundaries)
-        {
-            final MultiPolygon boundaryShape = boundary.getBoundary();
-            for (final Polygon outer : boundaryShape.outers())
-            {
-                if (outer.overlaps(shard.bounds()))
-                {
-                    result = true;
-                    for (final Polygon inner : boundaryShape.innersOf(outer))
-                    {
-                        if (inner.fullyGeometricallyEncloses(shard.bounds()))
-                        {
-                            result = false;
-                            break;
-                        }
-                    }
-                    if (result)
-                    {
-                        break;
-                    }
-                }
-            }
-            if (result)
-            {
-                break;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Get a rough idea of all the shards for a specific country, by using the country's bounds to
-     * find all the shards. It some cases, this list will contain a lot of false positives.
+     * Generates a {@link List} of {@link AtlasGenerationTask}s for given countries using given
+     * {@link CountryBoundaryMap} and {@link Sharding} strategy.
      *
+     * @param countries
+     *            Countries to generate tasks for
+     * @param boundaryMap
+     *            {@link CountryBoundaryMap} to read country boundaries
      * @param sharding
-     *            The sharding tree to consider
-     * @param countryBoundary
-     *            The country boundary for which to find the shards
-     * @return The rough tally of shards
+     *            {@link Sharding} strategy
+     * @return {@link List} of {@link AtlasGenerationTask}s
      */
-    protected static Set<Shard> roughShards(final Sharding sharding,
-            final CountryBoundary countryBoundary)
+    protected static List<AtlasGenerationTask> generateTasks(final StringList countries,
+            final CountryBoundaryMap boundaryMap, final Sharding sharding)
     {
-        final Set<Shard> shards = new HashSet<>();
-        for (final Polygon subBoundary : countryBoundary.getBoundary().outers())
+        // Extract country boundaries and queue them
+        final BlockingQueue<CountryBoundary> queue = new LinkedBlockingQueue<>();
+        final MultiMapWithSet<String, Shard> countryToShardMap = new MultiMapWithSet<>();
+        countries.stream().forEach(country ->
         {
-            sharding.shards(subBoundary.bounds()).forEach(shards::add);
+            // Initialize country-shard map
+            countryToShardMap.put(country, new HashSet<>());
+
+            // Fetch boundaries
+            final List<CountryBoundary> countryBoundaries = boundaryMap.countryBoundary(country);
+            if (countryBoundaries == null)
+            {
+                logger.error("No boundaries found for {}!", country);
+                return;
+            }
+
+            // Queue boundary for processing
+            countryBoundaries.forEach(countryBoundary -> queue.add(countryBoundary));
+        });
+
+        // Use all available processors except one (used by main thread)
+        final int threadCount = Runtime.getRuntime().availableProcessors() - 1;
+        logger.info("Generating tasks with {} processors (threads).", threadCount);
+
+        // Start the execution pool to generate tasks
+        try (Pool processPool = new Pool(threadCount, "Atlas Task Generator"))
+        {
+            // Generate processors
+            IntStream.range(0, threadCount).forEach(index ->
+            {
+                processPool.queue(new AtlasGeneratorTaskProcessor(queue, sharding, boundaryMap,
+                        countryToShardMap));
+            });
         }
-        return shards;
+
+        // Generate tasks from country-shard map
+        final List<AtlasGenerationTask> tasks = new ArrayList<>();
+        countryToShardMap.keySet().forEach(country ->
+        {
+            final Set<Shard> shards = countryToShardMap.get(country);
+            if (!shards.isEmpty())
+            {
+                shards.forEach(shard -> tasks.add(new AtlasGenerationTask(country, shard, shards)));
+            }
+            else
+            {
+                logger.warn("No shards were found for {}. Skipping task generation.", country);
+            }
+        });
+
+        return tasks;
     }
 
     private static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
@@ -271,133 +279,82 @@ public class AtlasGenerator extends SparkJob
             worldBoundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
         }
 
-        // ****** SPARK CODE BELOW ****** //
-
-        // The code below is as parallel as there are countries...
-        final JavaRDD<String> countriesRDD = getContext().parallelize(Iterables.asList(countries),
-                countries.size());
-
-        // Get a list of country shard pairs, with a lot of false positives
-        // TODO Leverage country boundary map grid index when ready
-        final List<Tuple2<String, Shard>> roughCountryShards = countriesRDD
-                .flatMapToPair(countryName ->
-                {
-                    // For each country boundary
-                    final List<CountryBoundary> boundaries = worldBoundaries
-                            .countryBoundary(countryName);
-
-                    // Handle missing boundaries case
-                    if (boundaries == null)
-                    {
-                        logger.error("No boundaries found for country {}!", countryName);
-                        return new ArrayList<>();
-                    }
-
-                    logger.info("Generating shards for country {}", countryName);
-                    final Set<Shard> shards = new HashSet<>();
-                    for (final CountryBoundary boundary : boundaries)
-                    {
-                        // Identify all the shards in the country's bounding box and filter out
-                        // those that do not intersect
-                        shards.addAll(roughShards(sharding, boundary));
-                    }
-                    // Assign the country name / shard couples to the countryShards list to be
-                    // parallelized
-                    final List<Tuple2<String, Shard>> countryShards = new ArrayList<>();
-                    shards.forEach(shard -> countryShards.add(new Tuple2<>(countryName, shard)));
-                    return countryShards;
-                }).collect();
-
-        // Get a RDD of country shards without any false positives
-        // TODO Leverage country boundary map grid index when ready
-        final JavaPairRDD<String, Shard> preCountryShardsRDD = getContext()
-                .parallelizePairs(roughCountryShards, roughCountryShards.size()).filter(tuple ->
-                {
-                    final String countryName = tuple._1();
-                    final Shard shard = tuple._2();
-                    final List<CountryBoundary> boundaries = worldBoundaries
-                            .countryBoundary(countryName);
-                    return filterShards(shard, boundaries);
-                });
-
-        // Collect and re-parallelize so the code below is as parallel as there are countries/shard
-        // pairs (many more!)...
-        final List<Tuple2<String, Shard>> countryShards = preCountryShardsRDD.collect();
-        // Keep it as a MultiMap to pass it to the Atlas meta data.
-        final MultiMap<String, Shard> countryToShardMap = new MultiMap<>();
-        countryShards.forEach(tuple -> countryToShardMap.add(tuple._1(), tuple._2()));
-        final JavaPairRDD<String, Shard> countryShardsRDD = getContext()
-                .parallelizePairs(countryShards, countryShards.size());
+        // Generate country-shard generation tasks
+        final Time timer = Time.now();
+        final List<AtlasGenerationTask> tasks = generateTasks(countries, worldBoundaries, sharding);
+        logger.debug("Generated {} tasks in {}.", tasks.size(), timer.elapsedSince());
 
         // Transform the map country name to shard to country name to Atlas
         // This is not enforced, but it has to be a 1-1 mapping here.
         final Map<String, String> configurationMap = configurationMap();
-        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countryShardsRDD.mapToPair(tuple ->
-        {
-            // Get the country name
-            final String countryName = tuple._1();
-            // Get the country shard
-            final Shard shard = tuple._2();
-            // Build the AtlasLoadingOption
-            final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
-                    .createOptionWithAllEnabled(worldBoundaries)
-                    .setAdditionalCountryCodes(countryName);
-            // Create a local hadoop configuration to avoid serializing the whole class
-            final Configuration hadoopConfiguration = new Configuration();
-            configurationMap.entrySet()
-                    .forEach(entry -> hadoopConfiguration.set(entry.getKey(), entry.getValue()));
+        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = getContext().parallelize(tasks)
+                .mapToPair(task ->
+                {
+                    // Get the country name
+                    final String countryName = task.getCountry();
+                    // Get the country shard
+                    final Shard shard = task.getShard();
+                    // Build the AtlasLoadingOption
+                    final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
+                            .createOptionWithAllEnabled(worldBoundaries)
+                            .setAdditionalCountryCodes(countryName);
+                    // Create a local hadoop configuration to avoid serializing the whole class
+                    final Configuration hadoopConfiguration = new Configuration();
+                    configurationMap.entrySet().forEach(
+                            entry -> hadoopConfiguration.set(entry.getKey(), entry.getValue()));
 
-            // Apply all configurations
-            if (edgeConfiguration != null)
-            {
-                atlasLoadingOption.setEdgeFilter(
-                        getTaggableFilterFrom(edgeConfiguration, hadoopConfiguration));
-            }
-            if (waySectioningConfiguration != null)
-            {
-                atlasLoadingOption.setWaySectionFilter(
-                        getTaggableFilterFrom(waySectioningConfiguration, hadoopConfiguration));
-            }
-            if (pbfNodeConfiguration != null)
-            {
-                atlasLoadingOption.setOsmPbfNodeFilter(
-                        getTaggableFilterFrom(pbfNodeConfiguration, hadoopConfiguration));
-            }
-            if (pbfWayConfiguration != null)
-            {
-                atlasLoadingOption.setOsmPbfWayFilter(
-                        getTaggableFilterFrom(pbfWayConfiguration, hadoopConfiguration));
-            }
-            if (pbfRelationConfiguration != null)
-            {
-                atlasLoadingOption.setOsmPbfRelationFilter(
-                        getTaggableFilterFrom(pbfRelationConfiguration, hadoopConfiguration));
-            }
+                    // Apply all configurations
+                    if (edgeConfiguration != null)
+                    {
+                        atlasLoadingOption.setEdgeFilter(
+                                getTaggableFilterFrom(edgeConfiguration, hadoopConfiguration));
+                    }
+                    if (waySectioningConfiguration != null)
+                    {
+                        atlasLoadingOption.setWaySectionFilter(getTaggableFilterFrom(
+                                waySectioningConfiguration, hadoopConfiguration));
+                    }
+                    if (pbfNodeConfiguration != null)
+                    {
+                        atlasLoadingOption.setOsmPbfNodeFilter(
+                                getTaggableFilterFrom(pbfNodeConfiguration, hadoopConfiguration));
+                    }
+                    if (pbfWayConfiguration != null)
+                    {
+                        atlasLoadingOption.setOsmPbfWayFilter(
+                                getTaggableFilterFrom(pbfWayConfiguration, hadoopConfiguration));
+                    }
+                    if (pbfRelationConfiguration != null)
+                    {
+                        atlasLoadingOption.setOsmPbfRelationFilter(getTaggableFilterFrom(
+                                pbfRelationConfiguration, hadoopConfiguration));
+                    }
 
-            // Build the appropriate PbfLoader
-            final PbfContext pbfContext = new PbfContext(pbfPath, sharding);
-            final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, worldBoundaries,
-                    atlasLoadingOption, codeVersion, dataVersion, countryToShardMap);
-            final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                    + shard.getName();
-            final Atlas atlas;
-            try
-            {
-                // Generate the Atlas for this shard
-                atlas = loader.load(countryName, shard);
-            }
-            catch (final Throwable e)
-            {
-                throw new CoreException("Building Atlas {} failed!", name, e);
-            }
+                    // Build the appropriate PbfLoader
+                    final PbfContext pbfContext = new PbfContext(pbfPath, sharding);
+                    final PbfLoader loader = new PbfLoader(pbfContext, sparkContext,
+                            worldBoundaries, atlasLoadingOption, codeVersion, dataVersion,
+                            task.getAllShards());
+                    final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                            + shard.getName();
+                    final Atlas atlas;
+                    try
+                    {
+                        // Generate the Atlas for this shard
+                        atlas = loader.load(countryName, shard);
+                    }
+                    catch (final Throwable e)
+                    {
+                        throw new CoreException("Building Atlas {} failed!", name, e);
+                    }
 
-            // Report on memory usage
-            logger.info("Printing memory after loading Atlas {}", name);
-            Memory.printCurrentMemory();
-            // Output the Name/Atlas couple
-            final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
-            return result;
-        });
+                    // Report on memory usage
+                    logger.info("Printing memory after loading Atlas {}", name);
+                    Memory.printCurrentMemory();
+                    // Output the Name/Atlas couple
+                    final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
+                    return result;
+                });
 
         // Filter out null Atlas.
         final JavaPairRDD<String, Atlas> countryNonNullAtlasShardsRDD = countryAtlasShardsRDD
