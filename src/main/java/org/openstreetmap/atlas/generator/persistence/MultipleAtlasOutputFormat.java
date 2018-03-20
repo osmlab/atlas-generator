@@ -16,16 +16,9 @@ import org.openstreetmap.atlas.geography.atlas.Atlas;
  *
  * @author matthieun
  */
-public class MultipleAtlasOutputFormat extends MultipleOutputFormat<String, Atlas>
+public class MultipleAtlasOutputFormat extends AbstractMultipleAtlasBasedOutputFormat<Atlas>
 {
     private AtlasOutputFormat format = null;
-
-    @Override
-    protected String generateFileNameForKeyValue(final String key, final Atlas value,
-            final String name)
-    {
-        return key;
-    }
 
     @Override
     protected RecordWriter<String, Atlas> getBaseRecordWriter(final FileSystem fileSystem,

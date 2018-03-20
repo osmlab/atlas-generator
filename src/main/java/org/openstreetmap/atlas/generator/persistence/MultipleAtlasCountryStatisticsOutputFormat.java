@@ -11,15 +11,22 @@ import org.apache.hadoop.util.Progressable;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 
 /**
- * {@link MultipleOutputFormat} for the shard {@link AtlasStatistics}, based on the model of
+ * {@link MultipleOutputFormat} for the country {@link AtlasStatistics}, based on the model of
  * {@link MultipleTextOutputFormat}
  *
  * @author matthieun
  */
-public class MultipleAtlasStatisticsOutputFormat
-        extends AbstractMultipleAtlasBasedOutputFormat<AtlasStatistics>
+public class MultipleAtlasCountryStatisticsOutputFormat
+        extends MultipleOutputFormat<String, AtlasStatistics>
 {
     private AtlasStatisticsOutputFormat format = null;
+
+    @Override
+    protected String generateFileNameForKeyValue(final String key, final AtlasStatistics value,
+            final String name)
+    {
+        return key;
+    }
 
     @Override
     protected RecordWriter<String, AtlasStatistics> getBaseRecordWriter(final FileSystem fileSystem,

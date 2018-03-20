@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -17,6 +18,7 @@ import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
@@ -62,52 +64,58 @@ public class PbfLocator implements Serializable
 
     private static final Logger logger = LoggerFactory.getLogger(PbfLocator.class);
 
+    public static final String ZOOM = "zz";
+    public static final String X_INDEX = "xx";
+    public static final String Y_INDEX = "yy";
+    public static final String DEFAULT_SCHEME = ZOOM + "-" + X_INDEX + "-" + Y_INDEX
+            + FileSuffix.PBF.toString();
+
     private final PbfContext pbfContext;
-    private final Map<String, String> sparkContext;
-    private final Function<SlippyTile, LocatedPbf> tileToLocatedPbf;
+    private final Function<SlippyTile, Optional<LocatedPbf>> pbfFetcher;
 
     /**
      * Construct
      *
      * @param pbfContext
-     *            The context for the PBF input
+     *            The pbf context
      * @param spark
      *            The spark context that will help connect to the data source
      */
     public PbfLocator(final PbfContext pbfContext, final Map<String, String> spark)
     {
         this.pbfContext = pbfContext;
-        this.sparkContext = spark;
-        this.tileToLocatedPbf = (Function<SlippyTile, LocatedPbf> & Serializable) tile ->
+        final FileSystem fileSystem = new FileSystemCreator().get(this.pbfContext.getPbfPath(),
+                spark);
+        this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
-            final Path pbf = new Path(this.pbfContext.getPbfPath() + "/" + tile.getZoom() + "-"
-                    + tile.getX() + "-" + tile.getY() + ".pbf");
-            logger.info("Locating PBF for Tile {} at {}", tile, pbf.toString());
-            final FileSystem fileSystem = new FileSystemCreator().get(this.pbfContext.getPbfPath(),
-                    this.sparkContext);
+            final Path pbfName = new Path(this.pbfContext.getPbfPath() + "/"
+                    + this.pbfContext.getScheme().replaceAll(ZOOM, String.valueOf(shard.getZoom()))
+                            .replaceAll(X_INDEX, String.valueOf(shard.getX()))
+                            .replaceAll(Y_INDEX, String.valueOf(shard.getY())));
             try
             {
-                if (!fileSystem.exists(pbf))
+                if (!fileSystem.exists(pbfName))
                 {
-                    logger.warn("PBF Resource {} does not exist.", pbf.toString());
-                    return null;
+                    logger.warn("PBF Resource {} does not exist.", pbfName.toString());
+                    return Optional.empty();
                 }
             }
             catch (final IOException e)
             {
-                throw new CoreException("Cannot test if {} exists.", pbf.toString());
+                throw new CoreException("Cannot test if {} exists.", pbfName.toString());
             }
-            return new LocatedPbf(new InputStreamResource(() ->
+            final LocatedPbf locatedPbf = new LocatedPbf(new InputStreamResource(() ->
             {
                 try
                 {
-                    return fileSystem.open(pbf);
+                    return fileSystem.open(pbfName);
                 }
                 catch (final Exception e)
                 {
-                    throw new CoreException("Cannot translate {} to a PBF resource.", tile, e);
+                    throw new CoreException("Cannot translate {} to a PBF resource.", shard, e);
                 }
-            }).withName(pbf.toString()), tile.bounds());
+            }).withName(pbfName.toString()), shard.bounds());
+            return Optional.of(locatedPbf);
         };
     }
 
@@ -124,12 +132,11 @@ public class PbfLocator implements Serializable
                 .flatMap(PbfLocator.this::tilesCoveringPartially);
         final Set<Shard> tileSet = Iterables.asSet(tileIterable);
         logger.trace("Found tiles {} for MultiPolygon {}", tileSet, multiPolygon.toSimpleString());
-        final Iterable<LocatedPbf> resourcesWithNulls = Iterables.stream(tileSet)
-                .filter(tile -> !innerCovers(tile, inners)).map(shard -> (SlippyTile) shard)
-                .map(this.tileToLocatedPbf);
-        // Filter out all the null resources, meaning where the PBFs were not found. (Ocean for
+        // Filter out all the empty resources, meaning where the PBFs were not found. (Ocean for
         // example.)
-        return Iterables.filter(resourcesWithNulls, resource -> resource != null);
+        return Iterables.stream(tileSet).filter(tile -> !innerCovers(tile, inners))
+                .map(shard -> (SlippyTile) shard).map(this.pbfFetcher).filter(Optional::isPresent)
+                .map(Optional::get).collect();
     }
 
     /**
@@ -140,8 +147,10 @@ public class PbfLocator implements Serializable
     public Iterable<LocatedPbf> pbfsCovering(final Polygon polygon)
     {
         logger.trace("Seeking tiles for Polygon {}", polygon.toSimpleString());
+        // Filter out all the empty resources, meaning where the PBFs were not found. (Ocean for
+        // example.)
         return Iterables.stream(tilesCoveringPartially(polygon)).map(shard -> (SlippyTile) shard)
-                .map(this.tileToLocatedPbf);
+                .map(this.pbfFetcher).filter(Optional::isPresent).map(Optional::get).collect();
     }
 
     private boolean innerCovers(final Shard shard, final List<Polygon> inners)
