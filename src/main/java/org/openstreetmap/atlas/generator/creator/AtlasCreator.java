@@ -4,15 +4,19 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.openstreetmap.atlas.generator.AtlasGenerator;
+import org.openstreetmap.atlas.generator.PbfContext;
 import org.openstreetmap.atlas.generator.PbfLoader;
+import org.openstreetmap.atlas.generator.PbfLocator;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
+import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.File;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command;
@@ -42,7 +46,7 @@ public class AtlasCreator extends Command
             StringConverter.IDENTITY, Optionality.REQUIRED);
     public static final Switch<String> PBF_SCHEME = new Switch<>("pbfScheme",
             "The folder structure of the PBF", StringConverter.IDENTITY, Optionality.OPTIONAL,
-            "<z>-<x>-<y>.pbf");
+            PbfLocator.DEFAULT_SCHEME);
     public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
             "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
@@ -60,8 +64,8 @@ public class AtlasCreator extends Command
             final String pbfScheme, final Sharding pbfSharding, final Sharding sharding,
             final String countryName)
     {
-        final PbfLoader loader = new PbfLoader(pbfPath, pbfScheme, pbfSharding, new HashMap<>(),
-                map,
+        final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
+        final PbfLoader loader = new PbfLoader(pbfContext, new HashMap<>(), map,
                 AtlasLoadingOption.createOptionWithAllEnabled(map)
                         .setAdditionalCountryCodes(countryName),
                 "dummyCodeVersion", "dummyDataVersion", Collections.emptySet());
@@ -85,7 +89,8 @@ public class AtlasCreator extends Command
         PbfLoader.setAtlasSaveFolder(output);
         final Atlas atlas = generateAtlas(map, tile, pbfPath, pbfScheme, pbfSharding, sharding,
                 countryName);
-        atlas.save(output.child(countryName + "_" + tile.getName() + ".atlas"));
+        atlas.save(output.child(countryName + CountryShard.COUNTRY_SHARD_SEPARATOR + tile.getName()
+                + FileSuffix.ATLAS));
         atlas.saveAsGeoJson(output.child(countryName + "_" + tile.getName() + ".geojson"));
         return 0;
     }

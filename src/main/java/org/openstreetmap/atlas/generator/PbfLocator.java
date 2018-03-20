@@ -17,8 +17,8 @@ import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.sharding.Shard;
-import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
@@ -67,34 +67,29 @@ public class PbfLocator implements Serializable
     public static final String ZOOM = "zz";
     public static final String X_INDEX = "xx";
     public static final String Y_INDEX = "yy";
-    public static final String DEFAULT_SCHEME = ZOOM + "-" + X_INDEX + "-" + Y_INDEX + ".pbf";
+    public static final String DEFAULT_SCHEME = ZOOM + "-" + X_INDEX + "-" + Y_INDEX
+            + FileSuffix.PBF.toString();
 
-    private final String pbfPath;
-    private final Sharding sharding;
+    private final PbfContext pbfContext;
     private final Function<SlippyTile, Optional<LocatedPbf>> pbfFetcher;
 
     /**
      * Construct
      *
-     * @param pbfPath
-     *            The path where to find the PBFs
-     * @param pbfScheme
-     *            The folder structure inside the pbf path
-     * @param pbfSharding
-     *            The sharding tree for the PBFs
+     * @param pbfContext
+     *            The pbf context
      * @param spark
      *            The spark context that will help connect to the data source
      */
-    public PbfLocator(final String pbfPath, final String pbfScheme, final Sharding pbfSharding,
-            final Map<String, String> spark)
+    public PbfLocator(final PbfContext pbfContext, final Map<String, String> spark)
     {
-        this.pbfPath = pbfPath;
-        this.sharding = pbfSharding;
-        final FileSystem fileSystem = new FileSystemCreator().get(this.pbfPath, spark);
+        this.pbfContext = pbfContext;
+        final FileSystem fileSystem = new FileSystemCreator().get(this.pbfContext.getPbfPath(),
+                spark);
         this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
-            final Path pbfName = new Path(this.pbfPath + "/"
-                    + pbfScheme.replaceAll(ZOOM, String.valueOf(shard.getZoom()))
+            final Path pbfName = new Path(this.pbfContext.getPbfPath() + "/"
+                    + this.pbfContext.getScheme().replaceAll(ZOOM, String.valueOf(shard.getZoom()))
                             .replaceAll(X_INDEX, String.valueOf(shard.getX()))
                             .replaceAll(Y_INDEX, String.valueOf(shard.getY())));
             try
@@ -168,6 +163,6 @@ public class PbfLocator implements Serializable
 
     private Iterable<? extends Shard> tilesCoveringPartially(final Polygon polygon)
     {
-        return this.sharding.shards(polygon);
+        return this.pbfContext.getSharding().shards(polygon);
     }
 }

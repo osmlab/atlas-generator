@@ -42,8 +42,10 @@ public class PbfLocatorTest
     {
         // Test a default scheme
         final String scheme = PbfLocator.DEFAULT_SCHEME;
-        final PbfLocator locator = new PbfLocator("resource://" + version, scheme,
-                new SlippyTileSharding(10), ResourceFileSystem.simpleconfiguration());
+        final PbfContext pbfContext = new PbfContext("resource://" + version,
+                new SlippyTileSharding(10), scheme);
+        final PbfLocator locator = new PbfLocator(pbfContext,
+                ResourceFileSystem.simpleconfiguration());
         final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
                 Location.forString("25.131896,-77.207033"));
         final MultiPolygon multiPolygon = MultiPolygon.forPolygon(outer);
@@ -57,8 +59,10 @@ public class PbfLocatorTest
         // Test a non-default scheme
         final String scheme = PbfLocator.ZOOM + "/" + PbfLocator.X_INDEX + "-" + PbfLocator.Y_INDEX
                 + ".osm.pbf";
-        final PbfLocator locator = new PbfLocator("resource://" + version, scheme,
-                new SlippyTileSharding(10), ResourceFileSystem.simpleconfiguration());
+        final PbfContext pbfContext = new PbfContext("resource://" + version,
+                new SlippyTileSharding(10), scheme);
+        final PbfLocator locator = new PbfLocator(pbfContext,
+                ResourceFileSystem.simpleconfiguration());
         final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
                 Location.forString("25.131896,-77.207033"));
         final MultiPolygon multiPolygon = MultiPolygon.forPolygon(outer);

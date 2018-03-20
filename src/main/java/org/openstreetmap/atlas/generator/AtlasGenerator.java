@@ -251,8 +251,8 @@ public class AtlasGenerator extends SparkJob
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(shardingName, configuration())
-                : sharding;
+                ? AtlasSharding.forString(shardingName, configuration()) : sharding;
+        final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
@@ -327,9 +327,8 @@ public class AtlasGenerator extends SparkJob
                     }
 
                     // Build the appropriate PbfLoader
-                    final PbfLoader loader = new PbfLoader(pbfPath, pbfScheme, pbfSharding,
-                            sparkContext, boundaries, atlasLoadingOption, codeVersion, dataVersion,
-                            task.getAllShards());
+                    final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries,
+                            atlasLoadingOption, codeVersion, dataVersion, task.getAllShards());
                     final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
                             + shard.getName();
                     final Atlas atlas;

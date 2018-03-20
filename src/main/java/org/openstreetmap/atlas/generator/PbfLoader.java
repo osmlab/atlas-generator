@@ -20,7 +20,6 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.clipping.Clip.ClipType;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
-import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Maps;
@@ -57,12 +56,8 @@ public class PbfLoader implements Serializable
     /**
      * Construct
      *
-     * @param pbfPath
-     *            The path where to find the PBFs
-     * @param pbfScheme
-     *            The folder structure inside the pbf path
-     * @param pbfSharding
-     *            The sharding tree for the PBFs
+     * @param pbfContext
+     *            The pbf context
      * @param sparkContext
      *            The context from Spark
      * @param boundaries
@@ -76,15 +71,14 @@ public class PbfLoader implements Serializable
      * @param countryShards
      *            {@link Set} of {@link Shard}s for the Atlas meta data
      */
-    public PbfLoader(final String pbfPath, final String pbfScheme, final Sharding pbfSharding,
-            final Map<String, String> sparkContext, final CountryBoundaryMap boundaries,
-            final AtlasLoadingOption atlasLoadingOption, final String codeVersion,
-            final String dataVersion, final Set<Shard> countryShards)
+    public PbfLoader(final PbfContext pbfContext, final Map<String, String> sparkContext,
+            final CountryBoundaryMap boundaries, final AtlasLoadingOption atlasLoadingOption,
+            final String codeVersion, final String dataVersion, final Set<Shard> countryShards)
     {
         this.boundaries = boundaries;
         this.atlasLoadingOption = atlasLoadingOption;
         atlasLoadingOption.setCountryBoundaryMap(boundaries);
-        this.locator = new PbfLocator(pbfPath, pbfScheme, pbfSharding, sparkContext);
+        this.locator = new PbfLocator(pbfContext, sparkContext);
         this.codeVersion = codeVersion;
         this.dataVersion = dataVersion;
         this.countryShards = countryShards;
