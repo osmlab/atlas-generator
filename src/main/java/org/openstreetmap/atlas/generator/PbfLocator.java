@@ -132,6 +132,8 @@ public class PbfLocator implements Serializable
                 .flatMap(PbfLocator.this::tilesCoveringPartially);
         final Set<Shard> tileSet = Iterables.asSet(tileIterable);
         logger.trace("Found tiles {} for MultiPolygon {}", tileSet, multiPolygon.toSimpleString());
+        // Filter out all the empty resources, meaning where the PBFs were not found. (Ocean for
+        // example.)
         return Iterables.stream(tileSet).filter(tile -> !innerCovers(tile, inners))
                 .map(shard -> (SlippyTile) shard).map(this.pbfFetcher).filter(Optional::isPresent)
                 .map(Optional::get).collect();
@@ -145,6 +147,8 @@ public class PbfLocator implements Serializable
     public Iterable<LocatedPbf> pbfsCovering(final Polygon polygon)
     {
         logger.trace("Seeking tiles for Polygon {}", polygon.toSimpleString());
+        // Filter out all the empty resources, meaning where the PBFs were not found. (Ocean for
+        // example.)
         return Iterables.stream(tilesCoveringPartially(polygon)).map(shard -> (SlippyTile) shard)
                 .map(this.pbfFetcher).filter(Optional::isPresent).map(Optional::get).collect();
     }
