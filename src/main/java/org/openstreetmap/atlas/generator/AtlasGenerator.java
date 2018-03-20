@@ -17,6 +17,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
@@ -250,7 +251,8 @@ public class AtlasGenerator extends SparkJob
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(shardingName, configuration()) : sharding;
+                ? AtlasSharding.forString(shardingName, configuration())
+                : sharding;
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
@@ -408,7 +410,7 @@ public class AtlasGenerator extends SparkJob
         // new JobConf(configuration()));
         reducedStatisticsRDD.saveAsHadoopFile(
                 getAlternateSubFolderOutput(output, COUNTRY_STATISTICS_FOLDER), Text.class,
-                AtlasStatistics.class, MultipleAtlasStatisticsOutputFormat.class,
+                AtlasStatistics.class, MultipleAtlasCountryStatisticsOutputFormat.class,
                 new JobConf(configuration()));
         logger.info("\n\n********** SAVED THE COUNTRY STATISTICS **********\n");
 

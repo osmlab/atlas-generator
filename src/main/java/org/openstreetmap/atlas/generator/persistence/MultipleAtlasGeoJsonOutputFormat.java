@@ -5,23 +5,15 @@ import java.io.IOException;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.RecordWriter;
-import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.apache.hadoop.util.Progressable;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 
 /**
  * @author tony
  */
-public class MultipleAtlasGeoJsonOutputFormat extends MultipleOutputFormat<String, Atlas>
+public class MultipleAtlasGeoJsonOutputFormat extends AbstractMultipleAtlasBasedOutputFormat<Atlas>
 {
     private AtlasGeoJsonOutputFormat format = null;
-
-    @Override
-    protected String generateFileNameForKeyValue(final String key, final Atlas value,
-            final String name)
-    {
-        return key;
-    }
 
     @Override
     protected RecordWriter<String, Atlas> getBaseRecordWriter(final FileSystem fileSystem,

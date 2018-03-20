@@ -8,6 +8,7 @@ import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Progressable;
+import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 
@@ -17,15 +18,9 @@ import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
  *
  * @author matthieun
  */
-public class MultipleAtlasDeltaOutputFormat extends MultipleOutputFormat<String, AtlasDelta>
+public class MultipleAtlasDeltaOutputFormat
+        extends AbstractMultipleAtlasBasedOutputFormat<AtlasDelta>
 {
-    @Override
-    protected String generateFileNameForKeyValue(final String key, final AtlasDelta value,
-            final String name)
-    {
-        return key;
-    }
-
     @Override
     protected RecordWriter<String, AtlasDelta> getBaseRecordWriter(final FileSystem fileSystem,
             final JobConf job, final String name, final Progressable progress) throws IOException
