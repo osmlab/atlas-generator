@@ -57,7 +57,7 @@ public class PbfLoader implements Serializable
      * Construct
      *
      * @param pbfContext
-     *            The pbf context
+     *            The context explaining where to find the PBFs
      * @param sparkContext
      *            The context from Spark
      * @param boundaries
