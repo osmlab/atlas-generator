@@ -328,30 +328,44 @@ public class SparkFileHelper implements Serializable
     }
 
     /**
-     * Copies a file.
-     * <p>
-     * Copying of directories is not supported
-     * </p>
+     * Copies the {@link SparkFilePath#temporaryPath} to the {@link SparkFilePath#targetPath},
+     * taking care to avoid producing nested directories.
      *
-     * @param sourcePath
-     *            - original file path.
-     * @param destinationPath
-     *            - destination path.
+     * @param path
+     *            {@link SparkFilePath} to commit
      */
-    public void copyFile(final String sourcePath, final String destinationPath)
+    public void commitByCopy(final SparkFilePath path)
     {
-        if (this.isDirectory(sourcePath))
+        try
         {
-            final String message = String.format("Copy from {} to {} is failed.", sourcePath,
-                    destinationPath);
-            throw new CoreException(message,
-                    new UnsupportedOperationException("Copying directories is not supported."));
-        }
+            if (this.isDirectory(path.getTemporaryPath()))
+            {
+                logger.debug("Path {} is a directory. Copying all the files under.", path);
+                if (!this.exists(path.getTargetPath()))
+                {
+                    logger.debug("Creating {}.", path.getTargetPath());
+                    this.mkdir(path.getTargetPath());
+                }
 
-        final Resource resource = FileSystemHelper.resource(sourcePath, this.sparkContext);
-        final WritableResource output = FileSystemHelper.writableResource(destinationPath,
-                this.sparkContext);
-        resource.copyTo(output);
+                this.list(path.getTemporaryPath()).forEach(resource ->
+                {
+                    logger.debug("Copying {} in {} into {}.", resource.getName(),
+                            path.getTemporaryPath(), path.getTargetPath());
+                    this.copyFile(resource,
+                            SparkFileHelper.combine(path.getTargetPath(), resource.getName()));
+                });
+            }
+            else
+            {
+                logger.debug("Copying {} to {}.", path.getTemporaryPath(), path.getTargetPath());
+                this.copyFile(FileSystemHelper.resource(path.getTemporaryPath(), this.sparkContext),
+                        path.getTargetPath());
+            }
+        }
+        catch (final Exception e)
+        {
+            logger.warn("Copying {} failed!", path, e);
+        }
     }
 
     /**
@@ -575,5 +589,12 @@ public class SparkFileHelper implements Serializable
                         String.format("Could not save into %s.", resource.getName()), e);
             }
         });
+    }
+
+    private void copyFile(final Resource resource, final String targetPath)
+    {
+        final WritableResource output = FileSystemHelper.writableResource(targetPath,
+                this.sparkContext);
+        resource.copyTo(output);
     }
 }

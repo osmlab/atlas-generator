@@ -65,6 +65,38 @@ public class SparkFileHelperTest
     }
 
     @Test
+    public void testCommitDirectoryByCopy() throws IOException
+    {
+        // Create temporary files
+        // Delete one and copy one to another
+        final File tempFolder = this.temporaryFolder.newFolder();
+        final File targetFolder = this.temporaryFolder.newFolder();
+
+        targetFolder.delete();
+
+        final File tempFile = File.createTempFile("test", FileSuffix.TEMPORARY.toString(),
+                tempFolder);
+        final File tempFile2 = File.createTempFile("test-another", FileSuffix.TEMPORARY.toString(),
+                tempFolder);
+
+        TEST_HELPER.commitByCopy(
+                new SparkFilePath(tempFolder.getAbsolutePath(), targetFolder.getAbsolutePath()));
+
+        Assert.assertTrue(tempFile.exists());
+        Assert.assertTrue(tempFile2.exists());
+
+        final String[] targetFile = targetFolder
+                .list((dir, name) -> name.equals(tempFile.getName()));
+        Assert.assertNotNull(targetFile);
+        Assert.assertEquals(1, targetFile.length);
+
+        final String[] targetFile2 = targetFolder
+                .list((dir, name) -> name.equals(tempFile.getName()));
+        Assert.assertNotNull(targetFile2);
+        Assert.assertEquals(1, targetFile2.length);
+    }
+
+    @Test
     public void testCommitFile() throws IOException
     {
         // Create temporary files
@@ -85,10 +117,10 @@ public class SparkFileHelperTest
     }
 
     @Test
-    public void testCopyFile() throws IOException
+    public void testCommitFileByFile() throws IOException
     {
         // Create temporary files
-        // Delete one and rename one to another
+        // Delete one and copy one to another
         final File tempFile = File.createTempFile("test", FileSuffix.TEMPORARY.toString());
         tempFile.deleteOnExit();
         Assert.assertTrue(tempFile.exists());
@@ -98,7 +130,8 @@ public class SparkFileHelperTest
         Assert.assertFalse(tempFile2.exists());
 
         // Rename test to test-another
-        TEST_HELPER.copyFile(tempFile.getAbsolutePath(), tempFile2.getAbsolutePath());
+        TEST_HELPER.commitByCopy(
+                new SparkFilePath(tempFile.getAbsolutePath(), tempFile2.getAbsolutePath()));
         Assert.assertTrue(tempFile.exists());
         Assert.assertTrue(tempFile2.exists());
     }
