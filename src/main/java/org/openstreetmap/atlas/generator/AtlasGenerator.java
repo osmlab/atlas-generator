@@ -287,8 +287,8 @@ public class AtlasGenerator extends SparkJob
         // Transform the map country name to shard to country name to Atlas
         // This is not enforced, but it has to be a 1-1 mapping here.
         final Map<String, String> configurationMap = configurationMap();
-        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = getContext().parallelize(tasks)
-                .mapToPair(task ->
+        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = getContext()
+                .parallelize(tasks, tasks.size()).mapToPair(task ->
                 {
                     // Get the country name
                     final String countryName = task.getCountry();
