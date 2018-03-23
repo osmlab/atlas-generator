@@ -328,6 +328,33 @@ public class SparkFileHelper implements Serializable
     }
 
     /**
+     * Copies a file.
+     * <p>
+     * Copying of directories is not supported
+     * </p>
+     *
+     * @param sourcePath
+     *            - original file path.
+     * @param destinationPath
+     *            - destination path.
+     */
+    public void copyFile(final String sourcePath, final String destinationPath)
+    {
+        if (this.isDirectory(sourcePath))
+        {
+            final String message = String.format("Copy from {} to {} is failed.", sourcePath,
+                    destinationPath);
+            throw new CoreException(message,
+                    new UnsupportedOperationException("Copying directories is not supported."));
+        }
+
+        final Resource resource = FileSystemHelper.resource(sourcePath, this.sparkContext);
+        final WritableResource output = FileSystemHelper.writableResource(destinationPath,
+                this.sparkContext);
+        resource.copyTo(output);
+    }
+
+    /**
      * Deletes given directory and all it's child items
      *
      * @param path

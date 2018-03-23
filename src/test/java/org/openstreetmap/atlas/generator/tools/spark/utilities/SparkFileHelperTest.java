@@ -84,6 +84,25 @@ public class SparkFileHelperTest
         Assert.assertTrue(tempFile2.exists());
     }
 
+    @Test
+    public void testCopyFile() throws IOException
+    {
+        // Create temporary files
+        // Delete one and rename one to another
+        final File tempFile = File.createTempFile("test", FileSuffix.TEMPORARY.toString());
+        tempFile.deleteOnExit();
+        Assert.assertTrue(tempFile.exists());
+
+        final File tempFile2 = File.createTempFile("test-another", FileSuffix.TEMPORARY.toString());
+        tempFile2.delete();
+        Assert.assertFalse(tempFile2.exists());
+
+        // Rename test to test-another
+        TEST_HELPER.copyFile(tempFile.getAbsolutePath(), tempFile2.getAbsolutePath());
+        Assert.assertTrue(tempFile.exists());
+        Assert.assertTrue(tempFile2.exists());
+    }
+
     @Test(expected = CoreException.class)
     public void testDeleteNonExistingDirectory()
     {
