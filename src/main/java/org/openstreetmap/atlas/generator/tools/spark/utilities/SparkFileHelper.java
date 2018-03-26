@@ -328,6 +328,47 @@ public class SparkFileHelper implements Serializable
     }
 
     /**
+     * Copies the {@link SparkFilePath#temporaryPath} to the {@link SparkFilePath#targetPath},
+     * taking care to avoid producing nested directories.
+     *
+     * @param path
+     *            {@link SparkFilePath} to commit
+     */
+    public void commitByCopy(final SparkFilePath path)
+    {
+        try
+        {
+            if (this.isDirectory(path.getTemporaryPath()))
+            {
+                logger.debug("Path {} is a directory. Copying all the files under.", path);
+                if (!this.exists(path.getTargetPath()))
+                {
+                    logger.debug("Creating {}.", path.getTargetPath());
+                    this.mkdir(path.getTargetPath());
+                }
+
+                this.list(path.getTemporaryPath()).forEach(resource ->
+                {
+                    logger.debug("Copying {} in {} into {}.", resource.getName(),
+                            path.getTemporaryPath(), path.getTargetPath());
+                    this.copyFile(resource,
+                            SparkFileHelper.combine(path.getTargetPath(), resource.getName()));
+                });
+            }
+            else
+            {
+                logger.debug("Copying {} to {}.", path.getTemporaryPath(), path.getTargetPath());
+                this.copyFile(FileSystemHelper.resource(path.getTemporaryPath(), this.sparkContext),
+                        path.getTargetPath());
+            }
+        }
+        catch (final Exception e)
+        {
+            logger.warn("Copying {} failed!", path, e);
+        }
+    }
+
+    /**
      * Deletes given directory and all it's child items
      *
      * @param path
@@ -548,5 +589,12 @@ public class SparkFileHelper implements Serializable
                         String.format("Could not save into %s.", resource.getName()), e);
             }
         });
+    }
+
+    private void copyFile(final Resource resource, final String targetPath)
+    {
+        final WritableResource output = FileSystemHelper.writableResource(targetPath,
+                this.sparkContext);
+        resource.copyTo(output);
     }
 }
