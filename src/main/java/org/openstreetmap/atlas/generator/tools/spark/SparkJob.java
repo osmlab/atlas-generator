@@ -362,7 +362,8 @@ public abstract class SparkJob extends Command implements Serializable
     protected SwitchList switches()
     {
         return new SwitchList().with(INPUT, OUTPUT, STARTED_FOLDER, MASTER, SPARK_OPTIONS,
-                ADDITIONAL_SPARK_OPTIONS, COMPRESS_OUTPUT, SPARK_CONTEXT_PROVIDER);
+                ADDITIONAL_SPARK_OPTIONS, COMPRESS_OUTPUT, SPARK_CONTEXT_PROVIDER,
+                SENSITIVE_CONFIGURATION_PATTERN);
     }
 
     private void checkFileDoesNotExists(final String path, final String name)
