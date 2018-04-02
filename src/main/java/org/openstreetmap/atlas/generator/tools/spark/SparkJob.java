@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -73,6 +74,10 @@ public abstract class SparkJob extends Command implements Serializable
             "sparkContextProvider", "The class name of the Spark Context Provider",
             new SparkContextProviderFinder(), Optionality.OPTIONAL,
             DefaultSparkContextProvider.class.getCanonicalName());
+    public static final Switch<Pattern> SENSITIVE_CONFIGURATION_PATTERN = new Switch<>(
+            "sensitiveConfiguration",
+            "Regular expression pattern of spark configuration keys to avoid logging.",
+            Pattern::compile, Optionality.OPTIONAL, ".*");
 
     public static final String SUCCESS_FILE = "_SUCCESS";
     public static final String STARTED_FILE = "_STARTED";
@@ -129,6 +134,8 @@ public abstract class SparkJob extends Command implements Serializable
         @SuppressWarnings("unchecked")
         final Map<String, String> additionalOptions = (Map<String, String>) command
                 .get(ADDITIONAL_SPARK_OPTIONS);
+        final Pattern sensitiveConfiguration = (Pattern) command
+                .get(SENSITIVE_CONFIGURATION_PATTERN);
         // The additional options take precedence
         additionalOptions.forEach((key, value) -> options.put(key, value));
 
@@ -137,8 +144,16 @@ public abstract class SparkJob extends Command implements Serializable
         for (final String key : options.keySet())
         {
             final String value = options.get(key);
-            logger.info("Forcing configuration from -{}: key: \"{}\", value: \"{}\"",
-                    SPARK_OPTIONS.getName(), key, value);
+            if (!sensitiveConfiguration.matcher(key).matches())
+            {
+                logger.info("Forcing configuration from -{}: key: \"{}\", value: \"{}\"",
+                        SPARK_OPTIONS.getName(), key, value);
+            }
+            else
+            {
+                logger.info("Forcing configuration from -{}: key: \"{}\", value: \"**********\"",
+                        SPARK_OPTIONS.getName(), key);
+            }
             configuration.set(key, value);
         }
         if (sparkMaster != null)
@@ -151,7 +166,14 @@ public abstract class SparkJob extends Command implements Serializable
         logger.info("SparkConf ===============================================================");
         for (final Tuple2<String, String> tuple : configuration.getAll())
         {
-            logger.info("SparkConf: key: \"{}\", value: \"{}\"", tuple._1(), tuple._2());
+            if (!sensitiveConfiguration.matcher(tuple._1()).matches())
+            {
+                logger.info("SparkConf: key: \"{}\", value: \"{}\"", tuple._1(), tuple._2());
+            }
+            else
+            {
+                logger.info("SparkConf: key: \"{}\", value: \"**********\"", tuple._1());
+            }
         }
         logger.info("SparkConf ===============================================================");
         this.context = ((SparkContextProvider) command.get(SPARK_CONTEXT_PROVIDER))
