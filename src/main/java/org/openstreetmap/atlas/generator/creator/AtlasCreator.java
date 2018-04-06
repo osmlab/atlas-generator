@@ -85,8 +85,7 @@ public class AtlasCreator extends Command
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, Maps.stringMap());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(shardingName, Maps.stringMap())
-                : sharding;
+                ? AtlasSharding.forString(shardingName, Maps.stringMap()) : sharding;
         final String countryName = (String) command.get(COUNTRY);
         final File output = (File) command.get(OUTPUT);
         PbfLoader.setAtlasSaveFolder(output);
