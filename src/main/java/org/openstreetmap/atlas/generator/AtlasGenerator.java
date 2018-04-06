@@ -17,6 +17,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
@@ -104,7 +105,8 @@ public class AtlasGenerator extends SparkJob
             "atlasScheme",
             "The folder structure of the output Atlas. Example: \"zz/xx/yy/\" or \"\""
                     + " (everything under the same folder)",
-            SlippyTilePersistenceScheme::new, Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
+            SlippyTilePersistenceScheme::new, Optionality.OPTIONAL,
+            AbstractMultipleAtlasBasedOutputFormat.DEFAULT_SCHEME);
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
             SHARDING_DEFAULT);
@@ -260,7 +262,8 @@ public class AtlasGenerator extends SparkJob
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(shardingName, configuration()) : sharding;
+                ? AtlasSharding.forString(shardingName, configuration())
+                : sharding;
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
