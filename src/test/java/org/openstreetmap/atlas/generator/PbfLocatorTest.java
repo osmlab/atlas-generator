@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.PbfLocator.LocatedPbf;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.MultiPolygon;
@@ -41,7 +42,8 @@ public class PbfLocatorTest
     public void testDefaultTileFinder()
     {
         // Test a default scheme
-        final String scheme = PbfLocator.DEFAULT_SCHEME;
+        final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
+                PbfLocator.DEFAULT_SCHEME);
         final PbfContext pbfContext = new PbfContext("resource://" + version,
                 new SlippyTileSharding(10), scheme);
         final PbfLocator locator = new PbfLocator(pbfContext,
@@ -57,8 +59,9 @@ public class PbfLocatorTest
     public void testDifferentTileFinder()
     {
         // Test a non-default scheme
-        final String scheme = PbfLocator.ZOOM + "/" + PbfLocator.X_INDEX + "-" + PbfLocator.Y_INDEX
-                + ".osm.pbf";
+        final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
+                SlippyTilePersistenceScheme.ZOOM + "/" + SlippyTilePersistenceScheme.X_INDEX + "-"
+                        + SlippyTilePersistenceScheme.Y_INDEX + ".osm.pbf");
         final PbfContext pbfContext = new PbfContext("resource://" + version,
                 new SlippyTileSharding(10), scheme);
         final PbfLocator locator = new PbfLocator(pbfContext,

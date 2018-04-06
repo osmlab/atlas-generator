@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
 import org.openstreetmap.atlas.geography.sharding.Shard;
@@ -27,6 +28,13 @@ public class AtlasGeneratorTest
             new InputStreamResource(() -> AtlasGeneratorTest.class.getResourceAsStream("HTI.txt")));
     private static final CountryBoundaryMap JAM_BOUNDARY_MAP = CountryBoundaryMap.fromPlainText(
             new InputStreamResource(() -> AtlasGeneratorTest.class.getResourceAsStream("JAM.txt")));
+
+    @Test
+    public void testAtlasScheme()
+    {
+        final ResourceFileSystem fileSystem = new ResourceFileSystem();
+
+    }
 
     @Test
     public void testGenerateTasksEmptyBoundary()

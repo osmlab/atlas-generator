@@ -21,6 +21,7 @@ import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatist
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
@@ -93,12 +94,17 @@ public class AtlasGenerator extends SparkJob
             "Shape file containing the countries", StringConverter.IDENTITY, Optionality.REQUIRED);
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs", "The path to PBFs",
             StringConverter.IDENTITY, Optionality.REQUIRED);
-    public static final Switch<String> PBF_SCHEME = new Switch<>("pbfScheme",
-            "The folder structure of the PBF", StringConverter.IDENTITY, Optionality.OPTIONAL,
-            PbfLocator.DEFAULT_SCHEME);
+    public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
+            "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
+            Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
     public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
             "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
+    public static final Switch<SlippyTilePersistenceScheme> ATLAS_SCHEME = new Switch<>(
+            "atlasScheme",
+            "The folder structure of the output Atlas. Example: \"zz/xx/yy/\" or \"\""
+                    + " (everything under the same folder)",
+            SlippyTilePersistenceScheme::new, Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
             SHARDING_DEFAULT);
@@ -246,12 +252,16 @@ public class AtlasGenerator extends SparkJob
         final String countryShapes = (String) command.get(COUNTRY_SHAPES);
         final String previousOutputForDelta = (String) command.get(PREVIOUS_OUTPUT_FOR_DELTA);
         final String pbfPath = (String) command.get(PBF_PATH);
-        final String pbfScheme = (String) command.get(PBF_SCHEME);
+        final SlippyTilePersistenceScheme pbfScheme = (SlippyTilePersistenceScheme) command
+                .get(PBF_SCHEME);
+        final SlippyTilePersistenceScheme atlasScheme = (SlippyTilePersistenceScheme) command
+                .get(ATLAS_SCHEME);
         final String pbfShardingName = (String) command.get(PBF_SHARDING);
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(shardingName, configuration()) : sharding;
+                ? AtlasSharding.forString(shardingName, configuration())
+                : sharding;
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
@@ -346,7 +356,9 @@ public class AtlasGenerator extends SparkJob
                     logger.info("Printing memory after loading Atlas {}", name);
                     Memory.printCurrentMemory();
                     // Output the Name/Atlas couple
-                    final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
+                    final Tuple2<String, Atlas> result = new Tuple2<>(
+                            name + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(),
+                            atlas);
                     return result;
                 });
 
@@ -521,6 +533,6 @@ public class AtlasGenerator extends SparkJob
         return super.switches().with(COUNTRIES, COUNTRY_SHAPES, SHARDING_TYPE, PBF_PATH, PBF_SCHEME,
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
-                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION);
+                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME);
     }
 }

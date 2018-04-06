@@ -2,6 +2,7 @@ package org.openstreetmap.atlas.generator;
 
 import java.io.Serializable;
 
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 
 /**
@@ -13,9 +14,10 @@ public class PbfContext implements Serializable
 
     private final String pbfPath;
     private final Sharding sharding;
-    private final String scheme;
+    private final SlippyTilePersistenceScheme scheme;
 
-    public PbfContext(final String pbfPath, final Sharding sharding, final String scheme)
+    public PbfContext(final String pbfPath, final Sharding sharding,
+            final SlippyTilePersistenceScheme scheme)
     {
         this.pbfPath = pbfPath;
         this.sharding = sharding;
@@ -27,7 +29,7 @@ public class PbfContext implements Serializable
         return this.pbfPath;
     }
 
-    public String getScheme()
+    public SlippyTilePersistenceScheme getScheme()
     {
         return this.scheme;
     }
