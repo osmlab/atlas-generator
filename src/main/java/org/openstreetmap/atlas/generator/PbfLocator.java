@@ -11,6 +11,7 @@ import java.util.function.Function;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemCreator;
 import org.openstreetmap.atlas.geography.Located;
 import org.openstreetmap.atlas.geography.MultiPolygon;
@@ -64,10 +65,8 @@ public class PbfLocator implements Serializable
 
     private static final Logger logger = LoggerFactory.getLogger(PbfLocator.class);
 
-    public static final String ZOOM = "zz";
-    public static final String X_INDEX = "xx";
-    public static final String Y_INDEX = "yy";
-    public static final String DEFAULT_SCHEME = ZOOM + "-" + X_INDEX + "-" + Y_INDEX
+    public static final String DEFAULT_SCHEME = SlippyTilePersistenceScheme.ZOOM + "-"
+            + SlippyTilePersistenceScheme.X_INDEX + "-" + SlippyTilePersistenceScheme.Y_INDEX
             + FileSuffix.PBF.toString();
 
     private final PbfContext pbfContext;
@@ -89,9 +88,7 @@ public class PbfLocator implements Serializable
         this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
             final Path pbfName = new Path(this.pbfContext.getPbfPath() + "/"
-                    + this.pbfContext.getScheme().replaceAll(ZOOM, String.valueOf(shard.getZoom()))
-                            .replaceAll(X_INDEX, String.valueOf(shard.getX()))
-                            .replaceAll(Y_INDEX, String.valueOf(shard.getY())));
+                    + this.pbfContext.getScheme().compile(shard));
             try
             {
                 if (!fileSystem.exists(pbfName))

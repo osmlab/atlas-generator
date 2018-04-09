@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -22,6 +24,9 @@ import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
+import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * {@link FileSystem} that is based on a set of resources.
@@ -30,6 +35,8 @@ import org.openstreetmap.atlas.streaming.resource.WritableResource;
  */
 public class ResourceFileSystem extends FileSystem
 {
+    private static final Logger logger = LoggerFactory.getLogger(ResourceFileSystem.class);
+
     // The store that contains all the known resources in the file system
     private static final Map<String, Resource> STORE = new HashMap<>();
     public static final String SCHEME = "resource";
@@ -62,6 +69,11 @@ public class ResourceFileSystem extends FileSystem
     public static Set<String> files()
     {
         return STORE.keySet();
+    }
+
+    public static void printContents()
+    {
+        files().forEach(file -> logger.info("{}", file));
     }
 
     public static Map<String, String> simpleconfiguration()
@@ -184,7 +196,21 @@ public class ResourceFileSystem extends FileSystem
             // Hadoop end of job rename case
             destinationName = destinationName.endsWith("/") ? destinationName
                     : destinationName + "/";
-            final String appendName = sourceName.substring(sourceName.lastIndexOf("/") + 1);
+            // Sample resource:
+            // resource://test/atlas/_temporary/0/_temporary/attempt_201804061442_0003_m_000002_14/DMA/9/DMA_9-168-234.atlas
+            final Pattern pattern = Pattern.compile("\\/attempt_[^\\/]*\\/");
+            final Matcher matcher = pattern.matcher(sourceName);
+            final String appendName;
+            if (matcher.find())
+            {
+                final String match = matcher.group(0);
+                final StringList split = StringList.split(sourceName, match);
+                appendName = split.get(1);
+            }
+            else
+            {
+                appendName = sourceName.substring(sourceName.lastIndexOf("/") + 1);
+            }
             destinationName = destinationName + appendName;
         }
         if (STORE.containsKey(sourceName))

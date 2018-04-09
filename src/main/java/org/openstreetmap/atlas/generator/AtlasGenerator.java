@@ -18,10 +18,12 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.PairFunction;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
@@ -101,12 +103,18 @@ public class AtlasGenerator extends SparkJob
             "Shape file containing the countries", StringConverter.IDENTITY, Optionality.REQUIRED);
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs", "The path to PBFs",
             StringConverter.IDENTITY, Optionality.REQUIRED);
-    public static final Switch<String> PBF_SCHEME = new Switch<>("pbfScheme",
-            "The folder structure of the PBF", StringConverter.IDENTITY, Optionality.OPTIONAL,
-            PbfLocator.DEFAULT_SCHEME);
+    public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
+            "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
+            Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
     public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
             "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
+    public static final Switch<SlippyTilePersistenceScheme> ATLAS_SCHEME = new Switch<>(
+            "atlasScheme",
+            "The folder structure of the output Atlas. Example: \"zz/xx/yy/\" or \"\""
+                    + " (everything under the same folder)",
+            SlippyTilePersistenceScheme::new, Optionality.OPTIONAL,
+            AbstractMultipleAtlasBasedOutputFormat.DEFAULT_SCHEME);
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
             SHARDING_DEFAULT);
@@ -324,7 +332,10 @@ public class AtlasGenerator extends SparkJob
         final String countryShapes = (String) command.get(COUNTRY_SHAPES);
         final String previousOutputForDelta = (String) command.get(PREVIOUS_OUTPUT_FOR_DELTA);
         final String pbfPath = (String) command.get(PBF_PATH);
-        final String pbfScheme = (String) command.get(PBF_SCHEME);
+        final SlippyTilePersistenceScheme pbfScheme = (SlippyTilePersistenceScheme) command
+                .get(PBF_SCHEME);
+        final SlippyTilePersistenceScheme atlasScheme = (SlippyTilePersistenceScheme) command
+                .get(ATLAS_SCHEME);
         final String pbfShardingName = (String) command.get(PBF_SHARDING);
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
@@ -374,7 +385,7 @@ public class AtlasGenerator extends SparkJob
             // Generate the raw Atlas and filter any null atlases
             final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
                     .parallelize(tasks, tasks.size()).mapToPair(this.generateRawAtlas(boundaries,
-                            sparkContext, atlasLoadingOptions, pbfContext))
+                            sparkContext, atlasLoadingOptions, pbfContext, atlasScheme))
                     .filter(tuple -> tuple._2() != null);
 
             // Persist the RDD and save the intermediary state
@@ -411,7 +422,6 @@ public class AtlasGenerator extends SparkJob
         {
             // Transform the map country name to shard to country name to Atlas
             // This is not enforced, but it has to be a 1-1 mapping here.
-            final Map<String, String> configurationMap = configurationMap();
             final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = getContext()
                     .parallelize(tasks, tasks.size()).mapToPair(task ->
                     {
@@ -428,27 +438,27 @@ public class AtlasGenerator extends SparkJob
                         if (edgeConfiguration != null)
                         {
                             atlasLoadingOption.setEdgeFilter(
-                                    getTaggableFilterFrom(edgeConfiguration, configurationMap));
+                                    getTaggableFilterFrom(edgeConfiguration, sparkContext));
                         }
                         if (waySectioningConfiguration != null)
                         {
                             atlasLoadingOption.setWaySectionFilter(getTaggableFilterFrom(
-                                    waySectioningConfiguration, configurationMap));
+                                    waySectioningConfiguration, sparkContext));
                         }
                         if (pbfNodeConfiguration != null)
                         {
                             atlasLoadingOption.setOsmPbfNodeFilter(
-                                    getTaggableFilterFrom(pbfNodeConfiguration, configurationMap));
+                                    getTaggableFilterFrom(pbfNodeConfiguration, sparkContext));
                         }
                         if (pbfWayConfiguration != null)
                         {
                             atlasLoadingOption.setOsmPbfWayFilter(
-                                    getTaggableFilterFrom(pbfWayConfiguration, configurationMap));
+                                    getTaggableFilterFrom(pbfWayConfiguration, sparkContext));
                         }
                         if (pbfRelationConfiguration != null)
                         {
-                            atlasLoadingOption.setOsmPbfRelationFilter(getTaggableFilterFrom(
-                                    pbfRelationConfiguration, configurationMap));
+                            atlasLoadingOption.setOsmPbfRelationFilter(
+                                    getTaggableFilterFrom(pbfRelationConfiguration, sparkContext));
                         }
 
                         // Build the appropriate PbfLoader
@@ -471,7 +481,9 @@ public class AtlasGenerator extends SparkJob
                         logger.info("Printing memory after loading Atlas {}", name);
                         Memory.printCurrentMemory();
                         // Output the Name/Atlas couple
-                        final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
+                        final Tuple2<String, Atlas> result = new Tuple2<>(name
+                                + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(),
+                                atlas);
                         return result;
                     });
 
@@ -651,7 +663,7 @@ public class AtlasGenerator extends SparkJob
         return super.switches().with(COUNTRIES, COUNTRY_SHAPES, SHARDING_TYPE, PBF_PATH, PBF_SCHEME,
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
-                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, USE_RAW_ATLAS);
+                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS);
     }
 
     /**
@@ -663,13 +675,16 @@ public class AtlasGenerator extends SparkJob
      *            The basic required properties to create an {@link AtlasLoadingOption}
      * @param pbfContext
      *            The context explaining where to find the PBFs
+     * @param atlasScheme
+     *            The folder structure of the output atlas
      * @return a Spark {@link PairFunction} that processes an {@link AtlasGenerationTask}, loads the
      *         PBF for the task's shard, generates the raw atlas for the shard and outputs a shard
      *         name to raw atlas tuple.
      */
     private PairFunction<AtlasGenerationTask, String, Atlas> generateRawAtlas(
             final CountryBoundaryMap boundaries, final Map<String, String> sparkContext,
-            final Map<String, String> loadingOptions, final PbfContext pbfContext)
+            final Map<String, String> loadingOptions, final PbfContext pbfContext,
+            final SlippyTilePersistenceScheme atlasScheme)
     {
         return task ->
         {
@@ -704,7 +719,8 @@ public class AtlasGenerator extends SparkJob
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
-            final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
+            final Tuple2<String, Atlas> result = new Tuple2<>(
+                    name + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(), atlas);
             return result;
         };
     }
