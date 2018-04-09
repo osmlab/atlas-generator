@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
@@ -416,7 +417,47 @@ public class AtlasGenerator extends SparkJob
                     MultipleAtlasOutputFormat.class, new JobConf(configuration()));
             logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
 
-            // TODO Metrics, Deltas and Statistics for final Atlas
+            // Create the metrics
+            final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
+                    .mapToPair(generateAtlasStatistics(sharding));
+
+            // Persist the RDD and save
+            statisticsRDD.cache();
+            statisticsRDD.saveAsHadoopFile(
+                    getAlternateSubFolderOutput(output, SHARD_STATISTICS_FOLDER), Text.class,
+                    AtlasStatistics.class, MultipleAtlasStatisticsOutputFormat.class,
+                    new JobConf(configuration()));
+            logger.info("\n\n********** SAVED THE SHARD STATISTICS **********\n");
+
+            // Aggregate the metrics
+            final JavaPairRDD<String, AtlasStatistics> reducedStatisticsRDD = statisticsRDD
+                    .mapToPair(tuple ->
+                    {
+                        final String countryShardName = tuple._1();
+                        final String countryName = StringList.split(countryShardName, "_").get(0);
+                        return new Tuple2<>(countryName, tuple._2());
+                    }).reduceByKey(AtlasStatistics::merge);
+
+            // Save aggregated metrics
+            reducedStatisticsRDD.saveAsHadoopFile(
+                    getAlternateSubFolderOutput(output, COUNTRY_STATISTICS_FOLDER), Text.class,
+                    AtlasStatistics.class, MultipleAtlasCountryStatisticsOutputFormat.class,
+                    new JobConf(configuration()));
+            logger.info("\n\n********** SAVED THE COUNTRY STATISTICS **********\n");
+
+            // Compute the deltas, if needed
+            if (!previousOutputForDelta.isEmpty())
+            {
+                final JavaPairRDD<String, AtlasDelta> deltasRDD = countryAtlasShardsRDD
+                        .flatMapToPair(
+                                this.computeAtlasDelta(sparkContext, previousOutputForDelta));
+
+                // Save the deltas
+                deltasRDD.saveAsHadoopFile(getAlternateSubFolderOutput(output, SHARD_DELTAS_FOLDER),
+                        Text.class, AtlasDelta.class, RemovedMultipleAtlasDeltaOutputFormat.class,
+                        new JobConf(configuration()));
+                logger.info("\n\n********** SAVED THE DELTAS **********\n");
+            }
         }
         else
         {
@@ -497,24 +538,7 @@ public class AtlasGenerator extends SparkJob
 
             // Run the metrics
             final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryNonNullAtlasShardsRDD
-                    .mapToPair(tuple ->
-                    {
-                        final Counter counter = new Counter().withSharding(sharding);
-                        counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
-                        final AtlasStatistics statistics;
-                        try
-                        {
-                            statistics = counter.processAtlas(tuple._2());
-                        }
-                        catch (final Exception e)
-                        {
-                            throw new CoreException("Building Atlas Statistics for {} failed!",
-                                    tuple._1(), e);
-                        }
-                        final Tuple2<String, AtlasStatistics> result = new Tuple2<>(tuple._1(),
-                                statistics);
-                        return result;
-                    });
+                    .mapToPair(generateAtlasStatistics(sharding));
 
             // Cache the statistics
             statisticsRDD.cache();
@@ -556,38 +580,7 @@ public class AtlasGenerator extends SparkJob
             {
                 // Compute the deltas
                 final JavaPairRDD<String, AtlasDelta> deltasRDD = countryNonNullAtlasShardsRDD
-                        .flatMapToPair(tuple ->
-                        {
-                            final String countryShardName = tuple._1();
-                            final Atlas current = tuple._2();
-                            final List<Tuple2<String, AtlasDelta>> result = new ArrayList<>();
-                            try
-                            {
-                                final Optional<Atlas> alter = new AtlasLocator(sparkContext)
-                                        .atlasForShard(previousOutputForDelta + "/"
-                                                + StringList
-                                                        .split(countryShardName,
-                                                                CountryShard.COUNTRY_SHARD_SEPARATOR)
-                                                        .get(0),
-                                                countryShardName);
-                                if (alter.isPresent())
-                                {
-                                    logger.info(
-                                            "Printing memory after other Atlas loaded for Delta {}",
-                                            countryShardName);
-                                    Memory.printCurrentMemory();
-                                    final AtlasDelta delta = new AtlasDelta(current, alter.get())
-                                            .generate();
-                                    result.add(new Tuple2<>(countryShardName, delta));
-                                }
-                            }
-                            catch (final Exception e)
-                            {
-                                logger.error("Skipping! Could not generate deltas for {}",
-                                        countryShardName, e);
-                            }
-                            return result;
-                        });
+                        .flatMapToPair(computeAtlasDelta(sparkContext, previousOutputForDelta));
 
                 // deltasRDD.cache();
                 // logger.info("\n\n********** CACHED THE DELTAS **********\n");
@@ -664,6 +657,73 @@ public class AtlasGenerator extends SparkJob
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS);
+    }
+
+    /**
+     * @param sparkContext
+     *            Spark context (or configuration) as a key-value map
+     * @param previousOutputForDelta
+     *            Previous Atlas generation delta output location
+     * @return A Spark {@link PairFlatMapFunction} that takes a tuple of a country shard name and
+     *         atlas file and returns all the {@link AtlasDelta} for the country
+     */
+    private PairFlatMapFunction<Tuple2<String, Atlas>, String, AtlasDelta> computeAtlasDelta(
+            final Map<String, String> sparkContext, final String previousOutputForDelta)
+    {
+        return tuple ->
+        {
+            final String countryShardName = tuple._1();
+            final Atlas current = tuple._2();
+            final List<Tuple2<String, AtlasDelta>> result = new ArrayList<>();
+            try
+            {
+                final Optional<Atlas> alter = new AtlasLocator(sparkContext).atlasForShard(
+                        previousOutputForDelta + "/"
+                                + StringList.split(countryShardName,
+                                        CountryShard.COUNTRY_SHARD_SEPARATOR).get(0),
+                        countryShardName);
+                if (alter.isPresent())
+                {
+                    logger.info("Printing memory after other Atlas loaded for Delta {}",
+                            countryShardName);
+                    Memory.printCurrentMemory();
+                    final AtlasDelta delta = new AtlasDelta(current, alter.get()).generate();
+                    result.add(new Tuple2<>(countryShardName, delta));
+                }
+            }
+            catch (final Exception e)
+            {
+                logger.error("Skipping! Could not generate deltas for {}", countryShardName, e);
+            }
+            return result;
+        };
+    }
+
+    /**
+     * @param sharding
+     *            The sharding tree
+     * @return a Spark {@link PairFunction} that processes a shard to Atlas tuple, and constructs a
+     *         {@link AtlasStatistics} for each shard.
+     */
+    private PairFunction<Tuple2<String, Atlas>, String, AtlasStatistics> generateAtlasStatistics(
+            final Sharding sharding)
+    {
+        return tuple ->
+        {
+            final Counter counter = new Counter().withSharding(sharding);
+            counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
+            final AtlasStatistics statistics;
+            try
+            {
+                statistics = counter.processAtlas(tuple._2());
+            }
+            catch (final Exception e)
+            {
+                throw new CoreException("Building Atlas Statistics for {} failed!", tuple._1(), e);
+            }
+            final Tuple2<String, AtlasStatistics> result = new Tuple2<>(tuple._1(), statistics);
+            return result;
+        };
     }
 
     /**
