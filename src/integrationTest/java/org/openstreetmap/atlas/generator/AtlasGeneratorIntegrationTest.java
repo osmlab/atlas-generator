@@ -72,7 +72,6 @@ public class AtlasGeneratorIntegrationTest
                     resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/9/DMA_9-168-233.atlas")));
             Assert.assertTrue(
                     resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/9/DMA_9-168-234.atlas")));
-
         }
         catch (IllegalArgumentException | IOException e)
         {
