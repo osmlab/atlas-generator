@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.function.PairFunction;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
@@ -59,6 +60,7 @@ import scala.Tuple2;
  * Generate {@link Atlas} Shards for a specific version and a specific set of countries
  *
  * @author matthieun
+ * @author mgostintsev
  */
 public class AtlasGenerator extends SparkJob
 {
@@ -279,6 +281,8 @@ public class AtlasGenerator extends SparkJob
                 (String) command.get(PBF_WAY_CONFIGURATION));
         propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
                 (String) command.get(PBF_RELATION_CONFIGURATION));
+        propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
+        propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
 
         return propertyMap;
     }
@@ -367,19 +371,39 @@ public class AtlasGenerator extends SparkJob
             // from the command map and pass those around to create the AtlasLoadingOption
             final Map<String, String> atlasLoadingOptions = extractAtlasLoadingProperties(command);
 
-            // Generate the raw Atlas and save it
-            final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = generateAndSaveRawAtlas(
-                    tasks, boundaries, sparkContext, atlasLoadingOptions, pbfContext, output,
-                    codeVersion, dataVersion);
+            // Generate the raw Atlas and filter any null atlases
+            final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
+                    .parallelize(tasks, tasks.size()).mapToPair(this.generateRawAtlas(boundaries,
+                            sparkContext, atlasLoadingOptions, pbfContext))
+                    .filter(tuple -> tuple._2() != null);
 
-            // Slice the raw Atlas and save result
-            final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD = sliceAndSaveRawAtlases(
-                    countryRawAtlasShardsRDD, boundaries, output);
+            // Persist the RDD and save the intermediary state
+            countryRawAtlasShardsRDD.cache();
+            countryRawAtlasShardsRDD.saveAsHadoopFile(
+                    getAlternateSubFolderOutput(output, RAW_ATLAS_FOLDER), Text.class, Atlas.class,
+                    MultipleAtlasOutputFormat.class, new JobConf(configuration()));
+            logger.info("\n\n********** SAVED THE RAW ATLAS **********\n");
 
-            // Section the sliced raw Atlas and save result
-            final JavaPairRDD<String, Atlas> countryNonNullAtlasShardsRDD = sectionAndSaveRawAtlas(
-                    countrySlicedRawAtlasShardsRDD, boundaries, sparkContext, atlasLoadingOptions,
-                    output);
+            // Slice the raw Atlas and filter any null atlases
+            final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD = countryRawAtlasShardsRDD
+                    .mapToPair(this.sliceRawAtlas(boundaries)).filter(tuple -> tuple._2() != null);
+
+            // Persist the RDD and save the intermediary state
+            countrySlicedRawAtlasShardsRDD.cache();
+            countrySlicedRawAtlasShardsRDD.saveAsHadoopFile(
+                    getAlternateSubFolderOutput(output, SLICED_RAW_ATLAS_FOLDER), Text.class,
+                    Atlas.class, MultipleAtlasOutputFormat.class, new JobConf(configuration()));
+            logger.info("\n\n********** SAVED THE SLICED RAW ATLAS **********\n");
+
+            // Section the sliced raw Atlas
+            final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countrySlicedRawAtlasShardsRDD
+                    .mapToPair(this.sectionRawAtlas(boundaries, sparkContext, atlasLoadingOptions));
+
+            // Save the result, one for each key
+            countryAtlasShardsRDD.saveAsHadoopFile(
+                    getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
+                    MultipleAtlasOutputFormat.class, new JobConf(configuration()));
+            logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
 
             // TODO Metrics, Deltas and Statistics for final Atlas
         }
@@ -630,158 +654,151 @@ public class AtlasGenerator extends SparkJob
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, USE_RAW_ATLAS);
     }
 
-    private JavaPairRDD<String, Atlas> generateAndSaveRawAtlas(
-            final List<AtlasGenerationTask> tasks, final CountryBoundaryMap boundaries,
-            final Map<String, String> sparkContext, final Map<String, String> loadingOptions,
-            final PbfContext pbfContext, final String outputDirectory, final String codeVersion,
-            final String dataVersion)
-    {
-        // Construct the RDD, filter out null atlases
-        final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
-                .parallelize(tasks, tasks.size()).mapToPair(task ->
-                {
-                    final String countryName = task.getCountry();
-                    final Shard shard = task.getShard();
-
-                    // Set the country code that is being processed!
-                    final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(
-                            boundaries, sparkContext, loadingOptions);
-                    atlasLoadingOption.setAdditionalCountryCodes(countryName);
-
-                    // Build the PbfLoader
-                    final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries,
-                            atlasLoadingOption, codeVersion, dataVersion, task.getAllShards());
-                    final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                            + shard.getName();
-                    final Atlas atlas;
-                    try
-                    {
-                        // Generate the raw Atlas for this shard
-                        atlas = loader.generateRawAtlas(countryName, shard);
-                    }
-                    catch (final Throwable e)
-                    {
-                        throw new CoreException("Building raw Atlas {} failed!", name, e);
-                    }
-
-                    // Report on memory usage
-                    logger.info("Printing memory after loading raw Atlas {}", name);
-                    Memory.printCurrentMemory();
-
-                    // Output the Name/Atlas couple
-                    final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
-                    return result;
-                }).filter(tuple -> tuple._2() != null);
-
-        // Persist the RDD to avoid re-computing and save each raw atlas
-        countryRawAtlasShardsRDD.cache().saveAsHadoopFile(
-                getAlternateSubFolderOutput(outputDirectory, RAW_ATLAS_FOLDER), Text.class,
-                Atlas.class, MultipleAtlasOutputFormat.class, new JobConf(configuration()));
-        logger.info("\n\n********** SAVED THE RAW ATLAS **********\n");
-
-        return countryRawAtlasShardsRDD;
-    }
-
-    private JavaPairRDD<String, Atlas> sectionAndSaveRawAtlas(
-            final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD,
+    /**
+     * @param boundaries
+     *            The {@link CountryBoundaryMap} to use for pbf to atlas generation
+     * @param sparkContext
+     *            Spark context (or configuration) as a key-value map
+     * @param loadingOptions
+     *            The basic required properties to create an {@link AtlasLoadingOption}
+     * @param pbfContext
+     *            The context explaining where to find the PBFs
+     * @return a Spark {@link PairFunction} that processes an {@link AtlasGenerationTask}, loads the
+     *         PBF for the task's shard, generates the raw atlas for the shard and outputs a shard
+     *         name to raw atlas tuple.
+     */
+    private PairFunction<AtlasGenerationTask, String, Atlas> generateRawAtlas(
             final CountryBoundaryMap boundaries, final Map<String, String> sparkContext,
-            final Map<String, String> loadingOptions, final String outputDirectory)
+            final Map<String, String> loadingOptions, final PbfContext pbfContext)
     {
-        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countrySlicedRawAtlasShardsRDD
-                .mapToPair(tuple ->
-                {
-                    final Atlas atlas;
-                    try
-                    {
-                        final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(
-                                boundaries, sparkContext, loadingOptions);
+        return task ->
+        {
+            final String countryName = task.getCountry();
+            final Shard shard = task.getShard();
 
-                        // TODO - Leverage sharding and Atlas fetcher here!
+            // Set the country code that is being processed!
+            final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
+                    sparkContext, loadingOptions);
+            atlasLoadingOption.setAdditionalCountryCodes(countryName);
 
-                        // Section the Atlas
-                        atlas = new WaySectionProcessor(tuple._2(), atlasLoadingOption).run();
-                    }
-                    catch (final Throwable e)
-                    {
-                        throw new CoreException("Slicing Atlas {} failed!", tuple._2().getName(),
-                                e);
-                    }
+            // Build the PbfLoader
+            final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries,
+                    atlasLoadingOption, loadingOptions.get(CODE_VERSION.getName()),
+                    loadingOptions.get(DATA_VERSION.getName()), task.getAllShards());
+            final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                    + shard.getName();
 
-                    // Report on memory usage
-                    logger.info("Printing memory after loading final Atlas {}",
-                            tuple._2().getName());
-                    Memory.printCurrentMemory();
+            // Generate the raw Atlas for this shard
+            final Atlas atlas;
+            try
+            {
+                atlas = loader.generateRawAtlas(countryName, shard);
+            }
+            catch (final Throwable e)
+            {
+                throw new CoreException("Building raw Atlas {} failed!", name, e);
+            }
 
-                    // Output the Name/Atlas couple
-                    final Tuple2<String, Atlas> result = new Tuple2<>(tuple._1(), atlas);
-                    return result;
-                });
+            // Report on memory usage
+            logger.info("Printing memory after loading raw Atlas {}", name);
+            Memory.printCurrentMemory();
 
-        // Save the final Atlas files, one for each key
-        countryAtlasShardsRDD.saveAsHadoopFile(
-                getAlternateSubFolderOutput(outputDirectory, ATLAS_FOLDER), Text.class, Atlas.class,
-                MultipleAtlasOutputFormat.class, new JobConf(configuration()));
-        logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
-
-        return countryAtlasShardsRDD;
+            // Output the Name/Atlas couple
+            final Tuple2<String, Atlas> result = new Tuple2<>(name, atlas);
+            return result;
+        };
     }
 
-    private JavaPairRDD<String, Atlas> sliceAndSaveRawAtlases(
-            final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD,
-            final CountryBoundaryMap boundaries, final String outputDirectory)
+    /**
+     * @param boundaries
+     *            The {@link CountryBoundaryMap} required to create an {@link AtlasLoadingOption}
+     * @param sparkContext
+     *            Spark context (or configuration) as a key-value map
+     * @param loadingOptions
+     *            The basic required properties to create an {@link AtlasLoadingOption}
+     * @return a Spark {@link PairFunction} that processes a tuple of shard-name and sliced raw
+     *         atlas, sections the sliced raw atlas and returns the final sectioned (and sliced) raw
+     *         atlas for that shard name.
+     */
+    private PairFunction<Tuple2<String, Atlas>, String, Atlas> sectionRawAtlas(
+            final CountryBoundaryMap boundaries, final Map<String, String> sparkContext,
+            final Map<String, String> loadingOptions)
     {
-        // Construct the RDD, filter out null atlases
-        final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD = countryRawAtlasShardsRDD
-                .mapToPair(tuple ->
+        return tuple ->
+        {
+            final Atlas atlas;
+            try
+            {
+                final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
+                        sparkContext, loadingOptions);
+
+                // TODO - Leverage sharding and Atlas fetcher here!
+
+                // Section the Atlas
+                atlas = new WaySectionProcessor(tuple._2(), atlasLoadingOption).run();
+            }
+            catch (final Throwable e)
+            {
+                throw new CoreException("Slicing Atlas {} failed!", tuple._2().getName(), e);
+            }
+
+            // Report on memory usage
+            logger.info("Printing memory after loading final Atlas {}", tuple._2().getName());
+            Memory.printCurrentMemory();
+
+            // Output the Name/Atlas couple
+            final Tuple2<String, Atlas> result = new Tuple2<>(tuple._1(), atlas);
+            return result;
+        };
+    }
+
+    /**
+     * @param boundaries
+     *            The {@link CountryBoundaryMap} to use for slicing
+     * @return a Spark {@link PairFunction} that processes a tuple of shard-name and raw atlas,
+     *         slices the raw atlas and returns the sliced raw atlas for that shard name.
+     */
+    private PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlas(
+            final CountryBoundaryMap boundaries)
+    {
+        return tuple ->
+        {
+            final Atlas slicedAtlas;
+
+            // Grab the tuple contents
+            final String shardName = tuple._1();
+            final Atlas rawAtlas = tuple._2();
+
+            try
+            {
+                // Extract the country code
+                final Set<IsoCountry> isoCountries = new HashSet<>();
+                final Optional<IsoCountry> countryName = IsoCountry
+                        .forCountryCode(shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0]);
+                if (countryName.isPresent())
                 {
-                    final Atlas slicedAtlas;
+                    isoCountries.add(countryName.get());
+                }
+                else
+                {
+                    logger.error("Unable to extract valid IsoCountry code from {}", shardName);
+                }
 
-                    // Grab the tuple contents
-                    final String shardName = tuple._1();
-                    final Atlas rawAtlas = tuple._2();
+                // Slice the Atlas
+                slicedAtlas = new RawAtlasCountrySlicer(isoCountries, boundaries).slice(rawAtlas);
+            }
+            catch (final Throwable e)
+            {
+                throw new CoreException("Slicing raw Atlas {} failed!", rawAtlas.getName(), e);
+            }
 
-                    try
-                    {
-                        // Extract the country code
-                        final Set<IsoCountry> isoCountries = new HashSet<>();
-                        final Optional<IsoCountry> countryName = IsoCountry.forCountryCode(
-                                shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0]);
-                        if (countryName.isPresent())
-                        {
-                            isoCountries.add(countryName.get());
-                        }
-                        else
-                        {
-                            logger.error("Unable to extract valid IsoCountry code from {}",
-                                    shardName);
-                        }
+            // Report on memory usage
+            logger.info("Printing memory after loading sliced raw Atlas {}", rawAtlas.getName());
+            Memory.printCurrentMemory();
 
-                        // Slice the Atlas
-                        slicedAtlas = new RawAtlasCountrySlicer(isoCountries, boundaries)
-                                .slice(rawAtlas);
-                    }
-                    catch (final Throwable e)
-                    {
-                        throw new CoreException("Slicing raw Atlas {} failed!", rawAtlas.getName(),
-                                e);
-                    }
-
-                    // Report on memory usage
-                    logger.info("Printing memory after loading sliced raw Atlas {}",
-                            rawAtlas.getName());
-                    Memory.printCurrentMemory();
-
-                    // Output the Name/Atlas couple
-                    final Tuple2<String, Atlas> result = new Tuple2<>(tuple._1(), slicedAtlas);
-                    return result;
-                }).filter(tuple -> tuple._2() != null);
-
-        // Persist the RDD to avoid re-computing and save each sliced raw atlas
-        countrySlicedRawAtlasShardsRDD.cache().saveAsHadoopFile(
-                getAlternateSubFolderOutput(outputDirectory, SLICED_RAW_ATLAS_FOLDER), Text.class,
-                Atlas.class, MultipleAtlasOutputFormat.class, new JobConf(configuration()));
-        logger.info("\n\n********** SAVED THE SLICED RAW ATLAS **********\n");
-
-        return countrySlicedRawAtlasShardsRDD;
+            // Output the Name/Atlas couple
+            final Tuple2<String, Atlas> result = new Tuple2<>(tuple._1(), slicedAtlas);
+            return result;
+        };
     }
 }
