@@ -7,6 +7,7 @@ import org.openstreetmap.atlas.generator.AtlasGenerator;
 import org.openstreetmap.atlas.generator.PbfContext;
 import org.openstreetmap.atlas.generator.PbfLoader;
 import org.openstreetmap.atlas.generator.PbfLocator;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -44,9 +45,9 @@ public class AtlasCreator extends Command
             }, Optionality.REQUIRED);
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs", "The path to PBFs",
             StringConverter.IDENTITY, Optionality.REQUIRED);
-    public static final Switch<String> PBF_SCHEME = new Switch<>("pbfScheme",
-            "The folder structure of the PBF", StringConverter.IDENTITY, Optionality.OPTIONAL,
-            PbfLocator.DEFAULT_SCHEME);
+    public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
+            "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
+            Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
     public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
             "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
@@ -61,8 +62,8 @@ public class AtlasCreator extends Command
     }
 
     public Atlas generateAtlas(final CountryBoundaryMap map, final Shard tile, final String pbfPath,
-            final String pbfScheme, final Sharding pbfSharding, final Sharding sharding,
-            final String countryName)
+            final SlippyTilePersistenceScheme pbfScheme, final Sharding pbfSharding,
+            final Sharding sharding, final String countryName)
     {
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final PbfLoader loader = new PbfLoader(pbfContext, new HashMap<>(), map,
@@ -78,7 +79,8 @@ public class AtlasCreator extends Command
         final CountryBoundaryMap map = (CountryBoundaryMap) command.get(BOUNDARIES);
         final Shard tile = (Shard) command.get(TILE);
         final String pbfPath = (String) command.get(PBF_PATH);
-        final String pbfScheme = (String) command.get(PBF_SCHEME);
+        final SlippyTilePersistenceScheme pbfScheme = (SlippyTilePersistenceScheme) command
+                .get(PBF_SCHEME);
         final String pbfShardingName = (String) command.get(PBF_SHARDING);
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, Maps.stringMap());
