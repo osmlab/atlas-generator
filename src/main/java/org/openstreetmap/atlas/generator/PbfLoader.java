@@ -109,22 +109,27 @@ public class PbfLoader implements Serializable
             {
                 final MultiPolygon pbfLoadingArea = locatedPbf.bounds()
                         .clip(loadingArea.get(), ClipType.AND).getClipMultiPolygon();
-                final AtlasMetaData metaData = new AtlasMetaData(null, true, this.codeVersion,
-                        this.dataVersion, countryName, shard.getName(), metaDataTags);
-                Atlas shardPbfSlice = null;
-                try
+
+                // Guard against an empty loading area
+                if (!pbfLoadingArea.isEmpty())
                 {
-                    shardPbfSlice = new RawAtlasGenerator(locatedPbf.getResource(), pbfLoadingArea)
-                            .withMetaData(metaData).build();
-                }
-                catch (final Exception e)
-                {
-                    logger.error("Dropping PBF {} for Atlas shard {}",
-                            locatedPbf.getResource().getName(), shard, e);
-                }
-                if (shardPbfSlice != null)
-                {
-                    atlases.add(shardPbfSlice);
+                    final AtlasMetaData metaData = new AtlasMetaData(null, true, this.codeVersion,
+                            this.dataVersion, countryName, shard.getName(), metaDataTags);
+                    Atlas shardPbfSlice = null;
+                    try
+                    {
+                        shardPbfSlice = new RawAtlasGenerator(locatedPbf.getResource(),
+                                pbfLoadingArea).withMetaData(metaData).build();
+                    }
+                    catch (final Exception e)
+                    {
+                        logger.error("Dropping PBF {} for Atlas shard {}",
+                                locatedPbf.getResource().getName(), shard, e);
+                    }
+                    if (shardPbfSlice != null)
+                    {
+                        atlases.add(shardPbfSlice);
+                    }
                 }
             });
 
