@@ -28,6 +28,7 @@ import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenc
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -44,6 +45,7 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.locale.IsoCountry;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
+import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
@@ -296,6 +298,20 @@ public class AtlasGenerator extends SparkJob
         return propertyMap;
     }
 
+    private static Set<Shard> getAllShardsForCountry(final CountryBoundaryMap boundaries,
+            final String country, final Sharding sharding)
+    {
+        return boundaries.countryBoundary(country).stream()
+                .flatMap(
+                        boundary -> boundary.getBoundary().outers()
+                                .stream())
+                .flatMap(subBoundary -> Iterables
+                        .asList(Iterables.filter(sharding.shards(subBoundary.bounds()),
+                                shard -> subBoundary.overlaps(shard.bounds())))
+                        .stream())
+                .collect(Collectors.toSet());
+    }
+
     private static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
             final Map<String, String> configuration)
     {
@@ -401,17 +417,20 @@ public class AtlasGenerator extends SparkJob
                     .mapToPair(this.sliceRawAtlas(boundaries)).filter(tuple -> tuple._2() != null);
 
             // Persist the RDD and save the intermediary state
+            final String slicedRawAtlasPath = getAlternateSubFolderOutput(output,
+                    SLICED_RAW_ATLAS_FOLDER);
             countrySlicedRawAtlasShardsRDD.cache();
-            countrySlicedRawAtlasShardsRDD.saveAsHadoopFile(
-                    getAlternateSubFolderOutput(output, SLICED_RAW_ATLAS_FOLDER), Text.class,
+            countrySlicedRawAtlasShardsRDD.saveAsHadoopFile(slicedRawAtlasPath, Text.class,
                     Atlas.class, MultipleAtlasOutputFormat.class, new JobConf(configuration()));
             logger.info("\n\n********** SAVED THE SLICED RAW ATLAS **********\n");
 
             // Section the sliced raw Atlas
             final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countrySlicedRawAtlasShardsRDD
-                    .mapToPair(this.sectionRawAtlas(boundaries, sparkContext, atlasLoadingOptions));
+                    .mapToPair(this.sectionRawAtlas(boundaries, sharding, sparkContext,
+                            atlasLoadingOptions, slicedRawAtlasPath));
 
-            // Save the result, one for each key
+            // Persist the RDD and save the final atlas
+            countryAtlasShardsRDD.cache();
             countryAtlasShardsRDD.saveAsHadoopFile(
                     getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
                     MultipleAtlasOutputFormat.class, new JobConf(configuration()));
@@ -788,17 +807,22 @@ public class AtlasGenerator extends SparkJob
     /**
      * @param boundaries
      *            The {@link CountryBoundaryMap} required to create an {@link AtlasLoadingOption}
+     * @param sharding
+     *            The {@link Sharding} strategy
      * @param sparkContext
      *            Spark context (or configuration) as a key-value map
      * @param loadingOptions
      *            The basic required properties to create an {@link AtlasLoadingOption}
+     * @param slicedRawAtlasPath
+     *            The path where the sliced raw atlas files were saved
      * @return a Spark {@link PairFunction} that processes a tuple of shard-name and sliced raw
      *         atlas, sections the sliced raw atlas and returns the final sectioned (and sliced) raw
      *         atlas for that shard name.
      */
     private PairFunction<Tuple2<String, Atlas>, String, Atlas> sectionRawAtlas(
-            final CountryBoundaryMap boundaries, final Map<String, String> sparkContext,
-            final Map<String, String> loadingOptions)
+            final CountryBoundaryMap boundaries, final Sharding sharding,
+            final Map<String, String> sparkContext, final Map<String, String> loadingOptions,
+            final String slicedRawAtlasPath)
     {
         return tuple ->
         {
@@ -808,14 +832,26 @@ public class AtlasGenerator extends SparkJob
                 final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
                         sparkContext, loadingOptions);
 
-                // TODO - Leverage sharding and Atlas fetcher here!
+                // Calculate the shard, country name and possible shards
+                final String countryShardString = tuple._1();
+                final CountryShard countryShard = CountryShard.forName(countryShardString);
+                final String country = countryShard.getCountry();
+                final Set<Shard> possibleShards = getAllShardsForCountry(boundaries, country,
+                        sharding);
+
+                // Create the fetcher
+                final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
+                        .atlasFetcher(SparkFileHelper.combine(slicedRawAtlasPath, country),
+                                System.getProperty("java.io.tmpdir"), country, sparkContext,
+                                possibleShards);
 
                 // Section the Atlas
-                atlas = new WaySectionProcessor(tuple._2(), atlasLoadingOption).run();
+                atlas = new WaySectionProcessor(countryShard.getShard(), atlasLoadingOption,
+                        sharding, slicedRawAtlasFetcher).run();
             }
             catch (final Throwable e)
             {
-                throw new CoreException("Slicing Atlas {} failed!", tuple._2().getName(), e);
+                throw new CoreException("Sectioning Raw Atlas {} failed!", tuple._2().getName(), e);
             }
 
             // Report on memory usage

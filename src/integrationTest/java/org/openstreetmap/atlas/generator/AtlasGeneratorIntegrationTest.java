@@ -52,8 +52,6 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-pbfSharding=dynamic@" + TREE_14);
         arguments.add("-pbfScheme=zz/zz-xx-yy.osm.pbf");
         arguments.add("-atlasScheme=zz/");
-        // TODO - uncomment line below after switching to raw atlas flow
-        // arguments.add("-useRawAtlas");
         arguments.add("-sharding=dynamic@" + TREE_13);
         arguments.add(
                 "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
