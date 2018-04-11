@@ -116,6 +116,8 @@ dependencies
 {
     compile packages.atlas
     compile packages.spark.core
+    
+    shaded project.configurations.getByName('compile')
 }
 
 task integrationTest(type: Test) {
