@@ -2,6 +2,7 @@ package org.openstreetmap.atlas.generator;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +45,6 @@ import org.openstreetmap.atlas.utilities.threads.Pool;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Maps;
 
 import scala.Tuple2;
 
@@ -215,7 +214,7 @@ public class AtlasGenerator extends SparkJob
 
     private static Map<String, String> extractAtlasLoadingProperties(final CommandMap command)
     {
-        final Map<String, String> propertyMap = Maps.newHashMap();
+        final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
         propertyMap.put(EDGE_CONFIGURATION.getName(), (String) command.get(EDGE_CONFIGURATION));
