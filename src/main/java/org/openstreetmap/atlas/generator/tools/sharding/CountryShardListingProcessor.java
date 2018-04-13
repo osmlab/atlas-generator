@@ -1,4 +1,4 @@
-package org.openstreetmap.atlas.generator;
+package org.openstreetmap.atlas.generator.tools.sharding;
 
 import java.util.Map;
 import java.util.Set;
@@ -19,9 +19,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author mkalender
  */
-class AtlasGeneratorTaskProcessor implements Runnable
+public class CountryShardListingProcessor implements Runnable
 {
-    private static final Logger logger = LoggerFactory.getLogger(AtlasGeneratorTaskProcessor.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(CountryShardListingProcessor.class);
     private final BlockingQueue<CountryBoundary> queue;
     private final Sharding sharding;
     private final CountryBoundaryMap boundaryMap;
@@ -39,8 +40,8 @@ class AtlasGeneratorTaskProcessor implements Runnable
      * @param countryToShardMap
      *            {@link Map} of country names to {@link Set} of {@link Shard}s
      */
-    AtlasGeneratorTaskProcessor(final BlockingQueue<CountryBoundary> queue, final Sharding sharding,
-            final CountryBoundaryMap boundaryMap,
+    CountryShardListingProcessor(final BlockingQueue<CountryBoundary> queue,
+            final Sharding sharding, final CountryBoundaryMap boundaryMap,
             final MultiMapWithSet<String, Shard> countryToShardMap)
     {
         this.queue = queue;
