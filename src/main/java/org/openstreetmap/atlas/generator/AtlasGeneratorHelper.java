@@ -44,6 +44,7 @@ import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
+import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,6 +182,8 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             final String countryShardName = tuple._1();
             final Atlas current = tuple._2();
+            logger.info("Starting computing deltas for Atlas {}", countryShardName);
+            final Time start = Time.now();
             final List<Tuple2<String, AtlasDelta>> result = new ArrayList<>();
             try
             {
@@ -202,6 +205,8 @@ public final class AtlasGeneratorHelper implements Serializable
             {
                 logger.error("Skipping! Could not generate deltas for {}", countryShardName, e);
             }
+            logger.info("Finished computing deltas for Atlas {} in {}", countryShardName,
+                    start.elapsedSince());
             return result;
         };
     }
@@ -217,6 +222,8 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
+            logger.info("Starting generating Atlas statistics for {}", tuple._1());
+            final Time start = Time.now();
             final Counter counter = new Counter().withSharding(sharding);
             counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
             final AtlasStatistics statistics;
@@ -228,6 +235,8 @@ public final class AtlasGeneratorHelper implements Serializable
             {
                 throw new CoreException("Building Atlas Statistics for {} failed!", tuple._1(), e);
             }
+            logger.info("Finished generating Atlas statistics for {} in {}", tuple._1(),
+                    start.elapsedSince());
             final Tuple2<String, AtlasStatistics> result = new Tuple2<>(tuple._1(), statistics);
             return result;
         };
@@ -257,6 +266,10 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             final String countryName = task.getCountry();
             final Shard shard = task.getShard();
+            final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                    + shard.getName();
+            logger.info("Starting creating raw Atlas {}", name);
+            final Time start = Time.now();
 
             // Set the country code that is being processed!
             final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
@@ -267,8 +280,6 @@ public final class AtlasGeneratorHelper implements Serializable
             final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries,
                     atlasLoadingOption, loadingOptions.get(AtlasGenerator.CODE_VERSION.getName()),
                     loadingOptions.get(AtlasGenerator.DATA_VERSION.getName()), task.getAllShards());
-            final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                    + shard.getName();
 
             // Generate the raw Atlas for this shard
             final Atlas atlas;
@@ -280,6 +291,8 @@ public final class AtlasGeneratorHelper implements Serializable
             {
                 throw new CoreException("Building raw Atlas {} failed!", name, e);
             }
+
+            logger.info("Finished creating raw Atlas {} in {}", name, start.elapsedSince());
 
             // Report on memory usage
             logger.info("Printing memory after loading raw Atlas {}", name);
@@ -330,6 +343,7 @@ public final class AtlasGeneratorHelper implements Serializable
         return tuple ->
         {
             final Atlas atlas;
+            final Time start = Time.now();
             try
             {
                 final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
@@ -340,6 +354,8 @@ public final class AtlasGeneratorHelper implements Serializable
                 final CountryShard countryShard = CountryShard.forName(countryShardString);
                 final String country = countryShard.getCountry();
                 final Set<Shard> possibleShards = getAllShardsForCountry(tasks, country);
+
+                logger.info("Starting sectioning raw Atlas {}", countryShard);
 
                 // Create the fetcher
                 final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
@@ -355,6 +371,8 @@ public final class AtlasGeneratorHelper implements Serializable
             {
                 throw new CoreException("Sectioning Raw Atlas {} failed!", tuple._2().getName(), e);
             }
+
+            logger.info("Finished sectioning raw Atlas {} in {}", tuple._1(), start.elapsedSince());
 
             // Report on memory usage
             logger.info("Printing memory after loading final Atlas {}", tuple._2().getName());
@@ -382,6 +400,8 @@ public final class AtlasGeneratorHelper implements Serializable
             // Grab the tuple contents
             final String shardName = tuple._1();
             final Atlas rawAtlas = tuple._2();
+            logger.info("Starting slicing raw Atlas {}", shardName);
+            final Time start = Time.now();
 
             try
             {
@@ -405,6 +425,8 @@ public final class AtlasGeneratorHelper implements Serializable
             {
                 throw new CoreException("Slicing raw Atlas {} failed!", rawAtlas.getName(), e);
             }
+
+            logger.info("Finished slicing raw Atlas {} in {}", shardName, start.elapsedSince());
 
             // Report on memory usage
             logger.info("Printing memory after loading sliced raw Atlas {}", rawAtlas.getName());

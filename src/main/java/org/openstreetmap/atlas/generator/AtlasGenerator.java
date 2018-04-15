@@ -272,7 +272,8 @@ public class AtlasGenerator extends SparkJob
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(shardingName, configuration()) : sharding;
+                ? AtlasSharding.forString(shardingName, configuration())
+                : sharding;
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
@@ -450,6 +451,10 @@ public class AtlasGenerator extends SparkJob
                                 atlasLoadingOption, codeVersion, dataVersion, task.getAllShards());
                         final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
                                 + shard.getName();
+
+                        logger.info("Starting building Atlas {}", name);
+                        final Time start = Time.now();
+
                         final Atlas atlas;
                         try
                         {
@@ -461,9 +466,12 @@ public class AtlasGenerator extends SparkJob
                             throw new CoreException("Building Atlas {} failed!", name, e);
                         }
 
+                        logger.info("Finished building Atlas {} in {}", name, start.elapsedSince());
+
                         // Report on memory usage
                         logger.info("Printing memory after loading Atlas {}", name);
                         Memory.printCurrentMemory();
+
                         // Output the Name/Atlas couple
                         final Tuple2<String, Atlas> result = new Tuple2<>(name
                                 + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(),
