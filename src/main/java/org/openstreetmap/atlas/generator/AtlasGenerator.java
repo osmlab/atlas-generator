@@ -131,8 +131,9 @@ public class AtlasGenerator extends SparkJob
             "The path to the configuration file that defines which PBF Relations becomes an Atlas Entity",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     // TODO - once this is fully baked and tested, remove flag and old flow
-    private static final Flag USE_RAW_ATLAS = new Flag("useRawAtlas",
-            "Allow PBF to Atlas process to use Raw Atlas flow");
+    private static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
+            "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
+            Optionality.OPTIONAL, "false");
 
     public static void main(final String[] args)
     {
