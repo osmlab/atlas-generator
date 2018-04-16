@@ -182,7 +182,7 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             final String countryShardName = tuple._1();
             final Atlas current = tuple._2();
-            logger.info("Starting computing deltas for Atlas {}", countryShardName);
+            logger.info("Starting computing deltas for Atlas {}", current.getName());
             final Time start = Time.now();
             final List<Tuple2<String, AtlasDelta>> result = new ArrayList<>();
             try
@@ -195,7 +195,7 @@ public final class AtlasGeneratorHelper implements Serializable
                 if (alter.isPresent())
                 {
                     logger.info("Printing memory after other Atlas loaded for Delta {}",
-                            countryShardName);
+                            current.getName());
                     Memory.printCurrentMemory();
                     final AtlasDelta delta = new AtlasDelta(current, alter.get()).generate();
                     result.add(new Tuple2<>(countryShardName, delta));
@@ -203,9 +203,9 @@ public final class AtlasGeneratorHelper implements Serializable
             }
             catch (final Exception e)
             {
-                logger.error("Skipping! Could not generate deltas for {}", countryShardName, e);
+                logger.error("Skipping! Could not generate deltas for {}", current.getName(), e);
             }
-            logger.info("Finished computing deltas for Atlas {} in {}", countryShardName,
+            logger.info("Finished computing deltas for Atlas {} in {}", current.getName(),
                     start.elapsedSince());
             return result;
         };
@@ -355,7 +355,7 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String country = countryShard.getCountry();
                 final Set<Shard> possibleShards = getAllShardsForCountry(tasks, country);
 
-                logger.info("Starting sectioning raw Atlas {}", countryShard);
+                logger.info("Starting sectioning raw Atlas {}", tuple._2().getName());
 
                 // Create the fetcher
                 final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
@@ -372,7 +372,8 @@ public final class AtlasGeneratorHelper implements Serializable
                 throw new CoreException("Sectioning Raw Atlas {} failed!", tuple._2().getName(), e);
             }
 
-            logger.info("Finished sectioning raw Atlas {} in {}", tuple._1(), start.elapsedSince());
+            logger.info("Finished sectioning raw Atlas {} in {}", tuple._2().getName(),
+                    start.elapsedSince());
 
             // Report on memory usage
             logger.info("Printing memory after loading final Atlas {}", tuple._2().getName());
@@ -400,7 +401,7 @@ public final class AtlasGeneratorHelper implements Serializable
             // Grab the tuple contents
             final String shardName = tuple._1();
             final Atlas rawAtlas = tuple._2();
-            logger.info("Starting slicing raw Atlas {}", shardName);
+            logger.info("Starting slicing raw Atlas {}", rawAtlas.getName());
             final Time start = Time.now();
 
             try
@@ -426,7 +427,8 @@ public final class AtlasGeneratorHelper implements Serializable
                 throw new CoreException("Slicing raw Atlas {} failed!", rawAtlas.getName(), e);
             }
 
-            logger.info("Finished slicing raw Atlas {} in {}", shardName, start.elapsedSince());
+            logger.info("Finished slicing raw Atlas {} in {}", rawAtlas.getName(),
+                    start.elapsedSince());
 
             // Report on memory usage
             logger.info("Printing memory after loading sliced raw Atlas {}", rawAtlas.getName());
