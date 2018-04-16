@@ -3,15 +3,11 @@ package org.openstreetmap.atlas.generator;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
@@ -29,9 +25,9 @@ import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
-import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMapArchiver;
+import org.openstreetmap.atlas.geography.boundary.CountryShardListing;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
@@ -41,7 +37,6 @@ import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
-import org.openstreetmap.atlas.utilities.threads.Pool;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,41 +155,8 @@ public class AtlasGenerator extends SparkJob
     protected static List<AtlasGenerationTask> generateTasks(final StringList countries,
             final CountryBoundaryMap boundaryMap, final Sharding sharding)
     {
-        // Extract country boundaries and queue them
-        final BlockingQueue<CountryBoundary> queue = new LinkedBlockingQueue<>();
-        final MultiMapWithSet<String, Shard> countryToShardMap = new MultiMapWithSet<>();
-        countries.stream().forEach(country ->
-        {
-            // Initialize country-shard map
-            countryToShardMap.put(country, new HashSet<>());
-
-            // Fetch boundaries
-            final List<CountryBoundary> countryBoundaries = boundaryMap.countryBoundary(country);
-            if (countryBoundaries == null)
-            {
-                logger.error("No boundaries found for {}!", country);
-                return;
-            }
-
-            // Queue boundary for processing
-            countryBoundaries.forEach(queue::add);
-        });
-
-        // Use all available processors except one (used by main thread)
-        final int threadCount = Runtime.getRuntime().availableProcessors() - 1;
-        logger.info("Generating tasks with {} processors (threads).", threadCount);
-
-        // Start the execution pool to generate tasks
-        try (Pool processPool = new Pool(threadCount, "Atlas Task Generator"))
-        {
-            // Generate processors
-            IntStream.range(0, threadCount).forEach(index ->
-            {
-                processPool.queue(new AtlasGeneratorTaskProcessor(queue, sharding, boundaryMap,
-                        countryToShardMap));
-            });
-        }
-
+        final MultiMapWithSet<String, Shard> countryToShardMap = CountryShardListing
+                .countryToShardList(countries, boundaryMap, sharding);
         // Generate tasks from country-shard map
         final List<AtlasGenerationTask> tasks = new ArrayList<>();
         countryToShardMap.keySet().forEach(country ->
