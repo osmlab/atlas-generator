@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,7 +35,6 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.locale.IsoCountry;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -355,7 +353,7 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String country = countryShard.getCountry();
                 final Set<Shard> possibleShards = getAllShardsForCountry(tasks, country);
 
-                logger.info("Starting sectioning raw Atlas {}", tuple._2().getName());
+                logger.info("Started sectioning raw Atlas for {}", countryShardString);
 
                 // Create the fetcher
                 final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
@@ -369,14 +367,14 @@ public final class AtlasGeneratorHelper implements Serializable
             }
             catch (final Throwable e)
             {
-                throw new CoreException("Sectioning Raw Atlas {} failed!", tuple._2().getName(), e);
+                throw new CoreException("Sectioning Raw Atlas for {} failed!", tuple._1(), e);
             }
 
-            logger.info("Finished sectioning raw Atlas {} in {}", tuple._2().getName(),
+            logger.info("Finished sectioning raw Atlas for {} in {}", tuple._1(),
                     start.elapsedSince());
 
             // Report on memory usage
-            logger.info("Printing memory after loading final Atlas {}", tuple._2().getName());
+            logger.info("Printing memory after loading final Atlas for {}", tuple._1());
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
@@ -407,31 +405,29 @@ public final class AtlasGeneratorHelper implements Serializable
             try
             {
                 // Extract the country code
-                final Set<IsoCountry> isoCountries = new HashSet<>();
-                final Optional<IsoCountry> countryName = IsoCountry
-                        .forCountryCode(shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0]);
-                if (countryName.isPresent())
+                final String countryName = shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0];
+                if (countryName != null)
                 {
-                    isoCountries.add(countryName.get());
+                    // Slice the Atlas
+                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries)
+                            .slice(rawAtlas);
                 }
                 else
                 {
-                    logger.error("Unable to extract valid IsoCountry code from {}", shardName);
+                    slicedAtlas = null;
+                    logger.error("Unable to extract valid country code for {}", shardName);
                 }
-
-                // Slice the Atlas
-                slicedAtlas = new RawAtlasCountrySlicer(isoCountries, boundaries).slice(rawAtlas);
             }
+
             catch (final Throwable e)
             {
-                throw new CoreException("Slicing raw Atlas {} failed!", rawAtlas.getName(), e);
+                throw new CoreException("Slicing raw Atlas failed for {}", shardName, e);
             }
 
-            logger.info("Finished slicing raw Atlas {} in {}", rawAtlas.getName(),
-                    start.elapsedSince());
+            logger.info("Finished slicing raw Atlas for {} in {}", shardName, start.elapsedSince());
 
             // Report on memory usage
-            logger.info("Printing memory after loading sliced raw Atlas {}", rawAtlas.getName());
+            logger.info("Printing memory after loading sliced raw Atlas for {}", shardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
