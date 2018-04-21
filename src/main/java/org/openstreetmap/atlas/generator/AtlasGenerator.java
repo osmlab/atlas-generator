@@ -182,16 +182,28 @@ public class AtlasGenerator extends SparkJob
         final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
-        propertyMap.put(EDGE_CONFIGURATION.getName(), FileSystemHelper
-                .resource((String) command.get(EDGE_CONFIGURATION), sparkContext).all());
-        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), FileSystemHelper
-                .resource((String) command.get(WAY_SECTIONING_CONFIGURATION), sparkContext).all());
-        propertyMap.put(PBF_NODE_CONFIGURATION.getName(), FileSystemHelper
-                .resource((String) command.get(PBF_NODE_CONFIGURATION), sparkContext).all());
-        propertyMap.put(PBF_WAY_CONFIGURATION.getName(), FileSystemHelper
-                .resource((String) command.get(PBF_WAY_CONFIGURATION), sparkContext).all());
-        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), FileSystemHelper
-                .resource((String) command.get(PBF_RELATION_CONFIGURATION), sparkContext).all());
+
+        final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
+        propertyMap.put(EDGE_CONFIGURATION.getName(), edgeConfiguration == null ? null
+                : FileSystemHelper.resource(edgeConfiguration, sparkContext).all());
+
+        final String waySectioningConfiguration = (String) command
+                .get(WAY_SECTIONING_CONFIGURATION);
+        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), waySectioningConfiguration == null
+                ? null : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
+
+        final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
+        propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
+                : FileSystemHelper.resource(pbfNodeConfiguration, sparkContext).all());
+
+        final String pbfWayConfiguration = (String) command.get(PBF_WAY_CONFIGURATION);
+        propertyMap.put(PBF_WAY_CONFIGURATION.getName(), pbfWayConfiguration == null ? null
+                : FileSystemHelper.resource(pbfWayConfiguration, sparkContext).all());
+
+        final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
+        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), pbfRelationConfiguration == null
+                ? null : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
+
         propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
 
