@@ -20,6 +20,7 @@ import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutp
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
+import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
@@ -175,20 +176,22 @@ public class AtlasGenerator extends SparkJob
         return tasks;
     }
 
-    private static Map<String, String> extractAtlasLoadingProperties(final CommandMap command)
+    private static Map<String, String> extractAtlasLoadingProperties(final CommandMap command,
+            final Map<String, String> sparkContext)
     {
         final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
-        propertyMap.put(EDGE_CONFIGURATION.getName(), (String) command.get(EDGE_CONFIGURATION));
-        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(),
-                (String) command.get(WAY_SECTIONING_CONFIGURATION));
-        propertyMap.put(PBF_NODE_CONFIGURATION.getName(),
-                (String) command.get(PBF_NODE_CONFIGURATION));
-        propertyMap.put(PBF_WAY_CONFIGURATION.getName(),
-                (String) command.get(PBF_WAY_CONFIGURATION));
-        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
-                (String) command.get(PBF_RELATION_CONFIGURATION));
+        propertyMap.put(EDGE_CONFIGURATION.getName(), FileSystemHelper
+                .resource((String) command.get(EDGE_CONFIGURATION), sparkContext).all());
+        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), FileSystemHelper
+                .resource((String) command.get(WAY_SECTIONING_CONFIGURATION), sparkContext).all());
+        propertyMap.put(PBF_NODE_CONFIGURATION.getName(), FileSystemHelper
+                .resource((String) command.get(PBF_NODE_CONFIGURATION), sparkContext).all());
+        propertyMap.put(PBF_WAY_CONFIGURATION.getName(), FileSystemHelper
+                .resource((String) command.get(PBF_WAY_CONFIGURATION), sparkContext).all());
+        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), FileSystemHelper
+                .resource((String) command.get(PBF_RELATION_CONFIGURATION), sparkContext).all());
         propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
 
@@ -238,12 +241,6 @@ public class AtlasGenerator extends SparkJob
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
-        final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
-        final String waySectioningConfiguration = (String) command
-                .get(WAY_SECTIONING_CONFIGURATION);
-        final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
-        final String pbfWayConfiguration = (String) command.get(PBF_WAY_CONFIGURATION);
-        final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
         final boolean useRawAtlas = (boolean) command.get(USE_RAW_ATLAS);
 
         final String output = output(command);
@@ -269,13 +266,14 @@ public class AtlasGenerator extends SparkJob
         final List<AtlasGenerationTask> tasks = generateTasks(countries, boundaries, sharding);
         logger.debug("Generated {} tasks in {}.", tasks.size(), timer.elapsedSince());
 
+        // AtlasLoadingOption isn't serializable, neither is command map. To avoid duplicating
+        // boiler-plate code for creating the AtlasLoadingOption, extract the properties we need
+        // from the command map and pass those around to create the AtlasLoadingOption
+        final Map<String, String> atlasLoadingOptions = extractAtlasLoadingProperties(command,
+                sparkContext);
+
         if (useRawAtlas)
         {
-            // AtlasLoadingOption isn't serializable, neither is command map. To avoid duplicating
-            // boiler-plate code for creating the AtlasLoadingOption, extract the properties we need
-            // from the command map and pass those around to create the AtlasLoadingOption
-            final Map<String, String> atlasLoadingOptions = extractAtlasLoadingProperties(command);
-
             // Generate the raw Atlas and filter any null atlases
             final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
                     .parallelize(tasks, tasks.size())
@@ -375,37 +373,10 @@ public class AtlasGenerator extends SparkJob
                         // Get the country shard
                         final Shard shard = task.getShard();
                         // Build the AtlasLoadingOption
-                        final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
-                                .createOptionWithAllEnabled(boundaries)
+                        final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorHelper
+                                .buildAtlasLoadingOption(boundaries, sparkContext,
+                                        atlasLoadingOptions)
                                 .setAdditionalCountryCodes(countryName);
-
-                        // Apply all configurations
-                        if (edgeConfiguration != null)
-                        {
-                            atlasLoadingOption.setEdgeFilter(AtlasGeneratorHelper
-                                    .getTaggableFilterFrom(edgeConfiguration, sparkContext));
-                        }
-                        if (waySectioningConfiguration != null)
-                        {
-                            atlasLoadingOption
-                                    .setWaySectionFilter(AtlasGeneratorHelper.getTaggableFilterFrom(
-                                            waySectioningConfiguration, sparkContext));
-                        }
-                        if (pbfNodeConfiguration != null)
-                        {
-                            atlasLoadingOption.setOsmPbfNodeFilter(AtlasGeneratorHelper
-                                    .getTaggableFilterFrom(pbfNodeConfiguration, sparkContext));
-                        }
-                        if (pbfWayConfiguration != null)
-                        {
-                            atlasLoadingOption.setOsmPbfWayFilter(AtlasGeneratorHelper
-                                    .getTaggableFilterFrom(pbfWayConfiguration, sparkContext));
-                        }
-                        if (pbfRelationConfiguration != null)
-                        {
-                            atlasLoadingOption.setOsmPbfRelationFilter(AtlasGeneratorHelper
-                                    .getTaggableFilterFrom(pbfRelationConfiguration, sparkContext));
-                        }
 
                         // Build the appropriate PbfLoader
                         final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries,

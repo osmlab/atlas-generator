@@ -38,6 +38,7 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
@@ -163,6 +164,56 @@ public final class AtlasGeneratorHelper implements Serializable
                 return loadAtlas(fileFromNetwork);
             }
         };
+    }
+
+    protected static AtlasLoadingOption buildAtlasLoadingOption(final CountryBoundaryMap boundaries,
+            final Map<String, String> sparkContext, final Map<String, String> properties)
+    {
+        final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
+                .createOptionWithAllEnabled(boundaries);
+
+        // Apply all configurations
+        final String edgeConfiguration = properties
+                .get(AtlasGenerator.EDGE_CONFIGURATION.getName());
+        if (edgeConfiguration != null)
+        {
+            atlasLoadingOption
+                    .setEdgeFilter(getTaggableFilterFrom(new StringResource(edgeConfiguration)));
+        }
+
+        final String waySectioningConfiguration = properties
+                .get(AtlasGenerator.WAY_SECTIONING_CONFIGURATION.getName());
+        if (waySectioningConfiguration != null)
+        {
+            atlasLoadingOption.setWaySectionFilter(
+                    getTaggableFilterFrom(new StringResource(waySectioningConfiguration)));
+        }
+
+        final String pbfNodeConfiguration = properties
+                .get(AtlasGenerator.PBF_NODE_CONFIGURATION.getName());
+        if (pbfNodeConfiguration != null)
+        {
+            atlasLoadingOption.setOsmPbfNodeFilter(
+                    getTaggableFilterFrom(new StringResource(pbfNodeConfiguration)));
+        }
+
+        final String pbfWayConfiguration = properties
+                .get(AtlasGenerator.PBF_WAY_CONFIGURATION.getName());
+        if (pbfWayConfiguration != null)
+        {
+            atlasLoadingOption.setOsmPbfWayFilter(
+                    getTaggableFilterFrom(new StringResource(pbfWayConfiguration)));
+        }
+
+        final String pbfRelationConfiguration = properties
+                .get(AtlasGenerator.PBF_RELATION_CONFIGURATION.getName());
+        if (pbfRelationConfiguration != null)
+        {
+            atlasLoadingOption.setOsmPbfRelationFilter(
+                    getTaggableFilterFrom(new StringResource(pbfRelationConfiguration)));
+        }
+
+        return atlasLoadingOption;
     }
 
     /**
@@ -303,16 +354,16 @@ public final class AtlasGeneratorHelper implements Serializable
         };
     }
 
-    protected static StandardConfiguration getStandardConfigurationFrom(final String path,
-            final Map<String, String> configuration)
+    protected static StandardConfiguration getStandardConfigurationFrom(
+            final Resource configurationResource)
     {
-        return new StandardConfiguration(FileSystemHelper.resource(path, configuration));
+        return new StandardConfiguration(configurationResource);
     }
 
-    protected static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
-            final Map<String, String> configuration)
+    protected static ConfiguredTaggableFilter getTaggableFilterFrom(
+            final Resource configurationResource)
     {
-        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(path, configuration));
+        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
     }
 
     /**
@@ -434,56 +485,6 @@ public final class AtlasGeneratorHelper implements Serializable
             final Tuple2<String, Atlas> result = new Tuple2<>(tuple._1(), slicedAtlas);
             return result;
         };
-    }
-
-    private static AtlasLoadingOption buildAtlasLoadingOption(final CountryBoundaryMap boundaries,
-            final Map<String, String> sparkContext, final Map<String, String> properties)
-    {
-        final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
-                .createOptionWithAllEnabled(boundaries);
-
-        // Apply all configurations
-        final String edgeConfiguration = properties
-                .get(AtlasGenerator.EDGE_CONFIGURATION.getName());
-        if (edgeConfiguration != null)
-        {
-            atlasLoadingOption
-                    .setEdgeFilter(getTaggableFilterFrom(edgeConfiguration, sparkContext));
-        }
-
-        final String waySectioningConfiguration = properties
-                .get(AtlasGenerator.WAY_SECTIONING_CONFIGURATION.getName());
-        if (waySectioningConfiguration != null)
-        {
-            atlasLoadingOption.setWaySectionFilter(
-                    getTaggableFilterFrom(waySectioningConfiguration, sparkContext));
-        }
-
-        final String pbfNodeConfiguration = properties
-                .get(AtlasGenerator.PBF_NODE_CONFIGURATION.getName());
-        if (pbfNodeConfiguration != null)
-        {
-            atlasLoadingOption
-                    .setOsmPbfNodeFilter(getTaggableFilterFrom(pbfNodeConfiguration, sparkContext));
-        }
-
-        final String pbfWayConfiguration = properties
-                .get(AtlasGenerator.PBF_WAY_CONFIGURATION.getName());
-        if (pbfWayConfiguration != null)
-        {
-            atlasLoadingOption
-                    .setOsmPbfWayFilter(getTaggableFilterFrom(pbfWayConfiguration, sparkContext));
-        }
-
-        final String pbfRelationConfiguration = properties
-                .get(AtlasGenerator.PBF_RELATION_CONFIGURATION.getName());
-        if (pbfRelationConfiguration != null)
-        {
-            atlasLoadingOption.setOsmPbfRelationFilter(
-                    getTaggableFilterFrom(pbfRelationConfiguration, sparkContext));
-        }
-
-        return atlasLoadingOption;
     }
 
     private static boolean fileExists(final String path, final Map<String, String> configuration)
