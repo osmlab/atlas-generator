@@ -204,9 +204,6 @@ public class AtlasGenerator extends SparkJob
         propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), pbfRelationConfiguration == null
                 ? null : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
 
-        propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
-        propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
-
         return propertyMap;
     }
 
