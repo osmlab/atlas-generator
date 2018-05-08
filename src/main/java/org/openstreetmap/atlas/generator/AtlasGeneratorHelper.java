@@ -122,7 +122,26 @@ public final class AtlasGeneratorHelper implements Serializable
 
                     // FileSystemHelper.resource sets the Decompressor on the Resource for us, so
                     // this call will gunzip the file
-                    fileFromNetwork.copyTo(temporaryLocalFile);
+                    try
+                    {
+                        fileFromNetwork.copyTo(temporaryLocalFile);
+                    }
+                    catch (final Exception e)
+                    {
+                        final Optional<FileNotFoundException> fileNotFound = ExceptionSearch
+                                .find(FileNotFoundException.class).within(e);
+                        if (fileNotFound.isPresent())
+                        {
+                            // It's possible there is no Atlas file for a given shard
+                            logger.info("No Atlas file found at {}", path);
+                            return Optional.empty();
+                        }
+                        else
+                        {
+                            // There is something else going on, re-throw and continue
+                            throw e;
+                        }
+                    }
 
                     // Before making the move, check again if file is there or not
                     if (!fileFromTemporaryDirectory.exists())
@@ -173,8 +192,8 @@ public final class AtlasGeneratorHelper implements Serializable
                             .find(FileNotFoundException.class).within(e);
                     if (fileNotFound.isPresent())
                     {
-                        // It's possible there is no Atlas file for a given shard - handle this case
-                        logger.info("No Atlas file found at {}", atlasDirectory);
+                        // It's possible there is no Atlas file for a given shard
+                        logger.info("No Atlas file found at {}", path);
                         return Optional.empty();
                     }
                     else
