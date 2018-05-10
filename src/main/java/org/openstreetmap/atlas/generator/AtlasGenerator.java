@@ -1,7 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +34,12 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
+import org.openstreetmap.atlas.utilities.maps.MultiMap;
 import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
+import org.openstreetmap.atlas.utilities.scalars.Duration;
+import org.openstreetmap.atlas.utilities.threads.Pool;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +83,7 @@ public class AtlasGenerator extends SparkJob
     public static final String SHARD_DELTAS_REMOVED_FOLDER = "deltasRemoved";
 
     private static final String SHARDING_DEFAULT = "slippy@10";
+    private static final String COUNTRY_DELIMITER = "-";
 
     public static final Switch<StringList> COUNTRIES = new Switch<>("countries",
             "Comma separated list of countries to be included in the final Atlas",
@@ -142,7 +145,7 @@ public class AtlasGenerator extends SparkJob
     }
 
     /**
-     * Generates a {@link List} of {@link AtlasGenerationTask}s for given countries using given
+     * Generates a {@link MultiMap} of {@link AtlasGenerationTask}s for given countries using given
      * {@link CountryBoundaryMap} and {@link Sharding} strategy.
      *
      * @param countries
@@ -151,21 +154,22 @@ public class AtlasGenerator extends SparkJob
      *            {@link CountryBoundaryMap} to read country boundaries
      * @param sharding
      *            {@link Sharding} strategy
-     * @return {@link List} of {@link AtlasGenerationTask}s
+     * @return {@link MultiMap} of {@link AtlasGenerationTask}s per country
      */
-    protected static List<AtlasGenerationTask> generateTasks(final StringList countries,
+    protected static MultiMap<String, AtlasGenerationTask> generateTasks(final StringList countries,
             final CountryBoundaryMap boundaryMap, final Sharding sharding)
     {
         final MultiMapWithSet<String, Shard> countryToShardMap = CountryShardListing
                 .countryToShardList(countries, boundaryMap, sharding);
         // Generate tasks from country-shard map
-        final List<AtlasGenerationTask> tasks = new ArrayList<>();
+        final MultiMap<String, AtlasGenerationTask> tasks = new MultiMap<>();
         countryToShardMap.keySet().forEach(country ->
         {
             final Set<Shard> shards = countryToShardMap.get(country);
             if (!shards.isEmpty())
             {
-                shards.forEach(shard -> tasks.add(new AtlasGenerationTask(country, shard, shards)));
+                shards.forEach(shard -> tasks.add(country,
+                        new AtlasGenerationTask(country, shard, shards)));
             }
             else
             {
@@ -270,10 +274,11 @@ public class AtlasGenerator extends SparkJob
             boundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
         }
 
-        // Generate country-shard generation tasks
+        // Generate country-shard tasks
         final Time timer = Time.now();
-        final List<AtlasGenerationTask> tasks = generateTasks(countries, boundaries, sharding);
-        logger.debug("Generated {} tasks in {}.", tasks.size(), timer.elapsedSince());
+        final MultiMap<String, AtlasGenerationTask> countryTasks = generateTasks(countries,
+                boundaries, sharding);
+        logger.debug("Generated {} tasks in {}.", countryTasks.size(), timer.elapsedSince());
 
         // AtlasLoadingOption isn't serializable, neither is command map. To avoid duplicating
         // boiler-plate code for creating the AtlasLoadingOption, extract the properties we need
@@ -283,99 +288,26 @@ public class AtlasGenerator extends SparkJob
 
         if (useRawAtlas)
         {
-            // Generate the raw Atlas and filter any null atlases
-            final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
-                    .parallelize(tasks, tasks.size())
-                    .mapToPair(AtlasGeneratorHelper.generateRawAtlas(boundaries, sparkContext,
-                            atlasLoadingOptions, pbfContext, atlasScheme))
-                    .filter(tuple -> tuple._2() != null);
-
-            // Persist the RDD and save the intermediary state
-            countryRawAtlasShardsRDD.cache();
-            countryRawAtlasShardsRDD.saveAsHadoopFile(
-                    getAlternateSubFolderOutput(output, RAW_ATLAS_FOLDER), Text.class, Atlas.class,
-                    MultipleAtlasOutputFormat.class, new JobConf(configuration()));
-            logger.info("\n\n********** SAVED THE RAW ATLAS **********\n");
-
-            // Slice the raw Atlas and filter any null atlases
-            final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD = countryRawAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.sliceRawAtlas(boundaries))
-                    .filter(tuple -> tuple._2() != null);
-
-            // Persist the RDD and save the intermediary state
-            final String slicedRawAtlasPath = getAlternateSubFolderOutput(output,
-                    SLICED_RAW_ATLAS_FOLDER);
-            countrySlicedRawAtlasShardsRDD.cache();
-            countrySlicedRawAtlasShardsRDD.saveAsHadoopFile(slicedRawAtlasPath, Text.class,
-                    Atlas.class, MultipleAtlasOutputFormat.class, new JobConf(configuration()));
-            logger.info("\n\n********** SAVED THE SLICED RAW ATLAS **********\n");
-
-            // Remove the raw atlas RDD from cache since we've cached the sliced RDD
-            countryRawAtlasShardsRDD.unpersist();
-
-            // Section the sliced raw Atlas
-            final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countrySlicedRawAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.sectionRawAtlas(boundaries, sharding,
-                            sparkContext, atlasLoadingOptions, slicedRawAtlasPath, tasks));
-
-            // Persist the RDD and save the final atlas
-            countryAtlasShardsRDD.cache();
-            countryAtlasShardsRDD.saveAsHadoopFile(
-                    getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
-                    MultipleAtlasOutputFormat.class, new JobConf(configuration()));
-            logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
-
-            // Remove the sliced atlas RDD from cache since we've cached the final RDD
-            countrySlicedRawAtlasShardsRDD.unpersist();
-
-            // Create the metrics
-            final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(sharding));
-
-            // Persist the RDD and save
-            statisticsRDD.cache();
-            statisticsRDD.saveAsHadoopFile(
-                    getAlternateSubFolderOutput(output, SHARD_STATISTICS_FOLDER), Text.class,
-                    AtlasStatistics.class, MultipleAtlasStatisticsOutputFormat.class,
-                    new JobConf(configuration()));
-            logger.info("\n\n********** SAVED THE SHARD STATISTICS **********\n");
-
-            // Aggregate the metrics
-            final JavaPairRDD<String, AtlasStatistics> reducedStatisticsRDD = statisticsRDD
-                    .mapToPair(tuple ->
-                    {
-                        final String countryShardName = tuple._1();
-                        final String countryName = StringList.split(countryShardName, "_").get(0);
-                        return new Tuple2<>(countryName, tuple._2());
-                    }).reduceByKey(AtlasStatistics::merge);
-
-            // Save aggregated metrics
-            reducedStatisticsRDD.saveAsHadoopFile(
-                    getAlternateSubFolderOutput(output, COUNTRY_STATISTICS_FOLDER), Text.class,
-                    AtlasStatistics.class, MultipleAtlasCountryStatisticsOutputFormat.class,
-                    new JobConf(configuration()));
-            logger.info("\n\n********** SAVED THE COUNTRY STATISTICS **********\n");
-
-            // Compute the deltas, if needed
-            if (!previousOutputForDelta.isEmpty())
+            // Create a thread for each country and synchronize each country's Spark stage
+            try (Pool countryThreads = new Pool(countries.size(), "CountryWorker",
+                    Duration.MAXIMUM))
             {
-                final JavaPairRDD<String, AtlasDelta> deltasRDD = countryAtlasShardsRDD
-                        .flatMapToPair(AtlasGeneratorHelper.computeAtlasDelta(sparkContext,
-                                previousOutputForDelta));
-
-                // Save the deltas
-                deltasRDD.saveAsHadoopFile(getAlternateSubFolderOutput(output, SHARD_DELTAS_FOLDER),
-                        Text.class, AtlasDelta.class, RemovedMultipleAtlasDeltaOutputFormat.class,
-                        new JobConf(configuration()));
-                logger.info("\n\n********** SAVED THE DELTAS **********\n");
+                countries.forEach(country ->
+                {
+                    // Kick off a country job
+                    countryThreads.queue(getCountryJob(country, boundaries,
+                            countryTasks.get(country), sparkContext, atlasLoadingOptions,
+                            pbfContext, atlasScheme, output, pbfSharding, previousOutputForDelta));
+                });
             }
         }
         else
         {
             // Transform the map country name to shard to country name to Atlas
             // This is not enforced, but it has to be a 1-1 mapping here.
+            final List<AtlasGenerationTask> allTasks = countryTasks.allValues();
             final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = getContext()
-                    .parallelize(tasks, tasks.size()).mapToPair(task ->
+                    .parallelize(allTasks, allTasks.size()).mapToPair(task ->
                     {
                         // Get the country name
                         final String countryName = task.getCountry();
@@ -550,5 +482,123 @@ public class AtlasGenerator extends SparkJob
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS);
+    }
+
+    private Runnable getCountryJob(final String country, final CountryBoundaryMap boundaries,
+            final List<AtlasGenerationTask> tasks, final Map<String, String> sparkContext,
+            final Map<String, String> atlasLoadingOptions, final PbfContext pbfContext,
+            final SlippyTilePersistenceScheme atlasScheme, final String output,
+            final Sharding sharding, final String previousOutputForDelta)
+    {
+        return () ->
+        {
+            try
+            {
+                logger.info("Country {} started", country);
+
+                // Generate the raw Atlas and filter any null atlases
+                final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
+                        .parallelize(tasks, tasks.size())
+                        .mapToPair(AtlasGeneratorHelper.generateRawAtlas(boundaries, sparkContext,
+                                atlasLoadingOptions, pbfContext, atlasScheme))
+                        .filter(tuple -> tuple._2() != null);
+
+                // Persist the RDD and save the intermediary state
+                countryRawAtlasShardsRDD.cache();
+                countryRawAtlasShardsRDD.saveAsHadoopFile(
+                        getAlternateSubFolderOutput(output,
+                                RAW_ATLAS_FOLDER + COUNTRY_DELIMITER + country),
+                        Text.class, Atlas.class, MultipleAtlasOutputFormat.class,
+                        new JobConf(configuration()));
+                logger.info("\n\n********** SAVED THE RAW ATLAS **********\n");
+
+                // Slice the raw Atlas and filter any null atlases
+                final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD = countryRawAtlasShardsRDD
+                        .mapToPair(AtlasGeneratorHelper.sliceRawAtlas(country, boundaries))
+                        .filter(tuple -> tuple._2() != null);
+
+                // Persist the RDD and save the intermediary state
+                final String slicedRawAtlasPath = getAlternateSubFolderOutput(output,
+                        SLICED_RAW_ATLAS_FOLDER + COUNTRY_DELIMITER + country);
+                countrySlicedRawAtlasShardsRDD.cache();
+                countrySlicedRawAtlasShardsRDD.saveAsHadoopFile(slicedRawAtlasPath, Text.class,
+                        Atlas.class, MultipleAtlasOutputFormat.class, new JobConf(configuration()));
+                logger.info("\n\n********** SAVED THE SLICED RAW ATLAS **********\n");
+
+                // Remove the raw atlas RDD from cache since we've cached the sliced RDD
+                countryRawAtlasShardsRDD.unpersist();
+
+                // Section the sliced raw Atlas
+                final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countrySlicedRawAtlasShardsRDD
+                        .mapToPair(AtlasGeneratorHelper.sectionRawAtlas(boundaries, sharding,
+                                sparkContext, atlasLoadingOptions, slicedRawAtlasPath, tasks));
+
+                // Persist the RDD and save the final atlas
+                countryAtlasShardsRDD.cache();
+                countryAtlasShardsRDD.saveAsHadoopFile(
+                        getAlternateSubFolderOutput(output,
+                                ATLAS_FOLDER + COUNTRY_DELIMITER + country),
+                        Text.class, Atlas.class, MultipleAtlasOutputFormat.class,
+                        new JobConf(configuration()));
+                logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
+
+                // Remove the sliced atlas RDD from cache since we've cached the final RDD
+                countrySlicedRawAtlasShardsRDD.unpersist();
+
+                // Create the metrics
+                final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
+                        .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(sharding));
+
+                // Persist the RDD and save
+                statisticsRDD.cache();
+                statisticsRDD.saveAsHadoopFile(
+                        getAlternateSubFolderOutput(output,
+                                SHARD_STATISTICS_FOLDER + COUNTRY_DELIMITER + country),
+                        Text.class, AtlasStatistics.class,
+                        MultipleAtlasStatisticsOutputFormat.class, new JobConf(configuration()));
+                logger.info("\n\n********** SAVED THE SHARD STATISTICS **********\n");
+
+                // Aggregate the metrics
+                final JavaPairRDD<String, AtlasStatistics> reducedStatisticsRDD = statisticsRDD
+                        .mapToPair(tuple ->
+                        {
+                            final String countryShardName = tuple._1();
+                            final String countryName = StringList.split(countryShardName, "_")
+                                    .get(0);
+                            return new Tuple2<>(countryName, tuple._2());
+                        }).reduceByKey(AtlasStatistics::merge);
+
+                // Save aggregated metrics
+                reducedStatisticsRDD.saveAsHadoopFile(
+                        getAlternateSubFolderOutput(output,
+                                COUNTRY_STATISTICS_FOLDER + COUNTRY_DELIMITER + country),
+                        Text.class, AtlasStatistics.class,
+                        MultipleAtlasCountryStatisticsOutputFormat.class,
+                        new JobConf(configuration()));
+                logger.info("\n\n********** SAVED THE COUNTRY STATISTICS **********\n");
+
+                // Compute the deltas, if needed
+                if (!previousOutputForDelta.isEmpty())
+                {
+                    final JavaPairRDD<String, AtlasDelta> deltasRDD = countryAtlasShardsRDD
+                            .flatMapToPair(AtlasGeneratorHelper.computeAtlasDelta(sparkContext,
+                                    previousOutputForDelta));
+
+                    // Save the deltas
+                    deltasRDD.saveAsHadoopFile(
+                            getAlternateSubFolderOutput(output,
+                                    SHARD_DELTAS_FOLDER + "-" + country),
+                            Text.class, AtlasDelta.class,
+                            RemovedMultipleAtlasDeltaOutputFormat.class,
+                            new JobConf(configuration()));
+                    logger.info("\n\n********** SAVED THE DELTAS **********\n");
+                }
+            }
+            catch (final Throwable error)
+            {
+                throw new CoreException("Atlas Generation Spark Job failed for country {}", country,
+                        error);
+            }
+        };
     }
 }
