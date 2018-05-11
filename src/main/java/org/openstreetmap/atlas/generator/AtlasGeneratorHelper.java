@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.FileAlreadyExistsException;
@@ -19,6 +20,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.exception.ExceptionSearch;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemCreator;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
@@ -115,12 +117,31 @@ public final class AtlasGeneratorHelper implements Serializable
                     final File temporaryLocalFile = File
                             .temporary(getAtlasName(country, shard) + "-", ATLAS_EXTENSION);
 
-                    System.out.println("Downloaded atlas from " + path
-                            + " and is found as temp file " + temporaryLocalFile.getAbsolutePath());
+                    logger.info("Downloaded atlas from {} and is found as temp file {}", path,
+                            temporaryLocalFile.getAbsolutePath());
 
                     // FileSystemHelper.resource sets the Decompressor on the Resource for us, so
                     // this call will gunzip the file
-                    fileFromNetwork.copyTo(temporaryLocalFile);
+                    try
+                    {
+                        fileFromNetwork.copyTo(temporaryLocalFile);
+                    }
+                    catch (final Exception e)
+                    {
+                        final Optional<FileNotFoundException> fileNotFound = ExceptionSearch
+                                .find(FileNotFoundException.class).within(e);
+                        if (fileNotFound.isPresent())
+                        {
+                            // It's possible there is no Atlas file for a given shard
+                            logger.info("No Atlas file found at {}", path);
+                            return Optional.empty();
+                        }
+                        else
+                        {
+                            // There is something else going on, re-throw and continue
+                            throw e;
+                        }
+                    }
 
                     // Before making the move, check again if file is there or not
                     if (!fileFromTemporaryDirectory.exists())
@@ -150,8 +171,8 @@ public final class AtlasGeneratorHelper implements Serializable
             // If we were able to find the file on local disk, then load from there
             if (fileFromTemporaryDirectory.exists())
             {
-                System.out.println("AtlasExisted - Cache Hit: "
-                        + fileFromTemporaryDirectory.getAbsolutePath());
+                logger.info("Atlas exists - Cache Hit: {}",
+                        fileFromTemporaryDirectory.getAbsolutePath());
                 return loadAtlas(fileFromTemporaryDirectory);
             }
             else
@@ -161,7 +182,26 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String path = SparkFileHelper.combine(atlasDirectory,
                         String.format("%s%s", getAtlasName(country, shard), ATLAS_EXTENSION));
                 final Resource fileFromNetwork = FileSystemHelper.resource(path, sparkContext);
-                return loadAtlas(fileFromNetwork);
+                try
+                {
+                    return loadAtlas(fileFromNetwork);
+                }
+                catch (final Exception e)
+                {
+                    final Optional<FileNotFoundException> fileNotFound = ExceptionSearch
+                            .find(FileNotFoundException.class).within(e);
+                    if (fileNotFound.isPresent())
+                    {
+                        // It's possible there is no Atlas file for a given shard
+                        logger.info("No Atlas file found at {}", path);
+                        return Optional.empty();
+                    }
+                    else
+                    {
+                        // There is something else going on, re-throw and continue
+                        throw e;
+                    }
+                }
             }
         };
     }
