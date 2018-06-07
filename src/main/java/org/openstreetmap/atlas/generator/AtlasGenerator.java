@@ -137,8 +137,8 @@ public class AtlasGenerator extends SparkJob
     public static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
             "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
-    public static final Switch<String> FORCE_SLICING_CONFIGURATION = new Switch<>(
-            "forceSlicingConfiguration",
+    public static final Switch<String> SHOULD_ALWAYS_SLICE_CONFIGURATION = new Switch<>(
+            "shouldAlwaysSliceConfiguration",
             "The path to the configuration file that defines which entities on which country slicing will"
                     + " always be attempted regardless of the number of countries it intersects according to the"
                     + " country boundary map's grid index.",
@@ -262,11 +262,12 @@ public class AtlasGenerator extends SparkJob
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final boolean useRawAtlas = (boolean) command.get(USE_RAW_ATLAS);
-        final String forceSlicingConfiguration = (String) command.get(FORCE_SLICING_CONFIGURATION);
-        final Predicate<Taggable> forceSlicingPredicate = forceSlicingConfiguration == null
+        final String shouldAlwaysSliceConfiguration = (String) command
+                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
+        final Predicate<Taggable> shouldAlwaysSlicePredicate = shouldAlwaysSliceConfiguration == null
                 ? taggable -> false
                 : AtlasGeneratorHelper.getTaggableFilterFrom(
-                        FileSystemHelper.resource(forceSlicingConfiguration, sparkContext));
+                        FileSystemHelper.resource(shouldAlwaysSliceConfiguration, sparkContext));
         final String output = output(command);
 
         // This has to be converted here, as we need the Spark Context
@@ -283,7 +284,7 @@ public class AtlasGenerator extends SparkJob
                     countries);
             boundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
         }
-        boundaries.setForceSlicingPredicate(forceSlicingPredicate);
+        boundaries.setShouldAlwaysSlicePredicate(shouldAlwaysSlicePredicate);
 
         // Generate country-shard generation tasks
         final Time timer = Time.now();
@@ -565,6 +566,6 @@ public class AtlasGenerator extends SparkJob
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS,
-                FORCE_SLICING_CONFIGURATION);
+                SHOULD_ALWAYS_SLICE_CONFIGURATION);
     }
 }

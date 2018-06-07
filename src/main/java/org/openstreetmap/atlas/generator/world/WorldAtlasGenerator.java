@@ -53,8 +53,8 @@ public class WorldAtlasGenerator extends Command
     public static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
             "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
-    public static final Switch<String> FORCE_SLICING_CONFIGURATION = new Switch<>(
-            "forceSlicingConfiguration",
+    public static final Switch<String> SHOULD_ALWAYS_SLICE_CONFIGURATION = new Switch<>(
+            "shouldAlwaysSliceConfiguration",
             "The path to the configuration file that defines which entities on which country slicing will"
                     + " always be attempted regardless of the number of countries it intersects according to the"
                     + " country boundary map's grid index.",
@@ -75,11 +75,12 @@ public class WorldAtlasGenerator extends Command
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final Shard world = SlippyTile.ROOT;
-        final String forceSlicingConfiguration = (String) command.get(FORCE_SLICING_CONFIGURATION);
+        final String forceSlicingConfiguration = (String) command
+                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
         final Predicate<Taggable> forceSlicingPredicate = forceSlicingConfiguration == null
                 ? taggable -> false
                 : AtlasGeneratorHelper.getTaggableFilterFrom(new File(forceSlicingConfiguration));
-        countryBoundaryMap.setForceSlicingPredicate(forceSlicingPredicate);
+        countryBoundaryMap.setShouldAlwaysSlicePredicate(forceSlicingPredicate);
 
         final Time start = Time.now();
 
@@ -139,7 +140,7 @@ public class WorldAtlasGenerator extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(PBF, ATLAS, STATISTICS, BOUNDARIES, CODE_VERSION, DATA_VERSION,
-                FORCE_SLICING_CONFIGURATION);
+                SHOULD_ALWAYS_SLICE_CONFIGURATION);
     }
 
 }
