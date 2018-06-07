@@ -67,6 +67,18 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final String ATLAS_EXTENSION = FileSuffix.ATLAS.toString();
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
 
+    public static StandardConfiguration getStandardConfigurationFrom(
+            final Resource configurationResource)
+    {
+        return new StandardConfiguration(configurationResource);
+    }
+
+    public static ConfiguredTaggableFilter getTaggableFilterFrom(
+            final Resource configurationResource)
+    {
+        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
+    }
+
     /**
      * @param atlasDirectory
      *            The path of the folder containing the Atlas files, in format CTRY_z-x-y.atlas.gz
@@ -392,18 +404,6 @@ public final class AtlasGeneratorHelper implements Serializable
                     name + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(), atlas);
             return result;
         };
-    }
-
-    protected static StandardConfiguration getStandardConfigurationFrom(
-            final Resource configurationResource)
-    {
-        return new StandardConfiguration(configurationResource);
-    }
-
-    protected static ConfiguredTaggableFilter getTaggableFilterFrom(
-            final Resource configurationResource)
-    {
-        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
     }
 
     /**

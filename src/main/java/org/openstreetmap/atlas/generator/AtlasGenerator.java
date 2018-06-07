@@ -134,10 +134,10 @@ public class AtlasGenerator extends SparkJob
             "The path to the configuration file that defines which PBF Relations becomes an Atlas Entity",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     // TODO - once this is fully baked and tested, remove flag and old flow
-    private static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
+    public static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
             "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
-    private static final Switch<String> FORCE_SLICING_CONFIGURATION = new Switch<>(
+    public static final Switch<String> FORCE_SLICING_CONFIGURATION = new Switch<>(
             "forceSlicingConfiguration",
             "The path to the configuration file that defines which entities on which country slicing will"
                     + " always be attempted regardless of the number of countries it intersects according to the"

@@ -1,8 +1,10 @@
 package org.openstreetmap.atlas.generator.world;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.openstreetmap.atlas.generator.AtlasGeneratorHelper;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
@@ -17,6 +19,7 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
+import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command;
@@ -47,6 +50,15 @@ public class WorldAtlasGenerator extends Command
             "The code version", StringConverter.IDENTITY, Optionality.OPTIONAL, "unknown");
     public static final Switch<String> DATA_VERSION = new Switch<>("dataVersion",
             "The data version", StringConverter.IDENTITY, Optionality.OPTIONAL, "unknown");
+    public static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
+            "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
+            Optionality.OPTIONAL, "false");
+    public static final Switch<String> FORCE_SLICING_CONFIGURATION = new Switch<>(
+            "forceSlicingConfiguration",
+            "The path to the configuration file that defines which entities on which country slicing will"
+                    + " always be attempted regardless of the number of countries it intersects according to the"
+                    + " country boundary map's grid index.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
 
     public static void main(final String[] args)
     {
@@ -63,6 +75,11 @@ public class WorldAtlasGenerator extends Command
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final Shard world = SlippyTile.ROOT;
+        final String forceSlicingConfiguration = (String) command.get(FORCE_SLICING_CONFIGURATION);
+        final Predicate<Taggable> forceSlicingPredicate = forceSlicingConfiguration == null
+                ? taggable -> false
+                : AtlasGeneratorHelper.getTaggableFilterFrom(new File(forceSlicingConfiguration));
+        countryBoundaryMap.setForceSlicingPredicate(forceSlicingPredicate);
 
         final Time start = Time.now();
 
@@ -121,8 +138,8 @@ public class WorldAtlasGenerator extends Command
     @Override
     protected SwitchList switches()
     {
-        return new SwitchList().with(PBF, ATLAS, STATISTICS, BOUNDARIES, CODE_VERSION,
-                DATA_VERSION);
+        return new SwitchList().with(PBF, ATLAS, STATISTICS, BOUNDARIES, CODE_VERSION, DATA_VERSION,
+                FORCE_SLICING_CONFIGURATION);
     }
 
 }
