@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.hadoop.io.Text;
@@ -33,6 +34,7 @@ import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
@@ -132,9 +134,15 @@ public class AtlasGenerator extends SparkJob
             "The path to the configuration file that defines which PBF Relations becomes an Atlas Entity",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     // TODO - once this is fully baked and tested, remove flag and old flow
-    private static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
+    public static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
             "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
+    public static final Switch<String> SHOULD_ALWAYS_SLICE_CONFIGURATION = new Switch<>(
+            "shouldAlwaysSliceConfiguration",
+            "The path to the configuration file that defines which entities on which country slicing will"
+                    + " always be attempted regardless of the number of countries it intersects according to the"
+                    + " country boundary map's grid index.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
 
     public static void main(final String[] args)
     {
@@ -234,6 +242,9 @@ public class AtlasGenerator extends SparkJob
         // logger.info("##########$$$$$$$$$--" + clazz.getSimpleName() + ": "
         // + clazz.getProtectionDomain().getCodeSource() + ": "
         // + clazz.getProtectionDomain().getCodeSource().getLocation());
+
+        final Map<String, String> sparkContext = configurationMap();
+
         final StringList countries = (StringList) command.get(COUNTRIES);
         final String countryShapes = (String) command.get(COUNTRY_SHAPES);
         final String previousOutputForDelta = (String) command.get(PREVIOUS_OUTPUT_FOR_DELTA);
@@ -251,9 +262,13 @@ public class AtlasGenerator extends SparkJob
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final boolean useRawAtlas = (boolean) command.get(USE_RAW_ATLAS);
-
+        final String shouldAlwaysSliceConfiguration = (String) command
+                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
+        final Predicate<Taggable> shouldAlwaysSlicePredicate = shouldAlwaysSliceConfiguration == null
+                ? taggable -> false
+                : AtlasGeneratorHelper.getTaggableFilterFrom(
+                        FileSystemHelper.resource(shouldAlwaysSliceConfiguration, sparkContext));
         final String output = output(command);
-        final Map<String, String> sparkContext = configurationMap();
 
         // This has to be converted here, as we need the Spark Context
         final Resource countryBoundaries = resource(countryShapes);
@@ -269,6 +284,7 @@ public class AtlasGenerator extends SparkJob
                     countries);
             boundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
         }
+        boundaries.setShouldAlwaysSlicePredicate(shouldAlwaysSlicePredicate);
 
         // Generate country-shard generation tasks
         final Time timer = Time.now();
@@ -549,6 +565,7 @@ public class AtlasGenerator extends SparkJob
         return super.switches().with(COUNTRIES, COUNTRY_SHAPES, SHARDING_TYPE, PBF_PATH, PBF_SCHEME,
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
-                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS);
+                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS,
+                SHOULD_ALWAYS_SLICE_CONFIGURATION);
     }
 }
