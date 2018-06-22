@@ -475,13 +475,15 @@ public final class AtlasGeneratorHelper implements Serializable
     }
 
     /**
+     * @param country
+     *            The country being processed
      * @param boundaries
      *            The {@link CountryBoundaryMap} to use for slicing
      * @return a Spark {@link PairFunction} that processes a tuple of shard-name and raw atlas,
      *         slices the raw atlas and returns the sliced raw atlas for that shard name.
      */
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlas(
-            final CountryBoundaryMap boundaries)
+            final String country, final CountryBoundaryMap boundaries)
     {
         return tuple ->
         {
@@ -495,21 +497,8 @@ public final class AtlasGeneratorHelper implements Serializable
 
             try
             {
-                // Extract the country code
-                final String countryName = shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0];
-                if (countryName != null)
-                {
-                    // Slice the Atlas
-                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries)
-                            .slice(rawAtlas);
-                }
-                else
-                {
-                    slicedAtlas = null;
-                    logger.error("Unable to extract valid country code for {}", shardName);
-                }
+                slicedAtlas = new RawAtlasCountrySlicer(country, boundaries).slice(rawAtlas);
             }
-
             catch (final Throwable e)
             {
                 throw new CoreException("Slicing raw Atlas failed for {}", shardName, e);

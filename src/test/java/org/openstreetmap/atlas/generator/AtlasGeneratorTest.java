@@ -12,6 +12,7 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.utilities.maps.MultiMap;
 
 /**
  * Tests for {@link AtlasGenerator}.
@@ -75,15 +76,16 @@ public class AtlasGeneratorTest
     private void testCountry(final StringList countries, final CountryBoundaryMap boundaryMap,
             final int expectedTaskSize)
     {
-        final List<AtlasGenerationTask> tasks = AtlasGenerator.generateTasks(countries, boundaryMap,
-                SHARDING);
-        Assert.assertEquals(expectedTaskSize, tasks.size());
+        final MultiMap<String, AtlasGenerationTask> tasks = AtlasGenerator.generateTasks(countries,
+                boundaryMap, SHARDING);
+        final List<AtlasGenerationTask> allTasks = tasks.allValues();
+        Assert.assertEquals(expectedTaskSize, allTasks.size());
 
         // Verify that tasks have the same set of shards for the country
-        verifyAllShardEquality(tasks);
+        verifyAllShardEquality(allTasks);
 
         // Verify no shard is missed from tasks
-        verifyNoShardIsMissing(tasks);
+        verifyNoShardIsMissing(allTasks);
     }
 
     private void verifyAllShardEquality(final List<AtlasGenerationTask> tasks)
