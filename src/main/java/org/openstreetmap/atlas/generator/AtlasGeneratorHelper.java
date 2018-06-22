@@ -189,8 +189,8 @@ public final class AtlasGeneratorHelper implements Serializable
             }
             else
             {
-                logger.debug("Falling back to Atlas file hosted on {} for shard {}.", atlasDirectory,
-                        shard.getName());
+                logger.debug("Falling back to Atlas file hosted on {} for shard {}.",
+                        atlasDirectory, shard.getName());
                 final String path = SparkFileHelper.combine(atlasDirectory,
                         String.format("%s%s", getAtlasName(country, shard), ATLAS_EXTENSION));
                 final Resource fileFromNetwork = FileSystemHelper.resource(path, sparkContext);
