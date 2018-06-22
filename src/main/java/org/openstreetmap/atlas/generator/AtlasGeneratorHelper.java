@@ -129,7 +129,7 @@ public final class AtlasGeneratorHelper implements Serializable
                     final File temporaryLocalFile = File
                             .temporary(getAtlasName(country, shard) + "-", ATLAS_EXTENSION);
 
-                    logger.info("Downloaded atlas from {} and is found as temp file {}", path,
+                    logger.debug("Downloaded atlas from {} and is found as temp file {}", path,
                             temporaryLocalFile.getAbsolutePath());
 
                     // FileSystemHelper.resource sets the Decompressor on the Resource for us, so
@@ -145,7 +145,7 @@ public final class AtlasGeneratorHelper implements Serializable
                         if (fileNotFound.isPresent())
                         {
                             // It's possible there is no Atlas file for a given shard
-                            logger.info("No Atlas file found at {}", path);
+                            logger.debug("No Atlas file found at {}", path);
                             return Optional.empty();
                         }
                         else
@@ -183,13 +183,13 @@ public final class AtlasGeneratorHelper implements Serializable
             // If we were able to find the file on local disk, then load from there
             if (fileFromTemporaryDirectory.exists())
             {
-                logger.info("Atlas exists - Cache Hit: {}",
+                logger.debug("Atlas exists - Cache Hit: {}",
                         fileFromTemporaryDirectory.getAbsolutePath());
                 return loadAtlas(fileFromTemporaryDirectory);
             }
             else
             {
-                logger.warn("Falling back to Atlas file hosted on {} for shard {}.", atlasDirectory,
+                logger.debug("Falling back to Atlas file hosted on {} for shard {}.", atlasDirectory,
                         shard.getName());
                 final String path = SparkFileHelper.combine(atlasDirectory,
                         String.format("%s%s", getAtlasName(country, shard), ATLAS_EXTENSION));
@@ -205,7 +205,7 @@ public final class AtlasGeneratorHelper implements Serializable
                     if (fileNotFound.isPresent())
                     {
                         // It's possible there is no Atlas file for a given shard
-                        logger.info("No Atlas file found at {}", path);
+                        logger.debug("No Atlas file found at {}", path);
                         return Optional.empty();
                     }
                     else
@@ -536,7 +536,7 @@ public final class AtlasGeneratorHelper implements Serializable
         }
         catch (IllegalArgumentException | IOException e)
         {
-            logger.warn("can't determine if {} exists", path);
+            logger.warn("Can't determine if {} exists", path);
             return false;
         }
     }
