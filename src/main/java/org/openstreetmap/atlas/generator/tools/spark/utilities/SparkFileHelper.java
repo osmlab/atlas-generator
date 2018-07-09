@@ -228,9 +228,9 @@ public class SparkFileHelper implements Serializable
     /**
      * Returns an Atlas {@link Resource} for the given location URI string. The resource is resolve
      * and returned if the URI points to single resource, not a resource directory, that conforms to
-     * a path defined by at least one of the provided {@link PathFilter}s. The {@link PathFilter}s
-     * provide a way to find well known data types that can be used either directly as or
-     * transformed to an Atlas.
+     * a path defined by one of the provided {@link PathFilter}s. The {@link PathFilter}s provide a
+     * way to find well known data types that can be used either directly as or transformed to an
+     * Atlas. With no filters, the file is collected.
      *
      * @param uri
      *            the location of the Atlas datasource
