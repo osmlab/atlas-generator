@@ -242,7 +242,7 @@ public class SparkFileHelper implements Serializable
     {
         final Path path = new Path(uri);
         Resource resource = null;
-        if (Stream.of(filters).anyMatch(filter -> filter.accept(path)))
+        if (filters.length == 0 || Stream.of(filters).anyMatch(filter -> filter.accept(path)))
         {
             final String schema = URI.create(uri).getScheme();
             if ("http".equals(schema) || "https".equals(schema))
