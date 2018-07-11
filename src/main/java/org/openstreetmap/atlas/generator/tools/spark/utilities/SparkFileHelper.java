@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
@@ -242,7 +243,8 @@ public class SparkFileHelper implements Serializable
     {
         final Path path = new Path(uri);
         Resource resource = null;
-        if (filters.length == 0 || Stream.of(filters).anyMatch(filter -> filter.accept(path)))
+        if (ArrayUtils.isEmpty(filters)
+                || Stream.of(filters).anyMatch(filter -> filter.accept(path)))
         {
             final String schema = URI.create(uri).getScheme();
             if ("http".equals(schema) || "https".equals(schema))
