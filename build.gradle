@@ -1,24 +1,21 @@
-buildscript {
-    dependencies {
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:3.4.0'
-    }
-}
-
-// Used to promote a staging release build
-// https://github.com/Codearte/gradle-nexus-staging-plugin
-// gradle closeAndReleaseRepository
-plugins
-{
-    id "io.codearte.nexus-staging" version "0.8.0"
+plugins {
+	id 'java'
+	id 'maven'
+	id 'idea'
+	id 'signing'
+	id 'checkstyle'
+	id 'jacoco'
+	id "com.diffplug.gradle.spotless" version "3.4.0"
+	id 'org.sonarqube' version '2.6'
+	id 'com.google.protobuf' version '0.8.1'
+	id "io.codearte.nexus-staging" version "0.8.0"
 }
 
 apply from: 'dependencies.gradle'
-apply plugin: 'java'
-apply plugin: 'checkstyle'
-apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: "com.diffplug.gradle.spotless"
-apply plugin: 'idea'
+apply from: 'gradle/quality.gradle'
+apply from: 'gradle/deployment.gradle'
+
+description = "Atlas Generator Library"
 
 sourceCompatibility=1.8
 targetCompatibility=1.8
@@ -34,57 +31,6 @@ repositories
     maven { url "http://repository.cloudera.com/cloudera/cloudera-repos/" }
 }
 
-idea {
-    project {
-        languageLevel = '1.8'
-    }
-}
-
-spotless {
-   java {
-      importOrder(['static java', 'static javax', 'static org', 'static com', 'static scala', 'java', 'javax', 'org', 'com', 'scala'])
-      removeUnusedImports()
-      eclipse().configFile 'config/format/code_format.xml'
-   }
-}
-
-// corresponds to POM description
-description = "Atlas Library"
-
-// This is to skip the tasks for which there is a skip<TaskName>=true environment variable
-def skippedTaskNames = System.getenv().findAll { key, value ->
-    key.startsWith("skip") && value.equalsIgnoreCase("true")
-}.keySet().collect { it.substring(4) }
-
-gradle.startParameter.excludedTaskNames += skippedTaskNames
-
-checkstyle
-{
-    toolVersion = versions.checkstyle
-}
-
-sourceSets
-{
-    integrationTest
-    {
-        java
-        {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir file('src/integrationTest/java')
-        }
-        resources.srcDir file('src/integrationTest/resources')
-    }
-}
-
-test
-{
-    testLogging
-    {
-        events "passed", "skipped", "failed"
-        exceptionFormat = 'full'
-    }
-}
 
 configurations
 {
@@ -109,8 +55,6 @@ configurations
         exclude group: 'org.apache.hadoop'
         exclude group: 'org.apache.spark'
     }
-    integrationTestCompile.extendsFrom testCompile
-    integrationTestRuntime.extendsFrom testRuntime
 }
 
 dependencies
@@ -119,35 +63,6 @@ dependencies
     compile packages.spark.core
     
     shaded project.configurations.getByName('compile')
-}
-
-task integrationTest(type: Test) {
-    testClassesDir = sourceSets.integrationTest.output.classesDir
-    classpath = sourceSets.integrationTest.runtimeClasspath
-    testLogging
-    {
-        events "passed", "skipped", "failed"
-    }
-}
-
-check.dependsOn integrationTest
-integrationTest.mustRunAfter test
-
-tasks.withType(Test) {
-    reports.html.destination = file("${reporting.baseDir}/${name}")
-}
-
-/**
- * Artifact related items
- */
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
-
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
 }
 
 task shaded(type: Jar){
@@ -188,84 +103,35 @@ task fat(type: Jar){
     zip64 = true
 }
 
+/**
+ * Artifact related items
+ */
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 artifacts
 {
     archives javadocJar, sourcesJar
 }
 
-/**
- * Deployment related items
+/*
+ * This is to skip the tasks for which there is a skip<TaskName>=true
+ * environment variable
  */
-import org.gradle.plugins.signing.Sign
+def skippedTaskNames = System.getenv().findAll { key, value ->
+    key.startsWith("skip") && value.equalsIgnoreCase("true")
+}.keySet().collect { it.substring(4) }
+gradle.startParameter.excludedTaskNames += skippedTaskNames
 
-gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.allTasks.any { it instanceof Sign }) {
-        allprojects { ext."signing.keyId" = System.getenv('GPG_KEY_ID') }
-        allprojects { ext."signing.secretKeyRingFile" = System.getenv('GPG_KEY_LOCATION') }
-        allprojects { ext."signing.password" = System.getenv('GPG_PASSPHRASE') }
-    }
-    // Do not sign archives by default (a local build without gpg keyring should succeed)
-    if (taskGraph.allTasks.any { it.name == 'build' || it.name == 'assemble' }) {
-        tasks.findAll { it.name == 'signArchives' || it.name == 'signDocsJar' || it.name == 'signTestJar' }.each { task ->
-            task.enabled = false
-        }
+idea {
+    project {
+        languageLevel = '1.8'
     }
 }
-
-signing
-{
-    sign configurations.archives
-}
-build.dependsOn.remove(signArchives)
-
-uploadArchives
-{
-    repositories
-    {
-        mavenDeployer
-        {
-            beforeDeployment
-            {
-                MavenDeployment deployment -> signing.signPom(deployment)
-            }
-
-            repository(url: maven2_url) {
-                authentication(userName: System.getenv('SONATYPE_USERNAME'), password: System.getenv('SONATYPE_PASSWORD'))
-            }
-
-            snapshotRepository(url: snapshot_url) {
-                authentication(userName: System.getenv('SONATYPE_USERNAME'), password: System.getenv('SONATYPE_PASSWORD'))
-            }
-
-            pom.project
-            {
-                name project_name
-                packaging 'jar'
-                // optionally artifactId can be defined here
-                description project_description
-                url project_url
-
-                scm {
-                    connection project_scm
-                    developerConnection project_scm
-                    url project_url
-                }
-
-                licenses {
-                    license {
-                        name project_license_slug
-                        url project_license_url
-                    }
-                }
-
-                developers {
-                    developer {
-                        id project_developer
-                        name project_developer
-                    }
-                }
-            }
-        }
-    }
-}
-
