@@ -7,7 +7,6 @@ plugins {
 	id 'jacoco'
 	id "com.diffplug.gradle.spotless" version "3.4.0"
 	id 'org.sonarqube' version '2.6'
-	id 'com.google.protobuf' version '0.8.1'
 	id "io.codearte.nexus-staging" version "0.8.0"
 }
 
@@ -61,7 +60,7 @@ dependencies
 {
     compile packages.atlas
     compile packages.spark.core
-    
+
     shaded project.configurations.getByName('compile')
 }
 
