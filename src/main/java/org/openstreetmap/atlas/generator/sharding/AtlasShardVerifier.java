@@ -4,7 +4,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.openstreetmap.atlas.exception.CoreException;
-import org.openstreetmap.atlas.geography.atlas.Atlas;
+import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.writers.SafeBufferedWriter;
@@ -38,7 +38,7 @@ public class AtlasShardVerifier extends Command
         @SuppressWarnings("unchecked")
         final Set<CountryShard> expectedShards = (Set<CountryShard>) command.get(EXPECTED_SHARDS);
         final Set<CountryShard> existingShards = atlasFolder.listFilesRecursively().stream()
-                .filter(Atlas::isAtlas).map(File::getName)
+                .filter(AtlasResourceLoader.IS_ATLAS).map(File::getName)
                 .map(name -> StringList.split(name, ".").get(0)).map(CountryShard::forName)
                 .collect(Collectors.toSet());
         expectedShards.removeAll(existingShards);
