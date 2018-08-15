@@ -65,6 +65,8 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             throw new CoreException("Bad URI syntax: {}", atlasURIString, exception);
         }
 
+        // this is bad because GLOBAL_STRATEGY is not synchronized properly here
+        // synchronization occurs at instance level on ConcurrentResourceCache
         return this.get(atlasURI);
     }
 }
