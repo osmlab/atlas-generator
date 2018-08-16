@@ -7,8 +7,6 @@ import java.util.Optional;
 
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
-import org.openstreetmap.atlas.geography.atlas.Atlas;
-import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -55,7 +53,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
      *            The {@link Shard} object representing the shard
      * @return an {@link Optional} wrapping the shard
      */
-    public Optional<Atlas> get(final String country, final Shard shard)
+    public Optional<Resource> get(final String country, final Shard shard)
     {
         final String atlasName = String.format("%s_%s", country, shard.getName());
         final String atlasURIString = this.parentAtlasPath + "/" + country + "/" + atlasName
@@ -71,13 +69,6 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             throw new CoreException("Bad URI syntax: {}", atlasURIString, exception);
         }
 
-        final Optional<Resource> atlasResourceOptional = this.get(atlasURI);
-
-        if (!atlasResourceOptional.isPresent())
-        {
-            return Optional.empty();
-        }
-
-        return Optional.ofNullable(new AtlasResourceLoader().load(atlasResourceOptional.get()));
+        return this.get(atlasURI);
     }
 }
