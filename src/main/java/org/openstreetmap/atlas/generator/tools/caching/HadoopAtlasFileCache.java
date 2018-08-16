@@ -24,12 +24,6 @@ import org.slf4j.LoggerFactory;
  */
 public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
-    /**
-     * This field can be static since there is only 1 global filesystem! The advantage to this
-     * approach is that all instances of {@link HadoopAtlasFileCache} will share the same underlying
-     * file cache, and so cross-cache hits are possible (and desired!).
-     */
-    private static final SystemTemporaryFileCachingStrategy GLOBAL_STRATEGY = new SystemTemporaryFileCachingStrategy();
     private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
 
     private final String parentAtlasPath;
@@ -45,10 +39,20 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Map<String, String> configuration)
     {
-        super(GLOBAL_STRATEGY, uri -> FileSystemHelper.resource(uri.toString(), configuration));
+        super(new SystemTemporaryFileCachingStrategy(),
+                uri -> FileSystemHelper.resource(uri.toString(), configuration));
         this.parentAtlasPath = parentAtlasPath;
     }
 
+    /**
+     * Get an {@link Optional} of an atlas resource specified by the given parameters.
+     * 
+     * @param country
+     *            The ISO country code of the desired shard
+     * @param shard
+     *            The {@link Shard} object representing the shard
+     * @return an {@link Optional} wrapping the shard
+     */
     public Optional<Resource> get(final String country, final Shard shard)
     {
         final String atlasName = String.format("%s_%s", country, shard.getName());
@@ -65,8 +69,6 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             throw new CoreException("Bad URI syntax: {}", atlasURIString, exception);
         }
 
-        // this is bad because GLOBAL_STRATEGY is not synchronized properly here
-        // synchronization occurs at instance level on ConcurrentResourceCache
         return this.get(atlasURI);
     }
 }
