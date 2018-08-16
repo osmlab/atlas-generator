@@ -20,22 +20,30 @@ import org.openstreetmap.atlas.utilities.scalars.Duration;
  * Readable and Writable resource for HDFS files
  *
  * @author cuthbertm
+ * @author sbhalekar
  */
 public class HDFSFile extends AbstractWritableResource
 {
     private static final int DEFAULT_RETRIES = 3;
     private static final Duration DEFAULT_RETRYWAIT = Duration.seconds(2);
 
+    private static String HDFS_PATH_FORMAT = "hdfs://%s:%d/%s";
     private final Path path;
     private final FileSystem system;
     private boolean appendToFile = false;
     private int retries = DEFAULT_RETRIES;
+
     private Duration retryWait = DEFAULT_RETRYWAIT;
 
     public HDFSFile(final Path path) throws IOException
     {
+        this(path, new Configuration());
+    }
+
+    public HDFSFile(final Path path, final Configuration configuration) throws IOException
+    {
         this.path = path;
-        this.system = FileSystem.get(path.toUri(), new Configuration());
+        this.system = FileSystem.get(path.toUri(), configuration);
         FileSuffix.suffixFor(path.getName()).ifPresent(suffix ->
         {
             if (suffix == FileSuffix.GZIP)
@@ -51,10 +59,21 @@ public class HDFSFile extends AbstractWritableResource
         this(new Path(path));
     }
 
+    public HDFSFile(final String path, final Configuration configuration) throws IOException
+    {
+        this(new Path(path), configuration);
+    }
+
     public HDFSFile(final String server, final int port, final String path)
             throws URISyntaxException, IOException
     {
-        this(new Path(String.format("hdfs://%s:%d/%s", server, port, path)));
+        this(new Path(String.format(HDFS_PATH_FORMAT, server, port, path)));
+    }
+
+    public HDFSFile(final String server, final int port, final String path,
+            final Configuration configuration) throws URISyntaxException, IOException
+    {
+        this(new Path(String.format(HDFS_PATH_FORMAT, server, port, path)), configuration);
     }
 
     public boolean exists()
