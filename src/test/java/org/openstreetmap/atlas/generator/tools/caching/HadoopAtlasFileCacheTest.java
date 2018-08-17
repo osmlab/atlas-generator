@@ -50,7 +50,7 @@ public class HadoopAtlasFileCacheTest
         }
         finally
         {
-            parentAtlas.deleteRecursively();
+            parent.deleteRecursively();
         }
     }
 }
