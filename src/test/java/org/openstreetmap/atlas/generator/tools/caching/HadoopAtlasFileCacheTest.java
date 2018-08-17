@@ -10,6 +10,9 @@ import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author lcram
+ */
 public class HadoopAtlasFileCacheTest
 {
     private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCacheTest.class);
@@ -31,12 +34,14 @@ public class HadoopAtlasFileCacheTest
             final String path = "file://" + parentAtlas.toString();
             final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(path, new HashMap<>());
 
+            // cache miss, this will create the cached copy
             final Resource resource1 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource2 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
             Assert.assertEquals("1", resource1.firstLine());
             Assert.assertEquals("2", resource2.firstLine());
 
+            // cache hit, using cached copy
             final Resource resource3 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource4 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
