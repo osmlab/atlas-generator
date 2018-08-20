@@ -8,6 +8,9 @@ import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.util.Progressable;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 
+/**
+ * @author lcram
+ */
 public class MultipleAtlasProtoOutputFormat extends AbstractMultipleAtlasBasedOutputFormat<Atlas>
 {
     private AtlasProtoOutputFormat format = null;
