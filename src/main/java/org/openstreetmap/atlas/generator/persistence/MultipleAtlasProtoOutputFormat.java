@@ -25,5 +25,4 @@ public class MultipleAtlasProtoOutputFormat extends AbstractMultipleAtlasBasedOu
         }
         return this.format.getRecordWriter(fileSystem, job, name, progress);
     }
-
 }

@@ -14,7 +14,6 @@ import org.openstreetmap.atlas.streaming.resource.FileSuffix;
  */
 public class AtlasProtoOutputFormat extends AbstractFileOutputFormat<Atlas>
 {
-
     @Override
     protected String fileExtension()
     {
