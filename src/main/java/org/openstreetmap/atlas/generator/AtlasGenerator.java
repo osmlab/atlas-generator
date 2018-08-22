@@ -144,9 +144,8 @@ public class AtlasGenerator extends SparkJob
                     + " always be attempted regardless of the number of countries it intersects according to the"
                     + " country boundary map's grid index.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
-    // TODO - once we have the OK to go proto, change the default value of this switch to "true"
-    public static final Switch<Boolean> USE_PROTO_FORMAT = new Switch<>("useProtoFormat",
-            "Generate the atlas files using the protocol buffer atlas format.",
+    public static final Switch<Boolean> USE_JAVA_FORMAT = new Switch<>("useJavaFormat",
+            "Generate the atlas files using the java serialization atlas format (as opposed to the protobuf format).",
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
 
     public static void main(final String[] args)
@@ -270,11 +269,10 @@ public class AtlasGenerator extends SparkJob
         final String shouldAlwaysSliceConfiguration = (String) command
                 .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
         final Predicate<Taggable> shouldAlwaysSlicePredicate = shouldAlwaysSliceConfiguration == null
-                ? taggable -> false
-                : AtlasGeneratorHelper.getTaggableFilterFrom(
+                ? taggable -> false : AtlasGeneratorHelper.getTaggableFilterFrom(
                         FileSystemHelper.resource(shouldAlwaysSliceConfiguration, sparkContext));
         final String output = output(command);
-        final boolean useProtoFormat = (boolean) command.get(USE_PROTO_FORMAT);
+        final boolean useJavaFormat = (boolean) command.get(USE_JAVA_FORMAT);
 
         // This has to be converted here, as we need the Spark Context
         final Resource countryBoundaries = resource(countryShapes);
@@ -342,17 +340,17 @@ public class AtlasGenerator extends SparkJob
 
             // Persist the RDD and save the final atlas
             countryAtlasShardsRDD.cache();
-            if (useProtoFormat)
+            if (useJavaFormat)
             {
                 countryAtlasShardsRDD.saveAsHadoopFile(
                         getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
-                        MultipleAtlasProtoOutputFormat.class, new JobConf(configuration()));
+                        MultipleAtlasOutputFormat.class, new JobConf(configuration()));
             }
             else
             {
                 countryAtlasShardsRDD.saveAsHadoopFile(
                         getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
-                        MultipleAtlasOutputFormat.class, new JobConf(configuration()));
+                        MultipleAtlasProtoOutputFormat.class, new JobConf(configuration()));
             }
             logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
 
@@ -552,17 +550,17 @@ public class AtlasGenerator extends SparkJob
             // splitAndSaveAsHadoopFile(countryNonNullAtlasShardsRDD,
             // getAlternateParallelFolderOutput(output, ATLAS_FOLDER), Atlas.class,
             // MultipleAtlasOutputFormat.class, new CountrySplitter());
-            if (useProtoFormat)
+            if (useJavaFormat)
             {
                 countryNonNullAtlasShardsRDD.saveAsHadoopFile(
                         getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
-                        MultipleAtlasProtoOutputFormat.class, new JobConf(configuration()));
+                        MultipleAtlasOutputFormat.class, new JobConf(configuration()));
             }
             else
             {
                 countryNonNullAtlasShardsRDD.saveAsHadoopFile(
                         getAlternateSubFolderOutput(output, ATLAS_FOLDER), Text.class, Atlas.class,
-                        MultipleAtlasOutputFormat.class, new JobConf(configuration()));
+                        MultipleAtlasProtoOutputFormat.class, new JobConf(configuration()));
             }
             logger.info("\n\n********** SAVED THE ATLAS **********\n");
         }
@@ -591,6 +589,6 @@ public class AtlasGenerator extends SparkJob
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME, USE_RAW_ATLAS,
-                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_PROTO_FORMAT);
+                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT);
     }
 }
