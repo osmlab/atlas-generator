@@ -269,7 +269,8 @@ public class AtlasGenerator extends SparkJob
         final String shouldAlwaysSliceConfiguration = (String) command
                 .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
         final Predicate<Taggable> shouldAlwaysSlicePredicate = shouldAlwaysSliceConfiguration == null
-                ? taggable -> false : AtlasGeneratorHelper.getTaggableFilterFrom(
+                ? taggable -> false
+                : AtlasGeneratorHelper.getTaggableFilterFrom(
                         FileSystemHelper.resource(shouldAlwaysSliceConfiguration, sparkContext));
         final String output = output(command);
         final boolean useJavaFormat = (boolean) command.get(USE_JAVA_FORMAT);
