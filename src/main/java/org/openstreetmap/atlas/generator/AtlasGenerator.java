@@ -202,8 +202,7 @@ public class AtlasGenerator extends SparkJob
         final String waySectioningConfiguration = (String) command
                 .get(WAY_SECTIONING_CONFIGURATION);
         propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), waySectioningConfiguration == null
-                ? null
-                : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
+                ? null : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
 
         final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
         propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
@@ -214,9 +213,8 @@ public class AtlasGenerator extends SparkJob
                 : FileSystemHelper.resource(pbfWayConfiguration, sparkContext).all());
 
         final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
-        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
-                pbfRelationConfiguration == null ? null
-                        : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
+        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), pbfRelationConfiguration == null
+                ? null : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
 
         return propertyMap;
     }
@@ -263,8 +261,7 @@ public class AtlasGenerator extends SparkJob
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(pbfShardingName, configuration())
-                : sharding;
+                ? AtlasSharding.forString(pbfShardingName, configuration()) : sharding;
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
