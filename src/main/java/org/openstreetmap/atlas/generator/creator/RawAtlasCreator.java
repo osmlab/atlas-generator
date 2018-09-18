@@ -192,19 +192,30 @@ public class RawAtlasCreator extends Command
 
             if (!atlasOption.isPresent())
             {
-                logger.warn("sliced cache miss for {}, generating...", atlasName);
-                atlasOption = Optional.ofNullable(creator.generateSlicedAtlasFromScratch(pbfPath,
-                        countryName, countryBoundaryMap, shard));
+                logger.warn("Sliced cache miss for {}, generating...", atlasName);
+
+                try
+                {
+                    atlasOption = Optional.ofNullable(creator.generateSlicedAtlasFromScratch(
+                            pbfPath, countryName, countryBoundaryMap, shard));
+                }
+                catch (final Exception exception)
+                {
+                    atlasOption = Optional.empty();
+                }
+
                 if (atlasOption.isPresent())
                 {
                     final File atlasFile = new File(slicedCacheFile.toString());
                     atlasOption.get().save(atlasFile);
+                    logger.info("Successfully saved {} to sliced cache", atlasName);
                 }
                 else
                 {
+                    logger.error("Failed to generate sliced atlas {}", atlasName);
                     if (failFastOnSlicedCacheMiss)
                     {
-                        logger.error("Failed to generate sliced atlas {}", atlasName);
+                        logger.error("Failing fast, it is likely the PBF was missing");
                         System.exit(1);
                     }
                     else
@@ -215,7 +226,7 @@ public class RawAtlasCreator extends Command
             }
             else
             {
-                logger.info("sliced cache hit for {}", atlasName);
+                logger.info("Sliced cache hit for {}", atlasName);
             }
 
             return atlasOption;
