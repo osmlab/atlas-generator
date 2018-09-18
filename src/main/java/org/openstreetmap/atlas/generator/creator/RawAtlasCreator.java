@@ -81,6 +81,7 @@ public class RawAtlasCreator extends Command
     }
 
     private static final Logger logger = LoggerFactory.getLogger(RawAtlasCreator.class);
+    private static final String DEFAULT_CACHE_NAME = "__RawAtlasCreator_slicedAtlasCache__";
 
     /*
      * A path to a country boundary map file
@@ -120,7 +121,7 @@ public class RawAtlasCreator extends Command
      */
     public static final Switch<String> SLICED_CACHE_PATH = new Switch<>("slicedCache",
             "The path to the sliced atlas cache for DynamicAtlas", StringConverter.IDENTITY,
-            Optionality.REQUIRED);
+            Optionality.OPTIONAL, System.getProperty("user.home") + "/" + DEFAULT_CACHE_NAME);
 
     /*
      * If we attempt to populate the sliced atlas cache and still miss, we can optionally fail fast.
