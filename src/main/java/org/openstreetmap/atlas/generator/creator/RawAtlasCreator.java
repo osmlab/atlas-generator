@@ -69,7 +69,7 @@ public class RawAtlasCreator extends Command
             throw new CoreException("Invalid RawAtlasFlavor {}", string);
         }
 
-        private RawAtlasFlavor(final String flavorString)
+        RawAtlasFlavor(final String flavorString)
         {
             this.flavorString = flavorString;
         }
