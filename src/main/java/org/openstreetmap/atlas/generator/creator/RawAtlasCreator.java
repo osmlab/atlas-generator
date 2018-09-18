@@ -137,9 +137,13 @@ public class RawAtlasCreator extends Command
      * Optionally provided a PBF scheme. This is useful if you have lots of PBFs available and are
      * storing them with an alternate storage scheme.
      */
-    public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
-            "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
-            Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
+    // TODO support alternate PBF schemes. Currently we assume all PBFs are stored directly at the
+    // provided path.
+    /*
+     * public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new
+     * Switch<>("pbfScheme", "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
+     * Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
+     */
 
     /*
      * Option to provide if your PBF sharding does not match your atlas sharding. If in doubt,
@@ -191,8 +195,8 @@ public class RawAtlasCreator extends Command
         final String pbfPath = (String) command.get(PBF_PATH);
         final String slicedCachePath = (String) command.get(SLICED_CACHE_PATH);
         final boolean failFastOnSlicedCacheMiss = (boolean) command.get(FAIL_FAST_CACHE_MISS);
-        final SlippyTilePersistenceScheme pbfScheme = (SlippyTilePersistenceScheme) command
-                .get(PBF_SCHEME);
+        final SlippyTilePersistenceScheme pbfScheme = new SlippyTilePersistenceScheme(
+                PbfLocator.DEFAULT_SCHEME);
         final String pbfShardingName = (String) command.get(PBF_SHARDING);
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, Maps.stringMap());
@@ -226,8 +230,7 @@ public class RawAtlasCreator extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(BOUNDARIES, TILE, SHARDING_TYPE, PBF_PATH, SLICED_CACHE_PATH,
-                FAIL_FAST_CACHE_MISS, PBF_SCHEME, PBF_SHARDING, COUNTRY, OUTPUT, ATLAS_FLAVOR,
-                USE_JAVA_ATLAS);
+                FAIL_FAST_CACHE_MISS, PBF_SHARDING, COUNTRY, OUTPUT, ATLAS_FLAVOR, USE_JAVA_ATLAS);
     }
 
     private Function<Shard, Optional<Atlas>> atlasFetcher(final String countryName,
@@ -328,6 +331,10 @@ public class RawAtlasCreator extends Command
         return slicedRawAtlas;
     }
 
+    /*
+     * NOTE This method implicitly assumes the PBF scheme is the default scheme. If alternate
+     * schemes are to be supported, this needs to change.
+     */
     private String getPBFFilePathFromDirectory(final String pbfPath, final Shard shardToBuild)
     {
         final Path pbfPathWithFile = Paths.get(pbfPath, shardToBuild.getName() + FileSuffix.PBF);
