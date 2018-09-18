@@ -82,11 +82,22 @@ public class RawAtlasCreator extends Command
 
     private static final Logger logger = LoggerFactory.getLogger(RawAtlasCreator.class);
 
+    /*
+     * A path to a country boundary map file
+     */
     public static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
             "The boundary map to use", value -> CountryBoundaryMap.fromPlainText(new File(value)),
             Optionality.REQUIRED);
+
+    /*
+     * The ISO-3 country code of the country's shard to build
+     */
     public static final Switch<String> COUNTRY = new Switch<>("country", "The country code",
             StringConverter.IDENTITY, Optionality.REQUIRED);
+
+    /*
+     * The path to where the final output will be saved
+     */
     public static final Switch<File> OUTPUT = new Switch<>("output",
             "The path where the output will be saved", value ->
             {
@@ -94,31 +105,74 @@ public class RawAtlasCreator extends Command
                 result.mkdirs();
                 return result;
             }, Optionality.REQUIRED);
+
+    /*
+     * The path to the necessary OSM PBF files for this build.
+     */
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs",
             "The path to PBF shards needed to build the desired atlas", StringConverter.IDENTITY,
             Optionality.REQUIRED);
+
+    /*
+     * The path to the cache of sliced raw atlases. This class uses DynamicAtlas to do way
+     * sectioning, and it will create sliced raw atlas for shards it needs on the fly. It will then
+     * save them to this location for later use.
+     */
     public static final Switch<String> SLICED_CACHE_PATH = new Switch<>("slicedCache",
             "The path to the sliced atlas cache for DynamicAtlas", StringConverter.IDENTITY,
             Optionality.REQUIRED);
+
+    /*
+     * If we attempt to populate the sliced atlas cache and still miss, we can optionally fail fast.
+     * This type of cache miss will occur if the necessary PBF was not provided to the command.
+     * Generally, you will run this command once with this set to "false", then you can browse the
+     * logs to see which PBFs you will need. After you acquire them, set this to "true".
+     */
     public static final Switch<Boolean> FAIL_FAST_CACHE_MISS = new Switch<>(
             "failFastOnSlicedCacheMiss", "Fail fast on a sliced cache miss", Boolean::parseBoolean,
             Optionality.OPTIONAL, "true");
+
+    /*
+     * Optionally provided a PBF scheme. This is useful if you have lots of PBFs available and are
+     * storing them with an alternate storage scheme.
+     */
     public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
             "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
             Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
+
+    /*
+     * Option to provide if your PBF sharding does not match your atlas sharding. If in doubt,
+     * ignore this parameter.
+     */
     public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
             "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
+
+    /*
+     * Your atlas sharding.
+     */
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.REQUIRED);
+
+    /*
+     * The shard you are trying to build, in string format (eg. 10-234-125)
+     */
     public static final Switch<Shard> TILE = new Switch<>("tile", "The SlippyTile name to use",
             SlippyTile::forName, Optionality.REQUIRED);
+
+    /*
+     * The flavor of raw atlas you would like as output (ie. raw, sliced, sectioned)
+     */
     public static final Switch<RawAtlasFlavor> ATLAS_FLAVOR = new Switch<>("rawAtlasFlavor",
             "Which flavor of raw atlas - " + RawAtlasFlavor.RawAtlas.getFlavorString() + ", "
                     + RawAtlasFlavor.SlicedRawAtlas.getFlavorString() + ", or "
                     + RawAtlasFlavor.SectionedRawAtlas.getFlavorString(),
             RawAtlasFlavor::flavorStringToRawAtlasFlavor, Optionality.OPTIONAL,
             RawAtlasFlavor.SectionedRawAtlas.getFlavorString());
+
+    /*
+     * Change the serialization to legacy Java format if desired.
+     */
     public static final Switch<Boolean> USE_JAVA_ATLAS = new Switch<>("useJavaAtlas",
             "Use the Java serialization format.", Boolean::parseBoolean, Optionality.OPTIONAL,
             "false");
