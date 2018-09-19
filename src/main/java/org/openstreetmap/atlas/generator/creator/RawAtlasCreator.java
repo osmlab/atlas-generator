@@ -61,7 +61,7 @@ public class RawAtlasCreator extends Command
         {
             for (final RawAtlasFlavor flavor : RawAtlasFlavor.values())
             {
-                if (flavor.getFlavorString().equalsIgnoreCase(string))
+                if (flavor.toString().equalsIgnoreCase(string))
                 {
                     return flavor;
                 }
@@ -74,7 +74,8 @@ public class RawAtlasCreator extends Command
             this.flavorString = flavorString;
         }
 
-        public String getFlavorString()
+        @Override
+        public String toString()
         {
             return this.flavorString;
         }
@@ -169,11 +170,11 @@ public class RawAtlasCreator extends Command
      * The flavor of raw atlas you would like as output (ie. raw, sliced, sectioned)
      */
     public static final Switch<RawAtlasFlavor> ATLAS_FLAVOR = new Switch<>("rawAtlasFlavor",
-            "Which flavor of raw atlas - " + RawAtlasFlavor.RawAtlas.getFlavorString() + ", "
-                    + RawAtlasFlavor.SlicedRawAtlas.getFlavorString() + ", or "
-                    + RawAtlasFlavor.SectionedRawAtlas.getFlavorString(),
+            "Which flavor of raw atlas - " + RawAtlasFlavor.RawAtlas.toString() + ", "
+                    + RawAtlasFlavor.SlicedRawAtlas.toString() + ", or "
+                    + RawAtlasFlavor.SectionedRawAtlas.toString(),
             RawAtlasFlavor::flavorStringToRawAtlasFlavor, Optionality.OPTIONAL,
-            RawAtlasFlavor.SectionedRawAtlas.getFlavorString());
+            RawAtlasFlavor.SectionedRawAtlas.toString());
 
     /*
      * Change the serialization to legacy Java format if desired.
@@ -221,7 +222,8 @@ public class RawAtlasCreator extends Command
         }
         atlas.save(output.child(countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
                 + shardToBuild.getName() + FileSuffix.ATLAS));
-        atlas.saveAsGeoJson(output.child(countryName + "_" + shardToBuild.getName() + ".geojson"));
+        atlas.saveAsGeoJson(
+                output.child(countryName + "_" + shardToBuild.getName() + FileSuffix.GEO_JSON));
 
         return 0;
     }
@@ -259,6 +261,7 @@ public class RawAtlasCreator extends Command
                 }
                 catch (final Exception exception)
                 {
+                    logger.error("{}", exception.toString());
                     atlasOption = Optional.empty();
                 }
 
