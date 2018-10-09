@@ -329,8 +329,6 @@ public final class AtlasGeneratorHelper implements Serializable
                 // Create the fetcher
                 final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
                         .atlasFetcher(atlasCache, country, possibleShards);
-
-                logger.info("Started sectioning raw Atlas for {}", countryShardString);
                 // Section the Atlas
                 atlas = new WaySectionProcessor(countryShard.getShard(), atlasLoadingOption,
                         sharding, slicedRawAtlasFetcher).run();
