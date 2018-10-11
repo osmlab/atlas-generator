@@ -47,6 +47,7 @@ public class WorldAtlasGenerator extends Command
             "The atlas file to which the Atlas will be saved", File::new, Optionality.REQUIRED);
     private static final Switch<File> STATISTICS = new Switch<>("statistics",
             "The file that will contain the statistics", File::new, Optionality.OPTIONAL);
+    // the default boundary is a bounding box of the world
     public static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
             "The boundary map to use", value -> CountryBoundaryMap.fromPlainText(new File(value)),
             Optionality.OPTIONAL);
