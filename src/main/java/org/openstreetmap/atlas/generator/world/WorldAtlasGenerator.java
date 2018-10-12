@@ -77,7 +77,7 @@ public class WorldAtlasGenerator extends Command
             File::new, Optionality.OPTIONAL);
     // filter that does no filtering
     private static final ConfiguredTaggableFilter PBF_NO_FILTER_CONFIGURATION = new ConfiguredTaggableFilter(
-            new StandardConfiguration(new StringResource("{\n    \"filters\": [\n\n    ]\n}")));
+            new StandardConfiguration(new StringResource("{\"filters\": []}")));
 
     public static void main(final String[] args)
     {
