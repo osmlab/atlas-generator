@@ -202,23 +202,23 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            logger.info("Starting generating Atlas statistics for {}", tuple._1());
+            final String shardName = tuple._1();
+            logger.info("Starting generating Atlas statistics for {}", shardName);
             final Time start = Time.now();
             final Counter counter = new Counter().withSharding(sharding);
             counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
-            final AtlasStatistics statistics;
+            AtlasStatistics statistics = new AtlasStatistics();
             try
             {
                 statistics = counter.processAtlas(tuple._2());
+                logger.info("Finished generating Atlas statistics for {} in {}", shardName,
+                        start.elapsedSince());
             }
             catch (final Exception e)
             {
-                throw new CoreException("Building Atlas Statistics for {} failed!", tuple._1(), e);
+                logger.error("Building Atlas Statistics for {} failed!", shardName, e);
             }
-            logger.info("Finished generating Atlas statistics for {} in {}", tuple._1(),
-                    start.elapsedSince());
-            final Tuple2<String, AtlasStatistics> result = new Tuple2<>(tuple._1(), statistics);
-            return result;
+            return new Tuple2<>(shardName, statistics);
         };
     }
 
