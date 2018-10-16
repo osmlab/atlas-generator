@@ -1,12 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,16 +9,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.openstreetmap.atlas.exception.CoreException;
-import org.openstreetmap.atlas.exception.ExceptionSearch;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
-import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemCreator;
-import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
-import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
+import org.openstreetmap.atlas.generator.tools.caching.HadoopAtlasFileCache;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
@@ -37,8 +26,6 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.streaming.resource.File;
-import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
@@ -62,9 +49,6 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final long serialVersionUID = 1300098384789754747L;
     private static final Logger logger = LoggerFactory.getLogger(AtlasGeneratorHelper.class);
 
-    private static final String GZIPPED_ATLAS_EXTENSION = FileSuffix.ATLAS.toString()
-            + FileSuffix.GZIP.toString();
-    private static final String ATLAS_EXTENSION = FileSuffix.ATLAS.toString();
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
 
     public static StandardConfiguration getStandardConfigurationFrom(
@@ -80,22 +64,17 @@ public final class AtlasGeneratorHelper implements Serializable
     }
 
     /**
-     * @param atlasDirectory
-     *            The path of the folder containing the Atlas files, in format CTRY_z-x-y.atlas.gz
-     * @param temporaryDirectory
-     *            The path of the temporary folder to download Atlas files if they are not
-     *            downloaded already
+     * @param atlasCache
+     *            The cache object for the Atlas files
      * @param country
      *            The country to look for
-     * @param sparkContext
-     *            The Spark configuration as a map (to allow the creation of the proper FileSystem)
      * @param validShards
      *            All available shards for given country, to avoid fetching shards that do not exist
      * @return A function that returns an {@link Atlas} given a {@link Shard}
      */
-    protected static Function<Shard, Optional<Atlas>> atlasFetcher(final String atlasDirectory,
-            final String temporaryDirectory, final String country,
-            final Map<String, String> sparkContext, final Set<Shard> validShards)
+    protected static Function<Shard, Optional<Atlas>> atlasFetcher(
+            final HadoopAtlasFileCache atlasCache, final String country,
+            final Set<Shard> validShards)
     {
         // & Serializable is very important as that function will be passed around by Spark, and
         // functions are not serializable by default.
@@ -103,118 +82,18 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             if (!validShards.isEmpty() && !validShards.contains(shard))
             {
+                logger.debug("Ignoring loading request for invalid shard {}", shard);
                 return Optional.empty();
             }
 
-            // Check if non-gzipped file exists in final temporary directory
-            final String pathFromTemporaryDirectory = SparkFileHelper.combine(temporaryDirectory,
-                    String.format("%s%s", getAtlasName(country, shard), ATLAS_EXTENSION));
-            final File fileFromTemporaryDirectory = new File(pathFromTemporaryDirectory);
-
-            // Download file to disk if it is not cached already
-            if (!fileFromTemporaryDirectory.exists())
+            final Optional<Resource> cachedAtlasResource = atlasCache.get(country, shard);
+            if (cachedAtlasResource.isPresent())
             {
-                try
-                {
-                    String path = SparkFileHelper.combine(atlasDirectory,
-                            String.format("%s%s", getAtlasName(country, shard), ATLAS_EXTENSION));
-
-                    if (!fileExists(path, sparkContext))
-                    {
-                        path = SparkFileHelper.combine(atlasDirectory, String.format("%s%s",
-                                getAtlasName(country, shard), GZIPPED_ATLAS_EXTENSION));
-                    }
-
-                    final Resource fileFromNetwork = FileSystemHelper.resource(path, sparkContext);
-                    final File temporaryLocalFile = File
-                            .temporary(getAtlasName(country, shard) + "-", ATLAS_EXTENSION);
-
-                    logger.debug("Downloaded atlas from {} and is found as temp file {}", path,
-                            temporaryLocalFile.getAbsolutePath());
-
-                    // FileSystemHelper.resource sets the Decompressor on the Resource for us, so
-                    // this call will gunzip the file
-                    try
-                    {
-                        fileFromNetwork.copyTo(temporaryLocalFile);
-                    }
-                    catch (final Exception e)
-                    {
-                        final Optional<FileNotFoundException> fileNotFound = ExceptionSearch
-                                .find(FileNotFoundException.class).within(e);
-                        if (fileNotFound.isPresent())
-                        {
-                            // It's possible there is no Atlas file for a given shard
-                            logger.debug("No Atlas file found at {}", path);
-                            return Optional.empty();
-                        }
-                        else
-                        {
-                            // There is something else going on, re-throw and continue
-                            throw e;
-                        }
-                    }
-
-                    // Before making the move, check again if file is there or not
-                    if (!fileFromTemporaryDirectory.exists())
-                    {
-                        try
-                        {
-                            Files.move(Paths.get(temporaryLocalFile.getPath()),
-                                    Paths.get(fileFromTemporaryDirectory.getPath()),
-                                    StandardCopyOption.ATOMIC_MOVE);
-                        }
-                        catch (final FileAlreadyExistsException e)
-                        {
-                            logger.warn("Failed to rename file, but file exists already.", e);
-                        }
-                        catch (final Exception e)
-                        {
-                            logger.warn("Failed to rename file on local disk.", e);
-                        }
-                    }
-                }
-                catch (final Exception e)
-                {
-                    logger.warn("Failed to cache file on local disk.", e);
-                }
+                logger.debug("Cache hit, returning loaded atlas for shard {}", shard);
+                return Optional.ofNullable(ATLAS_LOADER.load(cachedAtlasResource.get()));
             }
-
-            // If we were able to find the file on local disk, then load from there
-            if (fileFromTemporaryDirectory.exists())
-            {
-                logger.debug("Atlas exists - Cache Hit: {}",
-                        fileFromTemporaryDirectory.getAbsolutePath());
-                return loadAtlas(fileFromTemporaryDirectory);
-            }
-            else
-            {
-                logger.debug("Falling back to Atlas file hosted on {} for shard {}.",
-                        atlasDirectory, shard.getName());
-                final String path = SparkFileHelper.combine(atlasDirectory,
-                        String.format("%s%s", getAtlasName(country, shard), ATLAS_EXTENSION));
-                final Resource fileFromNetwork = FileSystemHelper.resource(path, sparkContext);
-                try
-                {
-                    return loadAtlas(fileFromNetwork);
-                }
-                catch (final Exception e)
-                {
-                    final Optional<FileNotFoundException> fileNotFound = ExceptionSearch
-                            .find(FileNotFoundException.class).within(e);
-                    if (fileNotFound.isPresent())
-                    {
-                        // It's possible there is no Atlas file for a given shard
-                        logger.debug("No Atlas file found at {}", path);
-                        return Optional.empty();
-                    }
-                    else
-                    {
-                        // There is something else going on, re-throw and continue
-                        throw e;
-                    }
-                }
-            }
+            logger.debug("No atlas file found for shard {}", shard);
+            return Optional.empty();
         };
     }
 
@@ -323,23 +202,23 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            logger.info("Starting generating Atlas statistics for {}", tuple._1());
+            final String shardName = tuple._1();
+            logger.info("Starting generating Atlas statistics for {}", shardName);
             final Time start = Time.now();
             final Counter counter = new Counter().withSharding(sharding);
             counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
-            final AtlasStatistics statistics;
+            AtlasStatistics statistics = new AtlasStatistics();
             try
             {
                 statistics = counter.processAtlas(tuple._2());
+                logger.info("Finished generating Atlas statistics for {} in {}", shardName,
+                        start.elapsedSince());
             }
             catch (final Exception e)
             {
-                throw new CoreException("Building Atlas Statistics for {} failed!", tuple._1(), e);
+                logger.error("Building Atlas Statistics for {} failed!", shardName, e);
             }
-            logger.info("Finished generating Atlas statistics for {} in {}", tuple._1(),
-                    start.elapsedSince());
-            final Tuple2<String, AtlasStatistics> result = new Tuple2<>(tuple._1(), statistics);
-            return result;
+            return new Tuple2<>(shardName, statistics);
         };
     }
 
@@ -444,14 +323,12 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String country = countryShard.getCountry();
                 final Set<Shard> possibleShards = getAllShardsForCountry(tasks, country);
 
-                logger.info("Started sectioning raw Atlas for {}", countryShardString);
-
+                // Instantiate the cache
+                final HadoopAtlasFileCache atlasCache = new HadoopAtlasFileCache(slicedRawAtlasPath,
+                        sparkContext);
                 // Create the fetcher
                 final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
-                        .atlasFetcher(SparkFileHelper.combine(slicedRawAtlasPath, country),
-                                System.getProperty("java.io.tmpdir"), country, sparkContext,
-                                possibleShards);
-
+                        .atlasFetcher(atlasCache, country, possibleShards);
                 // Section the Atlas
                 atlas = new WaySectionProcessor(countryShard.getShard(), atlasLoadingOption,
                         sharding, slicedRawAtlasFetcher).run();
@@ -527,20 +404,6 @@ public final class AtlasGeneratorHelper implements Serializable
         };
     }
 
-    private static boolean fileExists(final String path, final Map<String, String> configuration)
-    {
-        final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
-        try
-        {
-            return fileSystem.exists(new Path(path));
-        }
-        catch (IllegalArgumentException | IOException e)
-        {
-            logger.warn("Can't determine if {} exists", path);
-            return false;
-        }
-    }
-
     private static Set<Shard> getAllShardsForCountry(final List<AtlasGenerationTask> tasks,
             final String country)
     {
@@ -554,16 +417,6 @@ public final class AtlasGeneratorHelper implements Serializable
         }
         logger.debug("Could not find shards for {}", country);
         return Collections.emptySet();
-    }
-
-    private static String getAtlasName(final String country, final Shard shard)
-    {
-        return String.format("%s_%s", country, shard.getName());
-    }
-
-    private static Optional<Atlas> loadAtlas(final Resource file)
-    {
-        return Optional.ofNullable(ATLAS_LOADER.load(file));
     }
 
     /**
