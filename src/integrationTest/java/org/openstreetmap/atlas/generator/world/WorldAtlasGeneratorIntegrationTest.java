@@ -12,6 +12,9 @@ import org.openstreetmap.atlas.generator.AtlasGeneratorIntegrationTest;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 
+/**
+ * @author jwpgage
+ */
 public class WorldAtlasGeneratorIntegrationTest
 {
     static
