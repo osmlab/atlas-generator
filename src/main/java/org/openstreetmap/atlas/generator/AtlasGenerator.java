@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.broadcast.Broadcast;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
@@ -302,13 +303,21 @@ public class AtlasGenerator extends SparkJob
         final Map<String, String> atlasLoadingOptions = extractAtlasLoadingProperties(command,
                 sparkContext);
 
+        // Leverage Spark broadcast to have a read-only variable cached on each machine, instead of
+        // shipping a copy with each task. All of these are re-used across tasks and are unchanged.
+        final Broadcast<CountryBoundaryMap> broadcastBoundaries = getContext()
+                .broadcast(boundaries);
+        final Broadcast<Map<String, String>> broadcastLoadingOptions = getContext()
+                .broadcast(atlasLoadingOptions);
+        final Broadcast<Sharding> broadcastSharding = getContext().broadcast(sharding);
+
         if (useRawAtlas)
         {
             // Generate the raw Atlas and filter any null atlases
             final JavaPairRDD<String, Atlas> countryRawAtlasShardsRDD = getContext()
                     .parallelize(tasks, tasks.size())
-                    .mapToPair(AtlasGeneratorHelper.generateRawAtlas(boundaries, sparkContext,
-                            atlasLoadingOptions, pbfContext, atlasScheme))
+                    .mapToPair(AtlasGeneratorHelper.generateRawAtlas(broadcastBoundaries,
+                            sparkContext, broadcastLoadingOptions, pbfContext, atlasScheme))
                     .filter(tuple -> tuple._2() != null);
 
             // Persist the RDD and save the intermediary state
@@ -321,7 +330,7 @@ public class AtlasGenerator extends SparkJob
 
             // Slice the raw Atlas and filter any null atlases
             final JavaPairRDD<String, Atlas> countrySlicedRawAtlasShardsRDD = countryRawAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.sliceRawAtlas(boundaries))
+                    .mapToPair(AtlasGeneratorHelper.sliceRawAtlas(broadcastBoundaries))
                     .filter(tuple -> tuple._2() != null);
 
             // Persist the RDD and save the intermediary state
@@ -338,8 +347,9 @@ public class AtlasGenerator extends SparkJob
 
             // Section the sliced raw Atlas
             final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = countrySlicedRawAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.sectionRawAtlas(boundaries, sharding,
-                            sparkContext, atlasLoadingOptions, slicedRawAtlasPath, tasks));
+                    .mapToPair(AtlasGeneratorHelper.sectionRawAtlas(broadcastBoundaries,
+                            broadcastSharding, sparkContext, broadcastLoadingOptions,
+                            slicedRawAtlasPath, tasks));
 
             // Persist the RDD and save the final atlas
             countryAtlasShardsRDD.cache();
@@ -363,7 +373,7 @@ public class AtlasGenerator extends SparkJob
 
             // Create the metrics
             final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(sharding));
+                    .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(broadcastSharding));
 
             // Persist the RDD and save
             statisticsRDD.cache();
@@ -466,7 +476,7 @@ public class AtlasGenerator extends SparkJob
 
             // Run the metrics
             final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryNonNullAtlasShardsRDD
-                    .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(sharding));
+                    .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(broadcastSharding));
 
             // Cache the statistics
             statisticsRDD.cache();

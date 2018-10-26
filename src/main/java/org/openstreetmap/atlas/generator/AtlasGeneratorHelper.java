@@ -11,6 +11,7 @@ import java.util.function.Function;
 
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.caching.HadoopAtlasFileCache;
@@ -198,14 +199,14 @@ public final class AtlasGeneratorHelper implements Serializable
      *         {@link AtlasStatistics} for each shard.
      */
     protected static PairFunction<Tuple2<String, Atlas>, String, AtlasStatistics> generateAtlasStatistics(
-            final Sharding sharding)
+            final Broadcast<Sharding> sharding)
     {
         return tuple ->
         {
             final String shardName = tuple._1();
             logger.info("Starting generating Atlas statistics for {}", shardName);
             final Time start = Time.now();
-            final Counter counter = new Counter().withSharding(sharding);
+            final Counter counter = new Counter().withSharding(sharding.getValue());
             counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
             AtlasStatistics statistics = new AtlasStatistics();
             try
@@ -238,8 +239,8 @@ public final class AtlasGeneratorHelper implements Serializable
      *         name to raw atlas tuple.
      */
     protected static PairFunction<AtlasGenerationTask, String, Atlas> generateRawAtlas(
-            final CountryBoundaryMap boundaries, final Map<String, String> sparkContext,
-            final Map<String, String> loadingOptions, final PbfContext pbfContext,
+            final Broadcast<CountryBoundaryMap> boundaries, final Map<String, String> sparkContext,
+            final Broadcast<Map<String, String>> loadingOptions, final PbfContext pbfContext,
             final SlippyTilePersistenceScheme atlasScheme)
     {
         return task ->
@@ -252,14 +253,16 @@ public final class AtlasGeneratorHelper implements Serializable
             final Time start = Time.now();
 
             // Set the country code that is being processed!
-            final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
-                    sparkContext, loadingOptions);
+            final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(
+                    boundaries.getValue(), sparkContext, loadingOptions.getValue());
             atlasLoadingOption.setAdditionalCountryCodes(countryName);
 
             // Build the PbfLoader
-            final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries,
-                    atlasLoadingOption, loadingOptions.get(AtlasGenerator.CODE_VERSION.getName()),
-                    loadingOptions.get(AtlasGenerator.DATA_VERSION.getName()), task.getAllShards());
+            final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries.getValue(),
+                    atlasLoadingOption,
+                    loadingOptions.getValue().get(AtlasGenerator.CODE_VERSION.getName()),
+                    loadingOptions.getValue().get(AtlasGenerator.DATA_VERSION.getName()),
+                    task.getAllShards());
 
             // Generate the raw Atlas for this shard
             final Atlas atlas;
@@ -304,9 +307,10 @@ public final class AtlasGeneratorHelper implements Serializable
      *         atlas for that shard name.
      */
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sectionRawAtlas(
-            final CountryBoundaryMap boundaries, final Sharding sharding,
-            final Map<String, String> sparkContext, final Map<String, String> loadingOptions,
-            final String slicedRawAtlasPath, final List<AtlasGenerationTask> tasks)
+            final Broadcast<CountryBoundaryMap> boundaries, final Broadcast<Sharding> sharding,
+            final Map<String, String> sparkContext,
+            final Broadcast<Map<String, String>> loadingOptions, final String slicedRawAtlasPath,
+            final List<AtlasGenerationTask> tasks)
     {
         return tuple ->
         {
@@ -314,8 +318,8 @@ public final class AtlasGeneratorHelper implements Serializable
             final Time start = Time.now();
             try
             {
-                final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(boundaries,
-                        sparkContext, loadingOptions);
+                final AtlasLoadingOption atlasLoadingOption = buildAtlasLoadingOption(
+                        boundaries.getValue(), sparkContext, loadingOptions.getValue());
 
                 // Calculate the shard, country name and possible shards
                 final String countryShardString = tuple._1();
@@ -331,7 +335,7 @@ public final class AtlasGeneratorHelper implements Serializable
                         .atlasFetcher(atlasCache, country, possibleShards);
                 // Section the Atlas
                 atlas = new WaySectionProcessor(countryShard.getShard(), atlasLoadingOption,
-                        sharding, slicedRawAtlasFetcher).run();
+                        sharding.getValue(), slicedRawAtlasFetcher).run();
             }
             catch (final Throwable e)
             {
@@ -358,7 +362,7 @@ public final class AtlasGeneratorHelper implements Serializable
      *         slices the raw atlas and returns the sliced raw atlas for that shard name.
      */
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlas(
-            final CountryBoundaryMap boundaries)
+            final Broadcast<CountryBoundaryMap> boundaries)
     {
         return tuple ->
         {
@@ -377,7 +381,7 @@ public final class AtlasGeneratorHelper implements Serializable
                 if (countryName != null)
                 {
                     // Slice the Atlas
-                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries)
+                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries.getValue())
                             .slice(rawAtlas);
                 }
                 else
