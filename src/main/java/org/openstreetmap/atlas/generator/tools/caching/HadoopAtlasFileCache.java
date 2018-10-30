@@ -6,8 +6,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.sharding.Shard;
+import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
@@ -27,21 +29,25 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
 
     private final String parentAtlasPath;
+    private final SlippyTilePersistenceScheme atlasScheme;
 
     /**
      * Create a new cache.
      *
      * @param parentAtlasPath
      *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param atlasScheme
+     *            The scheme used to locate atlas files based on slippy tiles
      * @param configuration
      *            The configuration map
      */
     public HadoopAtlasFileCache(final String parentAtlasPath,
-            final Map<String, String> configuration)
+            final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
         super(new SystemTemporaryFileCachingStrategy(),
                 uri -> FileSystemHelper.resource(uri.toString(), configuration));
         this.parentAtlasPath = parentAtlasPath;
+        this.atlasScheme = atlasScheme;
     }
 
     /**
@@ -55,9 +61,14 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
      */
     public Optional<Resource> get(final String country, final Shard shard)
     {
+        String compiledAtlasScheme = "";
+        if (shard instanceof SlippyTile)
+        {
+            compiledAtlasScheme = this.atlasScheme.compile((SlippyTile) shard);
+        }
         final String atlasName = String.format("%s_%s", country, shard.getName());
-        final String atlasURIString = this.parentAtlasPath + "/" + country + "/" + atlasName
-                + FileSuffix.ATLAS.toString();
+        final String atlasURIString = this.parentAtlasPath + "/" + country + "/"
+                + compiledAtlasScheme + atlasName + FileSuffix.ATLAS.toString();
         final URI atlasURI;
 
         try

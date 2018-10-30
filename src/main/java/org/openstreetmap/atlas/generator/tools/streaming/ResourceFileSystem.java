@@ -104,8 +104,9 @@ public class ResourceFileSystem extends FileSystem
         {
             delete(hadoopPath, false);
         }
-        final WritableResource resource = new ByteArrayResource();
-        STORE.put(hadoopPath.toString(), resource);
+        final String name = hadoopPath.toString();
+        final WritableResource resource = new ByteArrayResource().withName(name);
+        STORE.put(name, resource);
         return new FSDataOutputStream(resource.write(), STATISTICS);
     }
 
@@ -178,7 +179,8 @@ public class ResourceFileSystem extends FileSystem
     @Override
     public FSDataInputStream open(final Path hadoopPath, final int bufferSize) throws IOException
     {
-        final Resource resource = STORE.get(hadoopPath.toString());
+        final String name = hadoopPath.toString();
+        final Resource resource = STORE.get(name);
         if (resource == null)
         {
             return null;

@@ -79,6 +79,7 @@ public class SeekableResourceStream extends InputStream implements Seekable, Pos
     @Override
     public void seek(final long pos) throws IOException
     {
+        // Do not seek, this is for testing only.
     }
 
     @Override
