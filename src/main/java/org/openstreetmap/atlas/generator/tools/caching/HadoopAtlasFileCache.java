@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.sharding.Shard;
@@ -14,8 +15,6 @@ import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
 import org.openstreetmap.atlas.utilities.caching.strategies.SystemTemporaryFileCachingStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Cache an atlas file stored in the standard way (parentpath/COUNTRY/COUNTRY_z-x-y.atlas) to a
@@ -26,10 +25,25 @@ import org.slf4j.LoggerFactory;
  */
 public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
-    private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
-
     private final String parentAtlasPath;
     private final SlippyTilePersistenceScheme atlasScheme;
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param configuration
+     *            The configuration map
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath,
+            final Map<String, String> configuration)
+    {
+        super(new SystemTemporaryFileCachingStrategy(),
+                uri -> FileSystemHelper.resource(uri.toString(), configuration));
+        this.parentAtlasPath = parentAtlasPath;
+        this.atlasScheme = AtlasGeneratorParameters.ATLAS_SCHEME.getDefault();
+    }
 
     /**
      * Create a new cache.
