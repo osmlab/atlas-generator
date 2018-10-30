@@ -195,6 +195,8 @@ public final class AtlasGeneratorHelper implements Serializable
      *            The basic required properties to create an {@link AtlasLoadingOption}
      * @param pbfContext
      *            The context explaining where to find the PBFs
+     * @param atlasScheme
+     *            The folder structure of the output atlas
      * @return a Spark {@link PairFunction} that processes an {@link AtlasGenerationTask}, loads the
      *         PBF for the task's shard, generates the raw atlas for the shard and outputs a shard
      *         name to raw atlas tuple.
@@ -341,9 +343,6 @@ public final class AtlasGeneratorHelper implements Serializable
     /**
      * @param boundaries
      *            The {@link CountryBoundaryMap} to use for slicing
-     * @param atlasScheme
-     *            The persistence scheme used to save Atlas files, so the input files can be
-     *            properly found
      * @return a Spark {@link PairFunction} that processes a tuple of shard-name and raw atlas,
      *         slices the raw atlas and returns the sliced raw atlas for that shard name.
      */
