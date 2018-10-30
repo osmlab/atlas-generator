@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.broadcast.Broadcast;
@@ -44,8 +45,35 @@ import scala.Tuple2;
  */
 public final class AtlasGeneratorHelper implements Serializable
 {
+    /**
+     * @author matthieun
+     */
+    protected static class NamedAtlasStatistics implements Serializable
+    {
+        private static final long serialVersionUID = 1593790111775268766L;
+        private final String name;
+        private final AtlasStatistics atlasStatistics;
+
+        public NamedAtlasStatistics(final String name, final AtlasStatistics atlasStatistics)
+        {
+            this.name = name;
+            this.atlasStatistics = atlasStatistics;
+        }
+
+        public AtlasStatistics getAtlasStatistics()
+        {
+            return this.atlasStatistics;
+        }
+
+        public String getName()
+        {
+            return this.name;
+        }
+    }
+
     private static final long serialVersionUID = 1300098384789754747L;
     private static final Logger logger = LoggerFactory.getLogger(AtlasGeneratorHelper.class);
+
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
 
     /**
@@ -217,6 +245,25 @@ public final class AtlasGeneratorHelper implements Serializable
             // Output the Name/Atlas couple
             return new Tuple2<>(
                     name + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(), atlas);
+        };
+    }
+
+    protected static Function2<NamedAtlasStatistics, NamedAtlasStatistics, NamedAtlasStatistics> reduceAtlasStatistics()
+    {
+        return (left, right) ->
+        {
+            try
+            {
+                return new NamedAtlasStatistics(left.getName(), AtlasStatistics
+                        .merge(left.getAtlasStatistics(), right.getAtlasStatistics()));
+            }
+            catch (final Throwable e) // NOSONAR
+            {
+                logger.error(
+                        "Unable to merge AtlasStatistics for {}! Returning the first one only.\nLeft:\n{}\nRight:\n{}",
+                        left.getName(), left.getAtlasStatistics(), right.getAtlasStatistics(), e);
+                return left;
+            }
         };
     }
 
