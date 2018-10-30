@@ -138,8 +138,8 @@
 		</module> -->
 		<module name="OuterTypeFilename"/>
 		<module name="TrailingComment">
-            <property name="legalComment" value="NOSONAR"/>
-        </module>
+			<property name="legalComment" value="NOSONAR"/>
+		</module>
 		<module name="TodoComment" />
 		<module name="UpperEll" />
 	</module>
