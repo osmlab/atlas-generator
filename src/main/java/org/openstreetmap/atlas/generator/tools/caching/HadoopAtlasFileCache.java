@@ -14,7 +14,7 @@ import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
-import org.openstreetmap.atlas.utilities.caching.strategies.NamespaceCachingStrategy;
+import org.openstreetmap.atlas.utilities.caching.strategies.GlobalNamespaceCachingStrategy;
 
 /**
  * Cache an atlas file stored in the standard way (parentpath/COUNTRY/COUNTRY_z-x-y.atlas) to a
@@ -39,7 +39,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Map<String, String> configuration)
     {
-        super(new NamespaceCachingStrategy("HadoopAtlasFileCache"), uri -> Optional
+        super(new GlobalNamespaceCachingStrategy(), uri -> Optional
                 .ofNullable(FileSystemHelper.resource(uri.toString(), configuration)));
         this.parentAtlasPath = parentAtlasPath;
         this.atlasScheme = AtlasGeneratorParameters.ATLAS_SCHEME.getDefault();
@@ -58,7 +58,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
-        super(new NamespaceCachingStrategy("HadoopAtlasFileCache"), uri -> Optional
+        super(new GlobalNamespaceCachingStrategy(), uri -> Optional
                 .ofNullable(FileSystemHelper.resource(uri.toString(), configuration)));
         this.parentAtlasPath = parentAtlasPath;
         this.atlasScheme = atlasScheme;
