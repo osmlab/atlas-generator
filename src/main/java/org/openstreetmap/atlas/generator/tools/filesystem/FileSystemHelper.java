@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.tools.filesystem;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,39 @@ public final class FileSystemHelper
         catch (final Exception e)
         {
             throw new CoreException("Unable to delete {}", path, e);
+        }
+    }
+
+    /**
+     * Check if the given path exists.
+     *
+     * @param path
+     *            The path to check
+     * @return If the given path exists
+     */
+    public static boolean exists(final String path)
+    {
+        return exists(path, DEFAULT);
+    }
+
+    /**
+     * Check if the given path exists.
+     *
+     * @param path
+     *            The path to check
+     * @param configuration
+     *            The configuration map
+     * @return If the given path exists
+     */
+    public static boolean exists(final String path, final Map<String, String> configuration)
+    {
+        try
+        {
+            return new FileSystemCreator().get(path, configuration).exists(new Path(path));
+        }
+        catch (final IOException exception)
+        {
+            throw new CoreException("Failed to determine existence of {}", path, exception);
         }
     }
 
