@@ -14,7 +14,9 @@ import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
-import org.openstreetmap.atlas.utilities.caching.strategies.GlobalNamespaceCachingStrategy;
+import org.openstreetmap.atlas.utilities.caching.strategies.NamespaceCachingStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cache an atlas file stored in the standard way (parentpath/COUNTRY/COUNTRY_z-x-y.atlas) to a
@@ -25,6 +27,9 @@ import org.openstreetmap.atlas.utilities.caching.strategies.GlobalNamespaceCachi
  */
 public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
+    private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
+    private static final String GLOBAL_HADOOP_FILECACHE_NAMESPACE = "__HadoopAtlasFileCache_global_namespace__";
+
     private final String parentAtlasPath;
     private final SlippyTilePersistenceScheme atlasScheme;
 
@@ -39,10 +44,8 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Map<String, String> configuration)
     {
-        super(new GlobalNamespaceCachingStrategy(), uri -> Optional
-                .ofNullable(FileSystemHelper.resource(uri.toString(), configuration)));
-        this.parentAtlasPath = parentAtlasPath;
-        this.atlasScheme = AtlasGeneratorParameters.ATLAS_SCHEME.getDefault();
+        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
+                AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), configuration);
     }
 
     /**
@@ -58,8 +61,50 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
-        super(new GlobalNamespaceCachingStrategy(), uri -> Optional
-                .ofNullable(FileSystemHelper.resource(uri.toString(), configuration)));
+        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE, atlasScheme, configuration);
+    }
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param namespace
+     *            The namespace for this cache's resoures
+     * @param configuration
+     *            The configuration map
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath, final String namespace,
+            final Map<String, String> configuration)
+    {
+        this(parentAtlasPath, namespace, AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(),
+                configuration);
+    }
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param namespace
+     *            The namespace for this cache's resoures
+     * @param atlasScheme
+     *            The scheme used to locate atlas files based on slippy tiles
+     * @param configuration
+     *            The configuration map
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath, final String namespace,
+            final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
+    {
+        super(new NamespaceCachingStrategy(namespace), uri ->
+        {
+            if (!FileSystemHelper.exists(uri.toString(), configuration))
+            {
+                logger.warn("Fetcher: resource {} does not exist!", uri);
+                return Optional.empty();
+            }
+            return Optional.ofNullable(FileSystemHelper.resource(uri.toString(), configuration));
+        });
         this.parentAtlasPath = parentAtlasPath;
         this.atlasScheme = atlasScheme;
     }
