@@ -126,6 +126,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             compiledAtlasScheme = this.atlasScheme.compile((SlippyTile) shard);
         }
         final String atlasName = String.format("%s_%s", country, shard.getName());
+        // TODO it may be preferable to use SparkFileHelper.combine() here
         final String atlasURIString = this.parentAtlasPath + "/" + country + "/"
                 + compiledAtlasScheme + atlasName + FileSuffix.ATLAS.toString();
         final URI atlasURI;
