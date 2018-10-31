@@ -22,6 +22,7 @@ public class HadoopAtlasFileCacheTest
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
         final File parentAtlasCountry = new File(parentAtlas + "/AAA");
+        final String fullParentPathURI = "file://" + parentAtlas.toString();
         parentAtlasCountry.mkdirs();
         try
         {
@@ -30,8 +31,7 @@ public class HadoopAtlasFileCacheTest
             final File atlas2 = parentAtlasCountry.child("2/AAA_2-2-2.atlas");
             atlas2.writeAndClose("2");
 
-            final String path = "file://" + parentAtlas.toString();
-            final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(path,
+            final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(fullParentPathURI,
                     AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
 
             // cache miss, this will create the cached copy
@@ -60,32 +60,30 @@ public class HadoopAtlasFileCacheTest
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
         final File parentAtlasCountry = new File(parentAtlas + "/AAA");
+        final String fullParentPathURI = "file://" + parentAtlas.toString();
         parentAtlasCountry.mkdirs();
         try
         {
             // set up file for cache1
             File atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlasFile.writeAndClose("1");
-
-            final String path = "file://" + parentAtlas.toString();
+            atlasFile.writeAndClose("version1");
 
             // cache file in cache1 under namespace "namespace1"
-            final HadoopAtlasFileCache cache1 = new HadoopAtlasFileCache(path, "namespace1",
-                    AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
+            final HadoopAtlasFileCache cache1 = new HadoopAtlasFileCache(fullParentPathURI,
+                    "namespace1", AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"),
+                    new HashMap<>());
             final Resource resource1 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();
 
             // delete and recreate the same file (with same URI) but with new contents for cache2
             atlasFile.delete();
             atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlasFile.writeAndClose("2");
+            atlasFile.writeAndClose("version2");
 
             // cache the file in cache2 under namespace "namespace2"
-            final HadoopAtlasFileCache cache2 = new HadoopAtlasFileCache(path, "namespace2",
-                    AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
+            final HadoopAtlasFileCache cache2 = new HadoopAtlasFileCache(fullParentPathURI,
+                    "namespace2", AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"),
+                    new HashMap<>());
             final Resource resource2 = cache2.get("AAA", new SlippyTile(1, 1, 1)).get();
-
-            // we will totally delete the file, but the caches will now use their cached versions
-            atlasFile.delete();
 
             // the files should be unequal, even though the URIs are the same
             Assert.assertNotEquals(resource1.all(), resource2.all());
@@ -101,8 +99,9 @@ public class HadoopAtlasFileCacheTest
             cache1.invalidate(Paths.get(atlasFile.getPath()).toUri());
 
             // recreate version 2 of the file
+            atlasFile.delete();
             atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlasFile.writeAndClose("2");
+            atlasFile.writeAndClose("version2");
 
             // get version 2 of the file into cache1
             final Resource resource5 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();
@@ -122,14 +121,14 @@ public class HadoopAtlasFileCacheTest
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
         final File parentAtlasCountry = new File(parentAtlas + "/AAA");
+        final String fullParentPathURI = "file://" + parentAtlas.toString();
         parentAtlasCountry.mkdirs();
         try
         {
             final File atlas1 = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
             atlas1.writeAndClose("1");
 
-            final String path = "file://" + parentAtlas.toString();
-            final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(path,
+            final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(fullParentPathURI,
                     AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
 
             // this resource does not exist!
