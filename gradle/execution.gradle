@@ -1,0 +1,79 @@
+task downloadPbf << {
+    mkdir "${buildDir}/example/data/pbfSource/"
+    ant.get(src: "https://apple.box.com/shared/static/1wj4fiuwg88dczgkwxrva8udbbqjn6y5.pbf",
+        dest: "${buildDir}/example/data/pbfSource/belize.osm.pbf",
+        skipexisting: 'true')
+}
+
+task downloadBoundaries << {
+    mkdir "${buildDir}/example/data/"
+    ant.get(src: "https://apple.box.com/shared/static/k06amjcm32p83klwd5roex3m8vxj0mvx.gz",
+        dest: "${buildDir}/example/data/boundaries.txt.gz",
+        skipexisting: 'true')
+}
+
+task downloadShardingTree << {
+    mkdir "${buildDir}/example/data/"
+    ant.get(src: "https://apple.box.com/shared/static/2p2nz3khyusaup3mdxmuyr4mifwx1bmx.txt",
+        dest: "${buildDir}/example/data/sharding.txt",
+        skipexisting: 'true')
+}
+
+task copyShard1 (dependsOn: 'downloadPbf') << {
+    ant.copy(file: "${buildDir}/example/data/pbfSource/belize.osm.pbf",
+        toFile: "${buildDir}/example/data/pbfs/7-32-57.pbf")
+}
+
+task copyShard2 (dependsOn: 'downloadPbf') << {
+    ant.copy(file: "${buildDir}/example/data/pbfSource/belize.osm.pbf",
+        toFile: "${buildDir}/example/data/pbfs/8-64-116.pbf")
+}
+
+task copyShard3 (dependsOn: 'downloadPbf') << {
+    ant.copy(file: "${buildDir}/example/data/pbfSource/belize.osm.pbf",
+        toFile: "${buildDir}/example/data/pbfs/8-65-116.pbf")
+}
+
+task runGenerator(type: JavaExec, dependsOn: 'assemble', description: 'Executes the Atlas Generator Spark job.') {
+    classpath = sourceSets.main.runtimeClasspath
+
+    main = project.property("generator.${project.profile}.mainClass")
+
+    // apply arguments defined in the gradle.properties file for this profile
+    def flags = project.properties.findAll { property ->
+        property.toString().startsWith("generator.${project.profile}")
+    } collect {
+        it.toString().replace("generator.${project.profile}.", "-")
+    } collect {
+        it.toString().replace("@ROOTDIR@", rootDir.getAbsolutePath())
+    } collect {
+        it.toString().replace("@BUILDDIR@", buildDir.getAbsolutePath())
+    }
+    args(flags)
+
+    // uncomment to change jvm args
+    // jvmArgs(["-Xmx8g","-Xms8g"])
+
+    // uncomment to enable jvm debugging
+    // debug=true
+}
+
+/**
+ * Wraps runGenerator to perform any task involving setup or teardown
+ */
+task run(dependsOn: ['assemble',
+        'downloadPbf',
+        'downloadBoundaries',
+        'downloadShardingTree',
+        'copyShard1',
+        'copyShard2',
+        'copyShard3'],
+        group: 'application',
+        description: 'Runs the Atlas Generator spark job configured in properties') {
+    doLast {
+        runGenerator.getCommandLine().each {
+            line -> println("$line \\")
+        }
+        runGenerator.execute()
+    }
+}
