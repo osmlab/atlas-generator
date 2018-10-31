@@ -28,34 +28,24 @@ import org.slf4j.LoggerFactory;
  * For example, consider the following code:
  * <p>
  * <code>
- * ResourceCache cache1 = new HadoopAtlasFileCache(parentPath, &quotnamespace1&quot;, config);
+ * ResourceCache cache1 = new HadoopAtlasFileCache(parentPath, "namespace1", config);<br>
+ * ResourceCache cache2 = new HadoopAtlasFileCache(parentPath, "namespace2", config);<br>
  * <br>
- * ResourceCache cache2 = new HadoopAtlasFileCache(parentPath, &quotnamespace2&quot;, config);
- * <br><br>
- * // We will be fetching resource behind URI "parentPath/AAA/AAA_1-1-1.atlas"
+ * // We will be fetching resource behind URI "parentPath/AAA/AAA_1-1-1.atlas"<br>
+ * Resource r1 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br>
+ * // Assume some event changes the contents behind the URI between get() calls<br>
+ * Resource r2 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br>
  * <br>
- * Resource r1 = cache1.get(&quotAAA&quot;, new SlippyTile(1, 1, 1)).get();
+ * // This fails since the caches have different namespaces and the resource contents changed<br>
+ * Assert.assertEquals(r1.all(), r2.all());<br>
  * <br>
- * // Assume some event changes the contents behind the URI between get() calls
+ * // Now we invalidate cache1's copy of the resource<br>
+ * cache1.invalidate(getURIForResource(r1));<br>
+ * // This call to cache1.get() will re-fetch since we invalidated<br>
+ * r1 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br>
  * <br>
- * Resource r2 = cache1.get(&quotAAA&quot;, new SlippyTile(1, 1, 1)).get();
- * <br><br>
- * // This fails since the caches have different namespaces and the resource contents changed
- * <br>
- * Assert.assertEquals(r1.all(), r2.all());
- * <br><br>
- * // Now we invalidate cache1's copy of the resource
- * <br>
- * cache1.invalidate(getURIForResource(r1));
- * <br>
- * // This call to cache1.get() will re-fetch since we invalidated
- * <br>
- * r1 = cache1.get(&quotAAA&quot;, new SlippyTile(1, 1, 1)).get();
- * <br><br>
- * // Now this passes since cache1 was refreshed
- * <br>
- * Assert.assertEquals(r1.all(), r2.all());
- * <br>
+ * // Now this passes since cache1 was refreshed<br>
+ * Assert.assertEquals(r1.all(), r2.all());<br>
  * </code>
  * <p>
  * The key takeaway here is that <code>r1</code> and <code>r2</code> are not guaranteed to have the
