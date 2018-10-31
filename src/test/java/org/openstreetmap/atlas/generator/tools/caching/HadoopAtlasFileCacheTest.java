@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.tools.caching;
 
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -95,6 +96,19 @@ public class HadoopAtlasFileCacheTest
 
             // the files should still be unequal, even though the URIs are the same
             Assert.assertNotEquals(resource3.all(), resource4.all());
+
+            // delete cache1's cached version of the file
+            cache1.invalidate(Paths.get(atlasFile.getPath()).toUri());
+
+            // recreate version 2 of the file
+            atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
+            atlasFile.writeAndClose("2");
+
+            // get version 2 of the file into cache1
+            final Resource resource5 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();
+
+            // now the resources should be identical
+            Assert.assertEquals(resource4.all(), resource5.all());
         }
         finally
         {
