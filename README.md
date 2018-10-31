@@ -7,52 +7,54 @@ AtlasGenerator is a Spark Job that generates [Atlas](https://github.com/osmlab/a
 
 ## Getting started
 
-It is recommended to use Oracle's latest JDK 1.8 with that project.
+This project has been implemented and tested with Oracle JDK 1.8.
 
 ### Build
 
-This command will create the necessary fat (contains all the dependencies) and shaded (contains all the dependencies, except spark and hadoop) jars.
+The following command will compile, run checks, and build the library:
 
 ```
-gradle clean shaded fat
+./gradlew clean build
 ```
 
 ### Setup example: BLZ (Belize)
 
-Download the country boundaries and the sharding tree files from the respective sub-folders available [here](https://apple.box.com/s/3k3wcc0lq1fhqgozxr4mdi0llf95byo3). We will then call `file:///path/to/boundaries/world_boundaries_osm_20170424.txt` and `file:///path/to/sharding/tree-6-14-100000.txt` the boundaries and sharding files just downloaded. Finally download the latest `.osm.pbf` from geofabrik [here](http://download.geofabrik.de/central-america/belize-latest.osm.pbf). We will call the folder that contains it `file:///path/to/pbf`.
-
-We will also trick the program into thinking that the 3 shards Belize intersects with in this sharding tree each have a corresponding `.osm.pbf` file, which will each just be the same copy of the file that was downloaded from geofabrik:
+The BLZ example can be run with this one-liner:
 
 ```
-cp /path/to/pbf/belize-latest.osm.pbf /path/to/pbf/7-32-57.pbf
-cp /path/to/pbf/belize-latest.osm.pbf /path/to/pbf/8-64-117.pbf
-cp /path/to/pbf/belize-latest.osm.pbf /path/to/pbf/8-65-117.pbf
+./gradlew clean run
 ```
 
-### Run
+#### What this does
 
-The `AtlasGenerator` is a `SparkJob` that can be run directly from a simple java command. Assuming `/path/to/jars` contains a fat jar version built from this project here is a sample command that can run locally.
-
+* Downloads the country boundaries and the sharding tree files from the respective sub-folders available [here](https://apple.box.com/s/3k3wcc0lq1fhqgozxr4mdi0llf95byo3).
+* Downloads a belize snapshot osm.pbf file from Geofabrik
+* It tricks the program into thinking that the 3 shards Belize intersects with in this sharding tree each have a corresponding `.osm.pbf` file, which will each just be the same copy of the file that was downloaded from geofabrik:
 ```
-java -classpath "/path/to/jars/*" org.openstreetmap.atlas.generator.AtlasGenerator \
-    -output=file:///path/to/BLZ/output \
-    -master=local \
-    -startedFolder=file:///path/to/BLZ/started \
-    -countries=BLZ \
-    -countryShapes=file:///path/to/boundaries/world_boundaries_osm_20170424.txt \
-    -pbfs=file:///path/to/pbf \
-    -sharding=dynamic@file:///path/to/sharding/tree-6-14-100000.txt \
-    -sparkOptions=spark.executor.memory->10g,spark.driver.memory->10g
+./build/example/data/pbfSource/belize.osm.pbf -> ./build/example/data/pbfs/7-32-57.pbf
+./build/example/data/pbfSource/belize.osm.pbf -> ./build/example/data/pbfs/8-64-116.pbf
+./build/example/data/pbfSource/belize.osm.pbf -> ./build/example/data/pbfs/8-65-116.pbf
+```
+* Runs the `AtlasGenerator` Spark job.
+
+#### The result
+
+* Three atlas shards in `./build/example/output/atlas/BLZ/`
+```
+$ ls -alF ./build/example/output/atlas/BLZ/
+-rw-r--r--  7097365 BLZ_7-32-57.atlas
+-rw-r--r--  658860 BLZ_8-64-116.atlas
+-rw-r--r--  590425 BLZ_8-65-116.atlas
 ```
 
-### Result
+Those 3 files can be loaded together at once, in the JOSM Atlas plugin for example, or programmatically loaded with a `MultiAtlas` using the [`AtlasResourceLoader` from the atlas project](https://github.com/osmlab/atlas/tree/dev/src/main/java/org/openstreetmap/atlas/geography/atlas#using-atlas).
 
-The above command should do the following:
+#### How it looks like
 
-* Create a _STARTED empty file in the started folder to indicate that it started
-* Create 3 atlas shards in /path/to/BLZ/atlas
+This is one shard visualized using the josm-atlas plugin:
 
-Those 3 files can be loaded together at once, in the JOSM Atlas plugin for example, or programmatically loaded with a `MultiAtlas` using the [`AtlasResourceLoader` from the atlas project](https://github.com/osmlab/atlas#using-atlas).
+![josm-atlas1](config/images/josm-atlas1.png)
+![josm-atlas2](config/images/josm-atlas2.png)
 
 ## Contributing
 
