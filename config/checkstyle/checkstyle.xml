@@ -137,7 +137,9 @@
 			<property name="forceStrictCondition" value="false"/>
 		</module> -->
 		<module name="OuterTypeFilename"/>
-		<module name="TrailingComment"/>
+		<module name="TrailingComment">
+			<property name="legalComment" value="NOSONAR"/>
+		</module>
 		<module name="TodoComment" />
 		<module name="UpperEll" />
 	</module>

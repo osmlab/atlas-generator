@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import org.openstreetmap.atlas.generator.AtlasGeneratorHelper;
+import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Rectangle;
@@ -87,6 +87,11 @@ public class WorldAtlasGenerator extends Command
         new WorldAtlasGenerator().run(args);
     }
 
+    public static void setHadoopFileSystemConfiguration(final Map<String, String> newConfiguration)
+    {
+        configuration = newConfiguration;
+    }
+
     private static Resource openResource(final String value)
     {
         return FileSystemHelper.resource(value, configuration);
@@ -95,11 +100,6 @@ public class WorldAtlasGenerator extends Command
     private static WritableResource openWritableResource(final String value)
     {
         return FileSystemHelper.writableResource(value, configuration);
-    }
-
-    public void setHadoopFileSystemConfiguration(final Map<String, String> configuration)
-    {
-        this.configuration = configuration;
     }
 
     @Override
@@ -123,9 +123,16 @@ public class WorldAtlasGenerator extends Command
         final Shard world = SlippyTile.ROOT;
         final String forceSlicingConfiguration = (String) command
                 .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
-        final Predicate<Taggable> forceSlicingPredicate = forceSlicingConfiguration == null
-                ? taggable -> false
-                : AtlasGeneratorHelper.getTaggableFilterFrom(new File(forceSlicingConfiguration));
+        final Predicate<Taggable> forceSlicingPredicate;
+        if (forceSlicingConfiguration == null)
+        {
+            forceSlicingPredicate = taggable -> false;
+        }
+        else
+        {
+            forceSlicingPredicate = AtlasGeneratorParameters
+                    .getTaggableFilterFrom(new File(forceSlicingConfiguration));
+        }
         countryBoundaryMap.setShouldAlwaysSlicePredicate(forceSlicingPredicate);
 
         final Time start = Time.now();
