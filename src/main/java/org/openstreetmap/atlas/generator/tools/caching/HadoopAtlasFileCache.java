@@ -21,7 +21,50 @@ import org.slf4j.LoggerFactory;
 /**
  * Cache an atlas file stored in the standard way (parentpath/COUNTRY/COUNTRY_z-x-y.atlas) to a
  * system temporary location. This cache is designed to be used with atlases that can be fetched
- * from a hadoop file system. This cache is threadsafe.
+ * from a hadoop file system. This cache is threadsafe. You can optionally associate a namespace
+ * with a {@link HadoopAtlasFileCache} at creation time. This will create a unique container
+ * per-namespace for cached content.
+ * <p>
+ * For example, consider the following code:
+ * <p>
+ * <code>
+ * ResourceCache cache1 = new HadoopAtlasFileCache(parentPath, &quotnamespace1&quot;, config);
+ * <br>
+ * ResourceCache cache2 = new HadoopAtlasFileCache(parentPath, &quotnamespace2&quot;, config);
+ * <br><br>
+ * // We will be fetching resource behind URI "parentPath/AAA/AAA_1-1-1.atlas"
+ * <br>
+ * Resource r1 = cache1.get(&quotAAA&quot;, new SlippyTile(1, 1, 1)).get();
+ * <br>
+ * // Assume some event changes the contents behind the URI between get() calls
+ * <br>
+ * Resource r2 = cache1.get(&quotAAA&quot;, new SlippyTile(1, 1, 1)).get();
+ * <br><br>
+ * // This fails since the caches have different namespaces and the resource contents changed
+ * <br>
+ * Assert.assertEquals(r1.all(), r2.all());
+ * <br><br>
+ * // Now we invalidate cache1's copy of the resource
+ * <br>
+ * cache1.invalidate(getURIForResource(r1));
+ * <br>
+ * // This call to cache1.get() will re-fetch since we invalidated
+ * <br>
+ * r1 = cache1.get(&quotAAA&quot;, new SlippyTile(1, 1, 1)).get();
+ * <br><br>
+ * // Now this passes since cache1 was refreshed
+ * <br>
+ * Assert.assertEquals(r1.all(), r2.all());
+ * <br>
+ * </code>
+ * <p>
+ * The key takeaway here is that <code>r1</code> and <code>r2</code> are not guaranteed to have the
+ * same contents, even though their URIs are the same. Since the two cache instances have different
+ * namespaces, their underlying stores do not intersect. It is also worth noting that the
+ * {@link HadoopAtlasFileCache} cannot detect if the resource behind a URI has changed. You must
+ * call {@link HadoopAtlasFileCache#invalidate()} or {@link HadoopAtlasFileCache#invalidate(URI)} to
+ * force an update.
+ * <p>
  *
  * @author lcram
  */
