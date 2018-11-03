@@ -1,9 +1,9 @@
 package org.openstreetmap.atlas.generator.world;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.MultiPolygon;
@@ -80,7 +80,8 @@ public class WorldAtlasGenerator extends Command
     // filter that does no filtering
     private static final ConfiguredTaggableFilter PBF_NO_FILTER_CONFIGURATION = new ConfiguredTaggableFilter(
             new StandardConfiguration(new StringResource("{\"filters\": []}")));
-    private static Map<String, String> configuration = new HashMap<>();
+    private static Map<String, String> configuration = Maps.hashMap("fs.file.impl",
+            LocalFileSystem.class.getName());
 
     public static void main(final String[] args)
     {
