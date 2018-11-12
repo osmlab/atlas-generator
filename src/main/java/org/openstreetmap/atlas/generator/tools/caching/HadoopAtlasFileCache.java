@@ -175,4 +175,43 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
 
         return this.get(atlasURI);
     }
+
+    /**
+     * Invalidate a given shard for a given country.
+     *
+     * @param country
+     *            the country
+     * @param shard
+     *            the shard to invalidate
+     */
+    public void invalidate(final String country, final Shard shard)
+    {
+        String compiledAtlasScheme = "";
+        if (shard instanceof SlippyTile)
+        {
+            compiledAtlasScheme = this.atlasScheme.compile((SlippyTile) shard);
+        }
+        final String atlasName = String.format("%s_%s", country, shard.getName());
+
+        final String atlasURIString = this.parentAtlasPath + "/" + country + "/"
+                + compiledAtlasScheme + atlasName + FileSuffix.ATLAS.toString();
+
+        final URI atlasURI;
+        try
+        {
+            atlasURI = new URI(atlasURIString);
+        }
+        catch (final URISyntaxException exception)
+        {
+            throw new CoreException("Bad URI syntax: {}", atlasURIString, exception);
+        }
+
+        super.invalidate(atlasURI);
+    }
+
+    @Override
+    public void invalidate(final URI resourceURI)
+    {
+        throw new UnsupportedOperationException("please use invalidate(String, Shard)");
+    }
 }

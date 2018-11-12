@@ -1,6 +1,5 @@
 package org.openstreetmap.atlas.generator.tools.caching;
 
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -94,7 +93,7 @@ public class HadoopAtlasFileCacheTest
             Assert.assertNotEquals(resource3.all(), resource4.all());
 
             // delete cache1's cached version of the file
-            cache1.invalidate(Paths.get(atlasFile.getPath()).toUri());
+            cache1.invalidate("AAA", new SlippyTile(1, 1, 1));
 
             // recreate version 2 of the file
             atlasFile.delete();
