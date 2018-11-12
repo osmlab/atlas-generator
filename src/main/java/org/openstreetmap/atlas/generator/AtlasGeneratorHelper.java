@@ -85,7 +85,6 @@ public final class AtlasGeneratorHelper implements Serializable
      *            All available shards for given country, to avoid fetching shards that do not exist
      * @return A function that returns an {@link Atlas} given a {@link Shard}
      */
-    @SuppressWarnings("unchecked")
     protected static Function<Shard, Optional<Atlas>> atlasFetcher(
             final HadoopAtlasFileCache atlasCache, final String country,
             final Set<Shard> validShards)
