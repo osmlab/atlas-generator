@@ -177,7 +177,9 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     }
 
     /**
-     * Invalidate a given shard for a given country.
+     * Invalidate a given shard for a given country. It is highly recommended to use this
+     * implementation of {@link #HadoopAtlasFileCache.invalidate(String, Shard)} over
+     * {@link #HadoopAtlasFileCache.invalidate(URI)}.
      *
      * @param country
      *            the country
@@ -206,12 +208,6 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             throw new CoreException("Bad URI syntax: {}", atlasURIString, exception);
         }
 
-        super.invalidate(atlasURI);
-    }
-
-    @Override
-    public void invalidate(final URI resourceURI)
-    {
-        throw new UnsupportedOperationException("please use invalidate(String, Shard)");
+        this.invalidate(atlasURI);
     }
 }
