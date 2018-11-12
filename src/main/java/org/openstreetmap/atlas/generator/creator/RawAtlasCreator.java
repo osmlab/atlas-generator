@@ -36,9 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A raw atlas compatible version of the {@link AtlasCreator} command. This tool allows the user to
- * replicate raw flow {@link AtlasGenerator} conditions on a certain shard. It is
- * {@link DynamicAtlas} enabled, and will create sliced shards for expansion where necessary.
+ * This tool allows the user to replicate raw flow {@link AtlasGenerator} conditions on a certain
+ * shard. It is {@link DynamicAtlas} enabled, and will create sliced shards for expansion where
+ * necessary.
  *
  * @author lcram
  */

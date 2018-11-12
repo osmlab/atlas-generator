@@ -11,7 +11,9 @@ import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
-import org.openstreetmap.atlas.geography.atlas.pbf.OsmPbfLoader;
+import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
+import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
+import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasCountrySlicer;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.statistics.Counter;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -175,11 +177,21 @@ public class WorldAtlasGenerator extends Command
         final Counter counter = new Counter();
         counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
 
-        final Atlas atlas;
+        Atlas atlas;
         logger.info("Generating world atlas from {}", pbf);
-        final OsmPbfLoader loader = new OsmPbfLoader(pbf, MultiPolygon.MAXIMUM, loadingOptions)
-                .withMetaData(metaData);
-        atlas = loader.read();
+
+        atlas = new RawAtlasGenerator(pbf, loadingOptions, MultiPolygon.MAXIMUM)
+                .withMetaData(metaData).build();
+        if (loadingOptions.isCountrySlicing())
+        {
+            atlas = new RawAtlasCountrySlicer(
+                    loadingOptions.getCountryBoundaryMap().getLoadedCountries(),
+                    loadingOptions.getCountryBoundaryMap()).slice(atlas);
+        }
+        if (loadingOptions.isWaySectioning())
+        {
+            atlas = new WaySectionProcessor(atlas, loadingOptions).run();
+        }
 
         if (atlas == null)
         {

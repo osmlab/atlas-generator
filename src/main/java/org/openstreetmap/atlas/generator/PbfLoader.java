@@ -15,7 +15,6 @@ import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
-import org.openstreetmap.atlas.geography.atlas.pbf.OsmPbfLoader;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -65,7 +64,7 @@ public class PbfLoader implements Serializable
      * @param boundaries
      *            The {@link CountryBoundaryMap}
      * @param atlasLoadingOption
-     *            The loading options for the {@link OsmPbfLoader}
+     *            The loading options
      * @param codeVersion
      *            The version of the code used
      * @param dataVersion
@@ -119,7 +118,8 @@ public class PbfLoader implements Serializable
                     try
                     {
                         shardPbfSlice = new RawAtlasGenerator(locatedPbf.getResource(),
-                                pbfLoadingArea).withMetaData(metaData).build();
+                                this.atlasLoadingOption, pbfLoadingArea).withMetaData(metaData)
+                                        .build();
                     }
                     catch (final Exception e)
                     {
@@ -169,30 +169,6 @@ public class PbfLoader implements Serializable
     }
 
     /**
-     * Generate the {@link Atlas} for a {@link Shard}.
-     *
-     * @param countryName
-     *            The Country to process
-     * @param shard
-     *            The shard to output
-     * @return The built {@link Atlas} for the specified {@link Shard}. {@code null} if there is no
-     *         Atlas to be built (because no PBF or empty PBFs or no overlap)
-     */
-    public Atlas load(final String countryName, final Shard shard)
-    {
-        final Optional<MultiPolygon> loadingArea = calculateLoadingArea(countryName, shard);
-        if (loadingArea.isPresent())
-        {
-            final Iterable<LocatedPbf> pbfPool = this.locator.pbfsCovering(loadingArea.get());
-            return loadFromPool(pbfPool, loadingArea.get(), countryName, shard);
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    /**
      * Calculates the loading area given a country name and working {@link Shard}.
      *
      * @param countryName
@@ -222,69 +198,6 @@ public class PbfLoader implements Serializable
         {
             logger.error("Can't find shard {} for country {}", shard, countryName);
             return Optional.empty();
-        }
-    }
-
-    private Atlas loadFromPool(final Iterable<LocatedPbf> pbfs, final MultiPolygon loadingArea,
-            final String country, final Shard shard)
-    {
-        final List<Atlas> atlases = new ArrayList<>();
-        final Map<String, String> metaDataTags = Maps.hashMap();
-
-        // Add shard information to the meta data
-        metaDataTags.put("countryShards",
-                this.countryShards.stream().map(countryShard -> country
-                        + CountryShard.COUNTRY_SHARD_SEPARATOR + countryShard.getName())
-                        .collect(Collectors.joining(",")));
-        metaDataTags.put(shard.getName() + "_boundary", loadingArea.toString());
-
-        pbfs.forEach(locatedPbf ->
-        {
-            final MultiPolygon pbfLoadingArea = locatedPbf.bounds().clip(loadingArea, ClipType.AND)
-                    .getClipMultiPolygon();
-            final AtlasMetaData metaData = new AtlasMetaData(null, true, this.codeVersion,
-                    this.dataVersion, country, shard.getName(), metaDataTags);
-            final OsmPbfLoader loader = new OsmPbfLoader(locatedPbf.getResource(), pbfLoadingArea,
-                    this.atlasLoadingOption).withMetaData(metaData);
-            Atlas shardPbfSlice = null;
-            try
-            {
-                shardPbfSlice = loader.read();
-            }
-            catch (final Exception e)
-            {
-                logger.error("Dropping PBF {} for Atlas shard {}",
-                        locatedPbf.getResource().getName(), shard, e);
-            }
-            if (shardPbfSlice != null)
-            {
-                atlases.add(shardPbfSlice);
-            }
-        });
-        if (ATLAS_SAVE_FOLDER != null)
-        {
-            int index = 0;
-            for (final Atlas atlas : atlases)
-            {
-                atlas.save(ATLAS_SAVE_FOLDER.child(shard.getName() + "_" + index++ + ".atlas.gz"));
-            }
-        }
-        if (atlases.size() > 1)
-        {
-            // Concatenate many PBFs in one single Atlas
-            logger.info("Concatenating {} PBF-made Atlas into one Atlas Shard {}", atlases.size(),
-                    shard);
-            return PackedAtlas.cloneFrom(new MultiAtlas(atlases));
-        }
-        else if (atlases.size() == 1)
-        {
-            // Only one PBF was used
-            return atlases.get(0);
-        }
-        else
-        {
-            // There are no PBF resources.
-            return null;
         }
     }
 }
