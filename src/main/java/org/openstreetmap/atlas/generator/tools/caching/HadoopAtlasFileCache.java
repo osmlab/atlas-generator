@@ -158,8 +158,8 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
 
     /**
      * Invalidate a given shard for a given country. It is highly recommended to use this
-     * implementation of {@link #HadoopAtlasFileCache.invalidate(String, Shard)} over
-     * {@link #HadoopAtlasFileCache.invalidate(URI)}.
+     * implementation of {@link HadoopAtlasFileCache#invalidate(String, Shard)} over
+     * {@link HadoopAtlasFileCache#invalidate(URI)}.
      *
      * @param country
      *            the country
