@@ -153,17 +153,37 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
      */
     public Optional<Resource> get(final String country, final Shard shard)
     {
+        return this.get(getURIFromCountryAndShard(country, shard));
+    }
+
+    /**
+     * Invalidate a given shard for a given country. It is highly recommended to use this
+     * implementation of {@link HadoopAtlasFileCache#invalidate(String, Shard)} over
+     * {@link HadoopAtlasFileCache#invalidate(URI)}.
+     *
+     * @param country
+     *            the country
+     * @param shard
+     *            the shard to invalidate
+     */
+    public void invalidate(final String country, final Shard shard)
+    {
+        this.invalidate(getURIFromCountryAndShard(country, shard));
+    }
+
+    private URI getURIFromCountryAndShard(final String country, final Shard shard)
+    {
         String compiledAtlasScheme = "";
         if (shard instanceof SlippyTile)
         {
             compiledAtlasScheme = this.atlasScheme.compile((SlippyTile) shard);
         }
         final String atlasName = String.format("%s_%s", country, shard.getName());
-        // TODO it may be preferable to use SparkFileHelper.combine() here
+
         final String atlasURIString = this.parentAtlasPath + "/" + country + "/"
                 + compiledAtlasScheme + atlasName + FileSuffix.ATLAS.toString();
-        final URI atlasURI;
 
+        final URI atlasURI;
         try
         {
             atlasURI = new URI(atlasURIString);
@@ -172,7 +192,6 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
         {
             throw new CoreException("Bad URI syntax: {}", atlasURIString, exception);
         }
-
-        return this.get(atlasURI);
+        return atlasURI;
     }
 }
