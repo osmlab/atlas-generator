@@ -59,9 +59,9 @@ public class WorldAtlasGenerator extends Command
             "The code version", StringConverter.IDENTITY, Optionality.OPTIONAL, "unknown");
     public static final Switch<String> DATA_VERSION = new Switch<>("dataVersion",
             "The data version", StringConverter.IDENTITY, Optionality.OPTIONAL, "unknown");
-    public static final Switch<Boolean> USE_RAW_ATLAS = new Switch<>("useRawAtlas",
-            "Allow PBF to Atlas process to use Raw Atlas flow", Boolean::parseBoolean,
-            Optionality.OPTIONAL, "false");
+    public static final Switch<String> EDGE_CONFIGURATION = new Switch<>("edgeConfiguration",
+            "The path to the configuration file that defines what OSM Way becomes an Edge",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> SHOULD_ALWAYS_SLICE_CONFIGURATION = new Switch<>(
             "shouldAlwaysSliceConfiguration",
             "The path to the configuration file that defines which entities on which country slicing will"
@@ -115,6 +115,7 @@ public class WorldAtlasGenerator extends Command
                     "AAA||" + Rectangle.MAXIMUM.toWkt());
             countryBoundaryMap = CountryBoundaryMap.fromPlainText(wholeWorld);
         }
+        final File edgeConfiguration = (File) command.get(EDGE_CONFIGURATION);
         final File pbfWayConfiguration = (File) command.get(PBF_WAY_CONFIGURATION);
         final File pbfNodeConfiguration = (File) command.get(PBF_NODE_CONFIGURATION);
         final File pbfRelationConfiguration = (File) command.get(PBF_RELATION_CONFIGURATION);
@@ -144,6 +145,13 @@ public class WorldAtlasGenerator extends Command
         final AtlasLoadingOption loadingOptions = AtlasLoadingOption
                 .createOptionWithAllEnabled(countryBoundaryMap)
                 .setAdditionalCountryCodes(countryBoundaryMap.allCountryNames());
+
+        if (edgeConfiguration != null)
+        {
+            loadingOptions.setEdgeFilter(
+                    new ConfiguredTaggableFilter(new StandardConfiguration(edgeConfiguration)));
+        }
+
         if (pbfWayConfiguration == null)
         {
             loadingOptions.setOsmPbfWayFilter(PBF_NO_FILTER_CONFIGURATION);
@@ -218,8 +226,8 @@ public class WorldAtlasGenerator extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(PBF, ATLAS, STATISTICS, BOUNDARIES, CODE_VERSION, DATA_VERSION,
-                SHOULD_ALWAYS_SLICE_CONFIGURATION, PBF_WAY_CONFIGURATION, PBF_NODE_CONFIGURATION,
-                PBF_RELATION_CONFIGURATION);
+                EDGE_CONFIGURATION, SHOULD_ALWAYS_SLICE_CONFIGURATION, PBF_WAY_CONFIGURATION,
+                PBF_NODE_CONFIGURATION, PBF_RELATION_CONFIGURATION);
     }
 
 }
