@@ -318,6 +318,11 @@ public abstract class SparkJob extends Command implements Serializable
         return resource(path, configurationMap());
     }
 
+    protected void setContext(final JavaSparkContext context)
+    {
+        this.context = context;
+    }
+
     /**
      * Instead of saving a full RDD(String, T) in a single folder, this function allows to save
      * subsets of an RDD(String, T) in separate folders. The keyReducer function needs to provide
