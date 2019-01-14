@@ -222,6 +222,11 @@ public abstract class SparkJob extends Command implements Serializable
         return 0;
     }
 
+    public void setContext(final JavaSparkContext context)
+    {
+        this.context = context;
+    }
+
     /**
      * The spark Job
      *
