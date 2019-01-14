@@ -222,11 +222,6 @@ public abstract class SparkJob extends Command implements Serializable
         return 0;
     }
 
-    public void setContext(final JavaSparkContext context)
-    {
-        this.context = context;
-    }
-
     /**
      * The spark Job
      *
@@ -321,6 +316,11 @@ public abstract class SparkJob extends Command implements Serializable
     protected Resource resource(final String path)
     {
         return resource(path, configurationMap());
+    }
+
+    protected void setContext(final JavaSparkContext context)
+    {
+        this.context = context;
     }
 
     /**
