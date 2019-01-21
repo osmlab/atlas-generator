@@ -12,14 +12,18 @@ import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.PbfLocator.LocatedPbf;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceSchemeType;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.sharding.SlippyTileSharding;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author matthieun
@@ -27,14 +31,15 @@ import org.openstreetmap.atlas.utilities.collections.Iterables;
 public class PbfLocatorTest
 {
     private static final String version = "07082015";
+    private static final Logger logger = LoggerFactory.getLogger(PbfLocatorTest.class);
 
     @Before
     public void init()
     {
-        uploadFile(10 + "/" + 291 + "-" + 438 + ".osm.pbf");
-        uploadFile(10 + "/" + 292 + "-" + 438 + ".osm.pbf");
-        uploadFile(10 + "-" + 291 + "-" + 438 + ".pbf");
-        uploadFile(10 + "-" + 292 + "-" + 438 + ".pbf");
+        uploadFile(10 + "/" + 291 + "-" + 438 + FileSuffix.PBF.toString());
+        uploadFile(10 + "/" + 292 + "-" + 438 + FileSuffix.PBF.toString());
+        uploadFile(10 + "-" + 291 + "-" + 438 + FileSuffix.PBF.toString());
+        uploadFile(10 + "-" + 292 + "-" + 438 + FileSuffix.PBF.toString());
         System.out.println(ResourceFileSystem.files());
     }
 
@@ -43,7 +48,8 @@ public class PbfLocatorTest
     {
         // Test a default scheme
         final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
-                PbfLocator.DEFAULT_SCHEME);
+                SlippyTilePersistenceSchemeType.ZZ_XX_YY_PBF);
+        logger.warn("{}", scheme.getScheme());
         final PbfContext pbfContext = new PbfContext("resource://" + version,
                 new SlippyTileSharding(10), scheme);
         final PbfLocator locator = new PbfLocator(pbfContext,
@@ -60,8 +66,8 @@ public class PbfLocatorTest
     {
         // Test a non-default scheme
         final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
-                SlippyTilePersistenceScheme.ZOOM + "/" + SlippyTilePersistenceScheme.X_INDEX + "-"
-                        + SlippyTilePersistenceScheme.Y_INDEX + ".osm.pbf");
+                SlippyTilePersistenceSchemeType.ZZ_SLASH_XX_YY_PBF);
+        logger.warn("{}", scheme.getScheme());
         final PbfContext pbfContext = new PbfContext("resource://" + version,
                 new SlippyTileSharding(10), scheme);
         final PbfLocator locator = new PbfLocator(pbfContext,

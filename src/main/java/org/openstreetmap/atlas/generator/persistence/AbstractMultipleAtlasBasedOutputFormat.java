@@ -3,6 +3,7 @@ package org.openstreetmap.atlas.generator.persistence;
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.openstreetmap.atlas.generator.AtlasGenerator;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.geography.sharding.converters.SlippyTileConverter;
@@ -30,10 +31,10 @@ public abstract class AbstractMultipleAtlasBasedOutputFormat<Type>
         final String country = countrySplit.get(0);
         final String shard = countrySplit.get(1);
         final String schemeDefinition = countrySplit.size() > 2 ? countrySplit.get(2) : "";
-        final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
-                schemeDefinition);
+        final SlippyTilePersistenceScheme scheme = SlippyTilePersistenceScheme
+                .getSchemeInstanceFromString(schemeDefinition);
         final SlippyTile slippyTile = new SlippyTileConverter().backwardConvert(shard);
-        return country + "/" + scheme.compile(slippyTile) + country
-                + CountryShard.COUNTRY_SHARD_SEPARATOR + shard;
+        return SparkFileHelper.combine(country, scheme.compile(slippyTile),
+                country + CountryShard.COUNTRY_SHARD_SEPARATOR + shard);
     }
 }

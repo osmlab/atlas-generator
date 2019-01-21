@@ -70,8 +70,12 @@ public class SparkFileHelper implements Serializable
         final StringBuilder builder = new StringBuilder(pathNotEndingWithSeparator(basePath));
         for (final String path : paths)
         {
+            if (path.isEmpty())
+            {
+                continue;
+            }
             builder.append(DIRECTORY_SEPARATOR);
-            builder.append(pathNotStartingWithSeparator(path));
+            builder.append(pathNotStartingOrEndingWithSeparator(path));
         }
 
         return builder.toString();
@@ -126,6 +130,11 @@ public class SparkFileHelper implements Serializable
         return pathNotEndingWithSeparator(path, DIRECTORY_SEPARATOR);
     }
 
+    public static String pathNotStartingOrEndingWithSeparator(final String path)
+    {
+        return pathNotStartingOrEndingWithSeparator(path, DIRECTORY_SEPARATOR);
+    }
+
     /**
      * Removes {@code PATH_SEPARATOR} from the beginning of given path.
      *
@@ -152,9 +161,28 @@ public class SparkFileHelper implements Serializable
             return EMPTY_STRING;
         }
 
-        final int lastSeparatorIndex = path.lastIndexOf(separator);
-        return lastSeparatorIndex == path.length() - 1 ? path.substring(0, lastSeparatorIndex)
-                : path;
+        String scrubbedPath = path;
+        while (scrubbedPath.lastIndexOf(separator) != -1)
+        {
+            final int lastSeparatorIndex = scrubbedPath.lastIndexOf(separator);
+            if (lastSeparatorIndex == scrubbedPath.length() - 1)
+            {
+                scrubbedPath = scrubbedPath.substring(0, lastSeparatorIndex);
+            }
+            else
+            {
+                break;
+            }
+        }
+        return scrubbedPath;
+    }
+
+    private static String pathNotStartingOrEndingWithSeparator(final String path,
+            final String directorySeparator)
+    {
+        String newPath = pathNotStartingWithSeparator(path, directorySeparator);
+        newPath = pathNotEndingWithSeparator(newPath, directorySeparator);
+        return newPath;
     }
 
     private static String pathNotStartingWithSeparator(final String path, final String separator)
@@ -171,8 +199,20 @@ public class SparkFileHelper implements Serializable
             return EMPTY_STRING;
         }
 
-        final int firstSeparatorIndex = path.indexOf(separator);
-        return firstSeparatorIndex == 0 ? path.substring(1) : path;
+        String scrubbedPath = path;
+        while (scrubbedPath.indexOf(separator) == 0)
+        {
+            final int firstSeparatorIndex = scrubbedPath.indexOf(separator);
+            if (firstSeparatorIndex == 0)
+            {
+                scrubbedPath = scrubbedPath.substring(1);
+            }
+            else
+            {
+                break;
+            }
+        }
+        return scrubbedPath;
     }
 
     private static String pathStartingWithSeparator(final String path, final String separator)

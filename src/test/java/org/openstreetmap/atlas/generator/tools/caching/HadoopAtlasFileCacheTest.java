@@ -5,7 +5,8 @@ import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceSchemeType;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -23,7 +24,8 @@ public class HadoopAtlasFileCacheTest
         final File parentAtlasCountry = new File(parentAtlas + "/AAA");
         final String fullParentPathURI = "file://" + parentAtlas.toString();
         final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(fullParentPathURI,
-                AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
+                new SlippyTilePersistenceScheme(SlippyTilePersistenceSchemeType.ZZ_SUBFOLDER),
+                new HashMap<>());
         parentAtlasCountry.mkdirs();
         try
         {
@@ -61,9 +63,13 @@ public class HadoopAtlasFileCacheTest
         final File parentAtlasCountry = new File(parentAtlas + "/AAA");
         final String fullParentPathURI = "file://" + parentAtlas.toString();
         final HadoopAtlasFileCache cache1 = new HadoopAtlasFileCache(fullParentPathURI,
-                "namespace1", AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
+                "namespace1",
+                new SlippyTilePersistenceScheme(SlippyTilePersistenceSchemeType.ZZ_SUBFOLDER),
+                new HashMap<>());
         final HadoopAtlasFileCache cache2 = new HadoopAtlasFileCache(fullParentPathURI,
-                "namespace2", AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
+                "namespace2",
+                new SlippyTilePersistenceScheme(SlippyTilePersistenceSchemeType.ZZ_SUBFOLDER),
+                new HashMap<>());
         parentAtlasCountry.mkdirs();
         try
         {
@@ -122,7 +128,8 @@ public class HadoopAtlasFileCacheTest
         final File parentAtlasCountry = new File(parentAtlas + "/AAA");
         final String fullParentPathURI = "file://" + parentAtlas.toString();
         final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(fullParentPathURI,
-                AtlasGeneratorParameters.ATLAS_SCHEME.get("zz/"), new HashMap<>());
+                new SlippyTilePersistenceScheme(SlippyTilePersistenceSchemeType.ZZ_SUBFOLDER),
+                new HashMap<>());
         parentAtlasCountry.mkdirs();
         try
         {

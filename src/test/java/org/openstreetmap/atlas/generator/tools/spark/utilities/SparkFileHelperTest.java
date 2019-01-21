@@ -223,6 +223,50 @@ public class SparkFileHelperTest
     }
 
     @Test
+    public void testPathOperations()
+    {
+        final String dir1 = "dir1";
+        final String dir2 = "dir2";
+        final String combined1 = SparkFileHelper.combine(dir1, dir2);
+        Assert.assertEquals("dir1/dir2", combined1);
+        Assert.assertEquals("dir1", SparkFileHelper.parentPath(combined1));
+
+        final String combined2 = SparkFileHelper.combine(dir1, dir2, dir2, dir1);
+        Assert.assertEquals("dir1/dir2/dir2/dir1", combined2);
+        Assert.assertEquals("dir1/dir2/dir2", SparkFileHelper.parentPath(combined2));
+
+        final String dir3 = "dir3/";
+        final String dir4 = "/dir4";
+        final String combined3 = SparkFileHelper.combine(dir3, dir4);
+        Assert.assertEquals("dir3/dir4", combined3);
+        Assert.assertEquals("dir3", SparkFileHelper.parentPath(combined3));
+
+        final String dir5 = "dir5////";
+        final String dir6 = "dir6";
+        final String combined4 = SparkFileHelper.combine(dir5, dir6, dir5, dir6);
+        Assert.assertEquals("dir5/dir6/dir5/dir6", combined4);
+
+        final String combined5 = SparkFileHelper.combine(dir5, dir6, dir5);
+        Assert.assertEquals("dir5/dir6/dir5", combined5);
+
+        final String dir7 = "dir7////";
+        final String dir8 = "//////dir8";
+        final String combined6 = SparkFileHelper.combine(dir7, dir8);
+        Assert.assertEquals("dir7/dir8", combined6);
+
+        final String combined7 = SparkFileHelper.combine(dir1, dir2, dir3, dir4, dir5, dir6, dir7,
+                dir8, dir7, dir6, dir5, dir4, dir3, dir2, dir1);
+        Assert.assertEquals(
+                "dir1/dir2/dir3/dir4/dir5/dir6/dir7/dir8/dir7/dir6/dir5/dir4/dir3/dir2/dir1",
+                combined7);
+
+        final String prefix = "hdfs://somePath/";
+        final String suffix = "/anotherComponent//";
+        Assert.assertEquals("hdfs://somePath/anotherComponent",
+                SparkFileHelper.combine(prefix, suffix));
+    }
+
+    @Test
     public void testRename() throws IOException
     {
         // Create temporary files
