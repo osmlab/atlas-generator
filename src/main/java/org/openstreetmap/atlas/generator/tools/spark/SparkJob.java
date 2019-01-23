@@ -28,7 +28,6 @@ import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProvide
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProviderFinder;
 import org.openstreetmap.atlas.generator.tools.spark.converters.SparkOptionsStringConverter;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
-import org.openstreetmap.atlas.streaming.Streams;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.AbstractResource;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
@@ -426,11 +425,11 @@ public abstract class SparkJob extends Command implements Serializable
         try
         {
             final FileSystem fileSystem = getFileSystem(path);
-            final BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
-                    fileSystem.create(new Path(SparkFileHelper.combine(path, name)))));
-            // TODO this leaks a resource if write() throws an exception
-            out.write(contents);
-            Streams.close(out);
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
+                    fileSystem.create(new Path(SparkFileHelper.combine(path, name))))))
+            {
+                out.write(contents);
+            }
         }
         catch (final Exception e)
         {
