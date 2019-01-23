@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.openstreetmap.atlas.generator.tools.spark.DataLocator;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
@@ -56,11 +57,12 @@ public class AtlasLocator extends DataLocator<Atlas>
 
     private String fullPath(final String atlasPath, final String countryShard)
     {
-        return atlasPath + "/" + countryShard + FileSuffix.ATLAS;
+        return SparkFileHelper.combine(atlasPath, countryShard + FileSuffix.ATLAS);
     }
 
     private String fullPathGzipped(final String atlasPath, final String countryShard)
     {
-        return atlasPath + "/" + countryShard + FileSuffix.ATLAS + FileSuffix.GZIP;
+        return SparkFileHelper.combine(atlasPath,
+                countryShard + FileSuffix.ATLAS + FileSuffix.GZIP);
     }
 }

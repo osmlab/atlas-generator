@@ -27,7 +27,7 @@ import org.openstreetmap.atlas.generator.tools.spark.context.DefaultSparkContext
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProvider;
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProviderFinder;
 import org.openstreetmap.atlas.generator.tools.spark.converters.SparkOptionsStringConverter;
-import org.openstreetmap.atlas.streaming.Streams;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.AbstractResource;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
@@ -261,7 +261,7 @@ public abstract class SparkJob extends Command implements Serializable
      */
     protected String getAlternateParallelFolderOutput(final String output, final String name)
     {
-        return output.substring(0, output.lastIndexOf("/")) + "-" + name;
+        return SparkFileHelper.parentPath(output) + "-" + name;
     }
 
     /**
@@ -276,7 +276,7 @@ public abstract class SparkJob extends Command implements Serializable
      */
     protected String getAlternateSubFolderOutput(final String output, final String name)
     {
-        return output.substring(0, output.lastIndexOf("/")) + "/" + name;
+        return SparkFileHelper.combine(SparkFileHelper.parentPath(output), name);
     }
 
     protected JavaSparkContext getContext()
@@ -379,7 +379,7 @@ public abstract class SparkJob extends Command implements Serializable
             final FileSystem fileSystem = getFileSystem(path);
             try
             {
-                fileSystem.getFileStatus(new Path(path + "/" + name));
+                fileSystem.getFileStatus(new Path(SparkFileHelper.combine(path, name)));
                 fileIsThere = true;
             }
             catch (final FileNotFoundException e)
@@ -412,7 +412,7 @@ public abstract class SparkJob extends Command implements Serializable
 
     private void deleteStatus(final String path, final String name)
     {
-        deleteStatus(path + "/" + name);
+        deleteStatus(SparkFileHelper.combine(path, name));
     }
 
     private FileSystem getFileSystem(final String path) throws IllegalArgumentException, IOException
@@ -425,10 +425,11 @@ public abstract class SparkJob extends Command implements Serializable
         try
         {
             final FileSystem fileSystem = getFileSystem(path);
-            final BufferedWriter out = new BufferedWriter(
-                    new OutputStreamWriter(fileSystem.create(new Path(path + "/" + name))));
-            out.write(contents);
-            Streams.close(out);
+            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
+                    fileSystem.create(new Path(SparkFileHelper.combine(path, name))))))
+            {
+                out.write(contents);
+            }
         }
         catch (final Exception e)
         {

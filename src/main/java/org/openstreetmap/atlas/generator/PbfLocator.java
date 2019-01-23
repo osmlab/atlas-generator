@@ -13,6 +13,7 @@ import org.apache.hadoop.fs.Path;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemCreator;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.Located;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
@@ -87,8 +88,8 @@ public class PbfLocator implements Serializable
                 spark);
         this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
-            final Path pbfName = new Path(this.pbfContext.getPbfPath() + "/"
-                    + this.pbfContext.getScheme().compile(shard));
+            final Path pbfName = new Path(SparkFileHelper.combine(this.pbfContext.getPbfPath(),
+                    this.pbfContext.getScheme().compile(shard)));
             try
             {
                 if (!fileSystem.exists(pbfName))

@@ -16,6 +16,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.caching.HadoopAtlasFileCache;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
@@ -131,9 +132,9 @@ public final class AtlasGeneratorHelper implements Serializable
             try
             {
                 final Optional<Atlas> alter = new AtlasLocator(sparkContext).atlasForShard(
-                        previousOutputForDelta + "/"
-                                + StringList.split(countryShardName,
-                                        CountryShard.COUNTRY_SHARD_SEPARATOR).get(0),
+                        SparkFileHelper.combine(previousOutputForDelta,
+                                StringList.split(countryShardName,
+                                        CountryShard.COUNTRY_SHARD_SEPARATOR).get(0)),
                         countryShardName);
                 if (alter.isPresent())
                 {

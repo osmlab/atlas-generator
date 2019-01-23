@@ -9,6 +9,7 @@ import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
@@ -180,8 +181,8 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
         }
         final String atlasName = String.format("%s_%s", country, shard.getName());
 
-        final String atlasURIString = this.parentAtlasPath + "/" + country + "/"
-                + compiledAtlasScheme + atlasName + FileSuffix.ATLAS.toString();
+        final String atlasURIString = SparkFileHelper.combine(this.parentAtlasPath, country,
+                compiledAtlasScheme, atlasName + FileSuffix.ATLAS.toString());
 
         final URI atlasURI;
         try

@@ -34,8 +34,9 @@ public final class AtlasGeneratorParameters
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs", "The path to PBFs",
             StringConverter.IDENTITY, Optionality.REQUIRED);
     public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
-            "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
-            Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
+            "The folder structure of the PBF",
+            SlippyTilePersistenceScheme::getSchemeInstanceFromString, Optionality.OPTIONAL,
+            PbfLocator.DEFAULT_SCHEME);
     public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
             "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
@@ -43,7 +44,7 @@ public final class AtlasGeneratorParameters
             "atlasScheme",
             "The folder structure of the output Atlas. Example: \"zz/xx/yy/\" or \"\""
                     + " (everything under the same folder)",
-            SlippyTilePersistenceScheme::new, Optionality.OPTIONAL,
+            SlippyTilePersistenceScheme::getSchemeInstanceFromString, Optionality.OPTIONAL,
             AbstractMultipleAtlasBasedOutputFormat.DEFAULT_SCHEME);
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,

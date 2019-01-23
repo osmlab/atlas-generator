@@ -12,6 +12,7 @@ import org.openstreetmap.atlas.generator.PbfLoader;
 import org.openstreetmap.atlas.generator.PbfLocator;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.dynamic.DynamicAtlas;
@@ -122,7 +123,8 @@ public class RawAtlasCreator extends Command
      */
     public static final Switch<String> SLICED_CACHE_PATH = new Switch<>("slicedCache",
             "The path to the sliced atlas cache for DynamicAtlas", StringConverter.IDENTITY,
-            Optionality.OPTIONAL, System.getProperty("user.home") + "/" + DEFAULT_CACHE_NAME);
+            Optionality.OPTIONAL,
+            SparkFileHelper.combine(System.getProperty("user.home"), DEFAULT_CACHE_NAME));
 
     /*
      * If we attempt to populate the sliced atlas cache and still miss, we can optionally fail fast.
@@ -196,8 +198,8 @@ public class RawAtlasCreator extends Command
         final String pbfPath = (String) command.get(PBF_PATH);
         final String slicedCachePath = (String) command.get(SLICED_CACHE_PATH);
         final boolean failFastOnSlicedCacheMiss = (boolean) command.get(FAIL_FAST_CACHE_MISS);
-        final SlippyTilePersistenceScheme pbfScheme = new SlippyTilePersistenceScheme(
-                PbfLocator.DEFAULT_SCHEME);
+        final SlippyTilePersistenceScheme pbfScheme = SlippyTilePersistenceScheme
+                .getSchemeInstanceFromString(PbfLocator.DEFAULT_SCHEME);
         final String pbfShardingName = (String) command.get(PBF_SHARDING);
         final String shardingName = (String) command.get(SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, Maps.stringMap());
