@@ -1,7 +1,8 @@
 package org.openstreetmap.atlas.generator;
 
 import java.io.IOException;
-import java.io.Serializable;
+// SONAR fails to see this is used to cast lambda functions.
+import java.io.Serializable; // NOSONAR
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
