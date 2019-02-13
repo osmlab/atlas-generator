@@ -14,6 +14,7 @@ import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenc
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
+import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.dynamic.DynamicAtlas;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
@@ -237,6 +238,7 @@ public class RawAtlasCreator extends Command
                 FAIL_FAST_CACHE_MISS, PBF_SHARDING, COUNTRY, OUTPUT, ATLAS_FLAVOR, USE_JAVA_ATLAS);
     }
 
+    @SuppressWarnings("unchecked")
     private Function<Shard, Optional<Atlas>> atlasFetcher(final String countryName,
             final String slicedCachePath, final boolean failFastOnSlicedCacheMiss,
             final String pbfPath, final CountryBoundaryMap countryBoundaryMap)
@@ -263,7 +265,7 @@ public class RawAtlasCreator extends Command
                 }
                 catch (final Exception exception)
                 {
-                    logger.error("{}", exception.toString());
+                    logger.error("Error", exception);
                     atlasOption = Optional.empty();
                 }
 
@@ -298,10 +300,12 @@ public class RawAtlasCreator extends Command
 
     private Atlas generateRawAtlas(final String pbfPath, final Shard shardToBuild)
     {
+        final String unknown = "unknown";
         final RawAtlasGenerator rawAtlasGenerator = new RawAtlasGenerator(
-                new File(this.getPBFFilePathFromDirectory(pbfPath, shardToBuild)));
-        final Atlas rawAtlas = rawAtlasGenerator.build();
-        return rawAtlas;
+                new File(this.getPBFFilePathFromDirectory(pbfPath, shardToBuild)))
+                        .withMetaData(new AtlasMetaData(null, true, unknown, unknown, unknown,
+                                shardToBuild.getName(), Maps.hashMap()));
+        return rawAtlasGenerator.build();
     }
 
     private Atlas generateSectionedAtlasGivenSlicedAtlas(final String countryName,
