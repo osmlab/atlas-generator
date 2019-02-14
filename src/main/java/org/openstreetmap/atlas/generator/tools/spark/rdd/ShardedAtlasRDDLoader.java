@@ -100,7 +100,6 @@ public class ShardedAtlasRDDLoader
      */
     public static Atlas loadOneAtlasShard(final String country, final String shardName,
             final String atlasDirectory, final Map<String, String> configurationMap)
-            throws CoreException
     {
         final String atlasPath = atlasPath(atlasDirectory, country, shardName);
         logger.info("Start to load atlas from atlas directory: {} ", atlasPath);
