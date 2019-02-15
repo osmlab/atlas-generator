@@ -86,6 +86,20 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final String LINE_SLICED_SUBATLAS_NAMESPACE = "lineSlicedSubAtlas";
     private static final String LINE_SLICED_ATLAS_NAMESPACE = "lineSlicedAtlas";
 
+    // Bring in all points that are part of any line that will become an edge
+    static final Predicate<AtlasEntity> pointPredicate = entity -> entity instanceof Point;
+
+    // Bring in all lines that will become edges
+    static final Predicate<AtlasEntity> relationPredicate = entity ->
+    {
+        return entity.getType().equals(ItemType.RELATION) && Validators.isOfType(entity,
+                NaturalTag.class, NaturalTag.WATER, NaturalTag.COASTLINE);
+    };
+
+    // Dynamic expansion filter will be a combination of points and lines
+    public static final Predicate<AtlasEntity> subAtlasFilter = entity -> pointPredicate
+            .test(entity) || relationPredicate.test(entity);
+
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
 
     @SuppressWarnings("unchecked")
@@ -600,22 +614,9 @@ public final class AtlasGeneratorHelper implements Serializable
 
             try
             {
-                // Bring in all points that are part of any line that will become an edge
-                final Predicate<AtlasEntity> pointPredicate = entity -> entity instanceof Point;
-
-                // Bring in all lines that will become edges
-                final Predicate<AtlasEntity> relationPredicate = entity ->
-                {
-                    return entity.getType().equals(ItemType.RELATION) && Validators.isOfType(entity,
-                            NaturalTag.class, NaturalTag.WATER, NaturalTag.COASTLINE);
-                };
-
-                // Dynamic expansion filter will be a combination of points and lines
-                final Predicate<AtlasEntity> dynamicAtlasExpansionFilter = entity -> pointPredicate
-                        .test(entity) || relationPredicate.test(entity);
                 // Slice the Atlas
                 final Optional<Atlas> subAtlasOptional = subAtlasFromRawShardAtlas
-                        .subAtlas(dynamicAtlasExpansionFilter, AtlasCutType.SOFT_CUT);
+                        .subAtlas(subAtlasFilter, AtlasCutType.SOFT_CUT);
                 if (subAtlasOptional.isPresent())
                 {
                     subAtlas = subAtlasOptional.get();
