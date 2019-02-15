@@ -273,7 +273,6 @@ public class RawAtlasCreator extends Command
                 FAIL_FAST_CACHE_MISS, PBF_SHARDING, COUNTRY, OUTPUT, ATLAS_FLAVOR, USE_JAVA_ATLAS);
     }
 
-
     private Optional<Atlas> fetchCachedAtlas(final Shard shard, final String countryName,
             final String cachePath)
     {
