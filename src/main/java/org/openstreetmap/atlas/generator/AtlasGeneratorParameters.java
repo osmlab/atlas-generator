@@ -85,6 +85,10 @@ public final class AtlasGeneratorParameters
     public static final Switch<Boolean> USE_JAVA_FORMAT = new Switch<>("useJavaFormat",
             "Generate the atlas files using the java serialization atlas format (as opposed to the protobuf format).",
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
+    public static final Switch<Boolean> LINE_DELIMITED_GEOJSON_OUTPUT = new Switch<>(
+            "lineDelimitedGeojsonOutput",
+            "Output each shard as a line delimited geojson outout file in the ldgeojson folder.",
+            Boolean::parseBoolean, Optionality.OPTIONAL, "false");
 
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
@@ -182,7 +186,7 @@ public final class AtlasGeneratorParameters
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME,
-                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT);
+                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT, LINE_DELIMITED_GEOJSON_OUTPUT);
     }
 
     private AtlasGeneratorParameters()

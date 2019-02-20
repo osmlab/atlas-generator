@@ -16,6 +16,7 @@ import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatist
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasProtoOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
+import org.openstreetmap.atlas.generator.persistence.MultipleLineDelimitedGeojsonOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
@@ -60,6 +61,7 @@ public class AtlasGenerator extends SparkJob
     public static final String SHARD_DELTAS_ADDED_FOLDER = "deltasAdded";
     public static final String SHARD_DELTAS_CHANGED_FOLDER = "deltasChanged";
     public static final String SHARD_DELTAS_REMOVED_FOLDER = "deltasRemoved";
+    public static final String LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER = "ldgeojson";
 
     public static void main(final String[] args)
     {
@@ -142,6 +144,8 @@ public class AtlasGenerator extends SparkJob
         final String output = output(command);
         final boolean useJavaFormat = (boolean) command
                 .get(AtlasGeneratorParameters.USE_JAVA_FORMAT);
+        final boolean lineDelimitedGeojsonOutput = (boolean) command
+                .get(AtlasGeneratorParameters.LINE_DELIMITED_GEOJSON_OUTPUT);
 
         // This has to be converted here, as we need the Spark Context
         final Resource countryBoundaries = resource(countryShapes);
@@ -232,6 +236,15 @@ public class AtlasGenerator extends SparkJob
                     MultipleAtlasProtoOutputFormat.class, new JobConf(configuration()));
         }
         logger.info("\n\n********** SAVED THE FINAL ATLAS **********\n");
+
+        if (lineDelimitedGeojsonOutput)
+        {
+            countryAtlasShardsRDD.saveAsHadoopFile(
+                    getAlternateSubFolderOutput(output, LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER),
+                    Text.class, String.class, MultipleLineDelimitedGeojsonOutputFormat.class,
+                    new JobConf(configuration()));
+            logger.info("\n\n********** SAVED THE LINE DELIMITED GEOJSON ATLAS **********\n");
+        }
 
         // Remove the sliced atlas RDD from cache since we've cached the final RDD
         countrySlicedRawAtlasShardsRDD.unpersist();
