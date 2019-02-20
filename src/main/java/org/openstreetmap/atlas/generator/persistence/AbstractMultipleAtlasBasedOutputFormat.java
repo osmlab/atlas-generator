@@ -14,18 +14,17 @@ import org.openstreetmap.atlas.utilities.collections.StringList;
  * {@link AtlasGenerator} follow the same output format structure.
  *
  * @author matthieun
- * @param <Type>
+ * @param <T>
  *            The type to be saved
  */
-public abstract class AbstractMultipleAtlasBasedOutputFormat<Type>
-        extends MultipleOutputFormat<String, Type>
+public abstract class AbstractMultipleAtlasBasedOutputFormat<T>
+        extends MultipleOutputFormat<String, T>
 {
     // By default, save all the shards under each country folder
     public static final String DEFAULT_SCHEME = "";
 
     @Override
-    protected String generateFileNameForKeyValue(final String key, final Type value,
-            final String name)
+    protected String generateFileNameForKeyValue(final String key, final T value, final String name)
     {
         final StringList countrySplit = StringList.split(key, CountryShard.COUNTRY_SHARD_SEPARATOR);
         final String country = countrySplit.get(0);
