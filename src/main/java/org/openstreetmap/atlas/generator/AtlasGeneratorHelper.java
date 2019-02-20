@@ -124,24 +124,12 @@ public final class AtlasGeneratorHelper implements Serializable
                         .get(countryBeingSliced, shard);
                 if (cachedInitialShardResource.isPresent())
                 {
+                    // Add the full line sliced data to the multi atlas, then remove this country
+                    // from the list of countries with the shard-- the remaining countries will have
+                    // their shards added before returning and we don't want to double add this
+                    // initial shard
                     atlasResources.add(cachedInitialShardResource.get());
-                    // MultiAtlas the water relation subatlases for other countries on this shard
-                    countriesForShard.forEach(country ->
-                    {
-                        if (!country.equals(countryBeingSliced))
-                        {
-                            final Optional<Resource> cachedAtlas = lineSlicedSubAtlasCache
-                                    .get(country, shard);
-                            if (cachedAtlas.isPresent())
-                            {
-                                logger.debug(
-                                        "Cache hit, loading sliced subAtlas for Shard {} and country {}",
-                                        shard, country);
-                                atlasResources.add(cachedAtlas.get());
-                            }
-                        }
-                    });
-                    return Optional.ofNullable(MultiAtlas.loadFromPackedAtlas(atlasResources));
+                    countriesForShard.remove(countryBeingSliced);
                 }
                 else
                 {
@@ -149,24 +137,20 @@ public final class AtlasGeneratorHelper implements Serializable
                     return Optional.empty();
                 }
             }
-            else
+
+            // Multi-atlas all remaining sliced water relation data together and return that
+            countriesForShard.forEach(country ->
             {
-                // If the shard is in the country being sliced, multi-atlas all sliced water
-                // relation data together and return that
-                countriesForShard.forEach(country ->
+                final Optional<Resource> cachedAtlas = lineSlicedSubAtlasCache.get(country, shard);
+                if (cachedAtlas.isPresent())
                 {
-                    final Optional<Resource> cachedAtlas = lineSlicedSubAtlasCache.get(country,
-                            shard);
-                    if (cachedAtlas.isPresent())
-                    {
-                        logger.debug(
-                                "Cache hit, loading sliced subAtlas for Shard {} and country {}",
-                                shard, country);
-                        atlasResources.add(cachedAtlas.get());
-                    }
-                });
-                return Optional.ofNullable(MultiAtlas.loadFromPackedAtlas(atlasResources));
-            }
+                    logger.debug("Cache hit, loading sliced subAtlas for Shard {} and country {}",
+                            shard, country);
+                    atlasResources.add(cachedAtlas.get());
+                }
+            });
+            return Optional.ofNullable(MultiAtlas.loadFromPackedAtlas(atlasResources));
+
         };
     }
 

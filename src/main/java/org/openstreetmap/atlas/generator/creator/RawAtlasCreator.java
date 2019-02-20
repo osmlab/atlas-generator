@@ -225,8 +225,6 @@ public class RawAtlasCreator extends Command
         final String pbfPath = (String) command.get(PBF_PATH);
         final String rawAtlasCachePath = (String) command.get(RAW_ATLAS_CACHE_PATH);
         final String lineSlicedAtlasCachePath = (String) command.get(LINE_SLICED_ATLAS_CACHE_PATH);
-        final String waterRelationSubAtlasCachePath = (String) command
-                .get(WATER_RELATION_SUB_ATLAS_CACHE_PATH);
         final String fullySlicedAtlasCachePath = (String) command
                 .get(FULLY_SLICED_ATLAS_CACHE_PATH);
         final boolean failFastOnSlicedCacheMiss = (boolean) command.get(FAIL_FAST_CACHE_MISS);
