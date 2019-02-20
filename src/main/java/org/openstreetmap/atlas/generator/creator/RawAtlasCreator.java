@@ -54,8 +54,10 @@ public class RawAtlasCreator extends Command
     private enum RawAtlasFlavor
     {
         RawAtlas("raw"),
-        SlicedRawAtlas("sliced"),
-        SectionedRawAtlas("sectioned");
+        LineSlicedAtlas("lineSliced"),
+        RelationSlicedAtlas("relationSliced"),
+        SlicedAtlas("sliced"),
+        SectionedAtlas("sectioned");
 
         private final String flavorString;
 
@@ -84,7 +86,10 @@ public class RawAtlasCreator extends Command
     }
 
     private static final Logger logger = LoggerFactory.getLogger(RawAtlasCreator.class);
-    private static final String DEFAULT_CACHE_NAME = "__RawAtlasCreator_slicedAtlasCache__";
+    private static final String DEFAULT_RAW_ATLAS_CACHE_NAME = "__RawAtlasCreator_rawAtlasCache__";
+    private static final String DEFAULT_LINE_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_lineSlicedAtlasCache__";
+    private static final String DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_fullySlicedAtlasCache__";
+    private static final String DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH = "__RawAtlasCreator_waterRelationSubAtlasCache__";
 
     /*
      * A path to a country boundary map file
@@ -118,14 +123,35 @@ public class RawAtlasCreator extends Command
             Optionality.REQUIRED);
 
     /*
-     * The path to the cache of sliced raw atlases. This class uses DynamicAtlas to do way
-     * sectioning, and it will create sliced raw atlas for shards it needs on the fly. It will then
-     * save them to this location for later use.
+     * The path to the cache of line sliced Atlases. Relation slicing expects a cache of two types
+     * of Atlas, one for line sliced Atlases and another for line sliced Atlases containing
+     * exclusively lines for water relations.
      */
-    public static final Switch<String> SLICED_CACHE_PATH = new Switch<>("slicedCache",
+    public static final Switch<String> LINE_SLICED_ATLAS_CACHE_PATH = new Switch<>(
+            "lineSlicedAtlasCache", "The path to the line sliced atlas cache for DynamicAtlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL,
+            System.getProperty("user.home") + "/" + DEFAULT_LINE_SLICED_ATLAS_CACHE_NAME);
+
+    public static final Switch<String> WATER_RELATION_SUB_ATLAS_CACHE_PATH = new Switch<>(
+            "waterRelationSubAtlasCache",
+            "The path to the line-sliced water relation subatlas cache for DynamicAtlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL,
+            System.getProperty("user.home") + "/" + DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH);
+
+    /*
+     * The path to the cache of fully sliced atlases. This class uses DynamicAtlas to do way
+     * sectioning, and it will create fully sliced atlas for shards it needs on the fly. It will
+     * then save them to this location for later use.
+     */
+    public static final Switch<String> FULLY_SLICED_ATLAS_CACHE_PATH = new Switch<>(
+            "fullySlicedAtlasCache", "The path to the fully sliced atlas cache for DynamicAtlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL,
+            System.getProperty("user.home") + "/" + DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME);
+
+    public static final Switch<String> RAW_ATLAS_CACHE_PATH = new Switch<>("rawAtlasCache",
             "The path to the sliced atlas cache for DynamicAtlas", StringConverter.IDENTITY,
             Optionality.OPTIONAL,
-            SparkFileHelper.combine(System.getProperty("user.home"), DEFAULT_CACHE_NAME));
+            SparkFileHelper.combine(System.getProperty("user.home"), DEFAULT_RAW_ATLAS_CACHE_NAME));
 
     /*
      * If we attempt to populate the sliced atlas cache and still miss, we can optionally fail fast.
@@ -174,10 +200,10 @@ public class RawAtlasCreator extends Command
      */
     public static final Switch<RawAtlasFlavor> ATLAS_FLAVOR = new Switch<>("rawAtlasFlavor",
             "Which flavor of raw atlas - " + RawAtlasFlavor.RawAtlas.toString() + ", "
-                    + RawAtlasFlavor.SlicedRawAtlas.toString() + ", or "
-                    + RawAtlasFlavor.SectionedRawAtlas.toString(),
+                    + RawAtlasFlavor.SlicedAtlas.toString() + ", or "
+                    + RawAtlasFlavor.SectionedAtlas.toString(),
             RawAtlasFlavor::flavorStringToRawAtlasFlavor, Optionality.OPTIONAL,
-            RawAtlasFlavor.SectionedRawAtlas.toString());
+            RawAtlasFlavor.SectionedAtlas.toString());
 
     /*
      * Change the serialization to legacy Java format if desired.
@@ -197,7 +223,12 @@ public class RawAtlasCreator extends Command
         final CountryBoundaryMap countryBoundaryMap = (CountryBoundaryMap) command.get(BOUNDARIES);
         final Shard shardToBuild = (Shard) command.get(TILE);
         final String pbfPath = (String) command.get(PBF_PATH);
-        final String slicedCachePath = (String) command.get(SLICED_CACHE_PATH);
+        final String rawAtlasCachePath = (String) command.get(RAW_ATLAS_CACHE_PATH);
+        final String lineSlicedAtlasCachePath = (String) command.get(LINE_SLICED_ATLAS_CACHE_PATH);
+        final String waterRelationSubAtlasCachePath = (String) command
+                .get(WATER_RELATION_SUB_ATLAS_CACHE_PATH);
+        final String fullySlicedAtlasCachePath = (String) command
+                .get(FULLY_SLICED_ATLAS_CACHE_PATH);
         final boolean failFastOnSlicedCacheMiss = (boolean) command.get(FAIL_FAST_CACHE_MISS);
         final SlippyTilePersistenceScheme pbfScheme = SlippyTilePersistenceScheme
                 .getSchemeInstanceFromString(PbfLocator.DEFAULT_SCHEME);
@@ -213,8 +244,11 @@ public class RawAtlasCreator extends Command
 
         PbfLoader.setAtlasSaveFolder(output);
         final PackedAtlas atlas = runGenerationForFlavor(atlasFlavor, countryBoundaryMap,
-                shardToBuild, pbfPath, slicedCachePath, failFastOnSlicedCacheMiss, pbfScheme,
-                pbfSharding, sharding, countryName);
+                shardToBuild, pbfPath, rawAtlasCachePath, lineSlicedAtlasCachePath,
+                waterRelationSubAtlasCachePath, fullySlicedAtlasCachePath,
+                failFastOnSlicedCacheMiss, failFastOnSlicedCacheMiss, pbfScheme, pbfSharding,
+                sharding, countryName);
+
         if (useJavaFormat)
         {
             atlas.setSaveSerializationFormat(AtlasSerializationFormat.JAVA);
@@ -234,68 +268,74 @@ public class RawAtlasCreator extends Command
     @Override
     protected SwitchList switches()
     {
-        return new SwitchList().with(BOUNDARIES, TILE, SHARDING_TYPE, PBF_PATH, SLICED_CACHE_PATH,
+        return new SwitchList().with(BOUNDARIES, TILE, SHARDING_TYPE, PBF_PATH,
+                RAW_ATLAS_CACHE_PATH, LINE_SLICED_ATLAS_CACHE_PATH, FULLY_SLICED_ATLAS_CACHE_PATH,
                 FAIL_FAST_CACHE_MISS, PBF_SHARDING, COUNTRY, OUTPUT, ATLAS_FLAVOR, USE_JAVA_ATLAS);
     }
 
+    private Optional<Atlas> fetchCachedAtlas(final Shard shard, final String countryName,
+            final String cachePath)
+    {
+        final String shardName = shard.getName();
+        final String atlasName = countryName + "_" + shardName + FileSuffix.ATLAS;
+        final AtlasResourceLoader loader = new AtlasResourceLoader();
+        final Path cacheFile = Paths.get(cachePath, atlasName);
+        final Optional<Atlas> atlasOption = Optional
+                .ofNullable(loader.load(new File(cacheFile.toString())));
+
+        if (!atlasOption.isPresent())
+        {
+            logger.warn("Sliced cache miss for {}", atlasName);
+        }
+        else
+        {
+            logger.info("Sliced cache hit for {}", atlasName);
+        }
+
+        return atlasOption;
+    }
+
     @SuppressWarnings("unchecked")
-    private Function<Shard, Optional<Atlas>> atlasFetcher(final String countryName,
-            final String slicedCachePath, final boolean failFastOnSlicedCacheMiss,
-            final String pbfPath, final CountryBoundaryMap countryBoundaryMap)
+    private Function<Shard, Optional<Atlas>> fullySlicedAtlasFetcher(final String countryName,
+            final CountryBoundaryMap countryBoundaryMap, final String cachePath,
+            final Sharding sharding, final Function<Shard, Optional<Atlas>> lineSlicedAtlasFetcher)
     {
         return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
         {
-            final String shardName = shard.getName();
-            final String atlasName = countryName + "_" + shardName + FileSuffix.ATLAS;
-            final AtlasResourceLoader loader = new AtlasResourceLoader();
-            final Path slicedCacheFile = Paths.get(slicedCachePath, atlasName);
-            final RawAtlasCreator creator = new RawAtlasCreator();
-
-            Optional<Atlas> atlasOption = Optional
-                    .ofNullable(loader.load(new File(slicedCacheFile.toString())));
-
-            if (!atlasOption.isPresent())
+            // Check the fully sliced Atlas cache to see if we have a copy of the fully sliced Atlas
+            // on the filesystem
+            final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                    + shard.getName() + FileSuffix.ATLAS;
+            final Optional<Atlas> fetchedAtlas = fetchCachedAtlas(shard, countryName, cachePath);
+            if (fetchedAtlas.isPresent())
             {
-                logger.warn("Sliced cache miss for {}, generating...", atlasName);
-
-                try
-                {
-                    atlasOption = Optional.ofNullable(creator.generateSlicedAtlasFromScratch(
-                            pbfPath, countryName, countryBoundaryMap, shard));
-                }
-                catch (final Exception exception)
-                {
-                    logger.error("Error", exception);
-                    atlasOption = Optional.empty();
-                }
-
-                if (atlasOption.isPresent())
-                {
-                    final File atlasFile = new File(slicedCacheFile.toString());
-                    atlasOption.get().save(atlasFile);
-                    logger.info("Successfully saved {} to sliced cache", atlasName);
-                }
-                else
-                {
-                    logger.error("Failed to generate sliced atlas {}", atlasName);
-                    if (failFastOnSlicedCacheMiss)
-                    {
-                        logger.error("Failing fast, it is likely the PBF was missing");
-                        System.exit(1);
-                    }
-                    else
-                    {
-                        throw new CoreException("Failed to generate sliced atlas {}", atlasName);
-                    }
-                }
-            }
-            else
-            {
-                logger.info("Sliced cache hit for {}", atlasName);
+                return fetchedAtlas;
             }
 
-            return atlasOption;
+            // if not, try and generate it, save it, then return it
+            final Atlas lineSlicedAtlas = generateFullySlicedAtlas(countryName, shard,
+                    countryBoundaryMap, sharding, lineSlicedAtlasFetcher);
+            saveAtlas(cachePath, filename, (PackedAtlas) lineSlicedAtlas);
+            return Optional.of(lineSlicedAtlas);
+
         };
+    }
+
+    private Atlas generateFullySlicedAtlas(final String countryName, final Shard shardToBuild,
+            final CountryBoundaryMap countryBoundaryMap, final Sharding sharding,
+            final Function<Shard, Optional<Atlas>> lineSlicedAtlasFetcher)
+    {
+        final Atlas fullySlicedAtlas = new RawAtlasCountrySlicer(countryName, countryBoundaryMap,
+                sharding, lineSlicedAtlasFetcher).sliceRelations(shardToBuild);
+        return fullySlicedAtlas;
+    }
+
+    private Atlas generateLineSlicedAtlas(final String countryName,
+            final CountryBoundaryMap countryBoundaryMap, final Atlas rawAtlas)
+    {
+        final Atlas slicedLinesRawAtlas = new RawAtlasCountrySlicer(countryName, countryBoundaryMap)
+                .sliceLines(rawAtlas);
+        return slicedLinesRawAtlas;
     }
 
     private Atlas generateRawAtlas(final String pbfPath, final Shard shardToBuild)
@@ -308,36 +348,15 @@ public class RawAtlasCreator extends Command
         return rawAtlasGenerator.build();
     }
 
-    private Atlas generateSectionedAtlasGivenSlicedAtlas(final String countryName,
-            final Shard shardToBuild, final CountryBoundaryMap countryBoundaryMap,
-            final Sharding sharding, final String slicedCachePath,
-            final boolean failFastOnSlicedCacheMiss, final String pbfPath)
+    private Atlas generateSectionedAtlas(final String countryName, final Shard shardToBuild,
+            final CountryBoundaryMap countryBoundaryMap, final Sharding sharding,
+            final Function<Shard, Optional<Atlas>> fullySlicedAtlasFetcher)
     {
-        final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = this.atlasFetcher(
-                countryName, slicedCachePath, failFastOnSlicedCacheMiss, pbfPath,
-                countryBoundaryMap);
 
         final WaySectionProcessor processor = new WaySectionProcessor(shardToBuild,
                 AtlasLoadingOption.createOptionWithAllEnabled(countryBoundaryMap), sharding,
-                slicedRawAtlasFetcher);
-        final Atlas finalAtlas = processor.run();
-        return finalAtlas;
-    }
-
-    private Atlas generateSlicedAtlasFromScratch(final String pbfPath, final String countryName,
-            final CountryBoundaryMap countryBoundaryMap, final Shard shardToBuild)
-    {
-        return new RawAtlasCountrySlicer(countryName, countryBoundaryMap)
-                .slice(new RawAtlasGenerator(
-                        new File(this.getPBFFilePathFromDirectory(pbfPath, shardToBuild))).build());
-    }
-
-    private Atlas generateSlicedAtlasGivenRawAtlas(final String countryName,
-            final CountryBoundaryMap countryBoundaryMap, final Atlas rawAtlas)
-    {
-        final Atlas slicedRawAtlas = new RawAtlasCountrySlicer(countryName, countryBoundaryMap)
-                .slice(rawAtlas);
-        return slicedRawAtlas;
+                fullySlicedAtlasFetcher);
+        return processor.run();
     }
 
     /*
@@ -350,35 +369,112 @@ public class RawAtlasCreator extends Command
         return pbfPathWithFile.toString();
     }
 
+    @SuppressWarnings("unchecked")
+    private Function<Shard, Optional<Atlas>> lineSlicedAtlasFetcher(final String countryName,
+            final CountryBoundaryMap countryBoundaryMap, final String lineSlicedCachePath,
+            final Function<Shard, Optional<Atlas>> rawAtlasFetcher)
+    {
+        return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
+        {
+            // Check the line sliced Atlas cache to see if we have a copy of the line sliced Atlas
+            // on the filesystem
+            final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                    + shard.getName() + FileSuffix.ATLAS;
+            final Optional<Atlas> fetchedAtlas = fetchCachedAtlas(shard, countryName,
+                    lineSlicedCachePath);
+            if (fetchedAtlas.isPresent())
+            {
+                return fetchedAtlas;
+            }
+
+            // If not, try and get the raw Atlas from its cache and line slice it, save it, then
+            // return it
+            final Optional<Atlas> fetchedRawAtlas = rawAtlasFetcher.apply(shard);
+            if (fetchedRawAtlas.isPresent())
+            {
+                final Atlas lineSlicedAtlas = generateLineSlicedAtlas(countryName,
+                        countryBoundaryMap, fetchedRawAtlas.get());
+                saveAtlas(lineSlicedCachePath, filename, (PackedAtlas) lineSlicedAtlas);
+                return Optional.of(lineSlicedAtlas);
+            }
+            return Optional.empty();
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Function<Shard, Optional<Atlas>> rawAtlasFetcher(final String countryName,
+            final String cachePath, final String pbfPath, final boolean failFastOnRawAtlasCacheMiss)
+    {
+        return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
+        {
+            final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                    + shard.getName() + FileSuffix.ATLAS;
+            final Optional<Atlas> fetchedAtlas = fetchCachedAtlas(shard, countryName, cachePath);
+            if (fetchedAtlas.isPresent())
+            {
+                return fetchedAtlas;
+            }
+            else if (failFastOnRawAtlasCacheMiss)
+            {
+                throw new CoreException("Failed to find raw Atlas file {} in cache!", shard);
+            }
+            final Atlas rawAtlas = generateRawAtlas(pbfPath, shard);
+            saveAtlas(cachePath, filename, (PackedAtlas) rawAtlas);
+            return Optional.of(rawAtlas);
+        };
+    }
+
     private PackedAtlas runGenerationForFlavor(final RawAtlasFlavor atlasFlavor,
             final CountryBoundaryMap countryBoundaryMap, final Shard shardToBuild,
-            final String pbfPath, final String slicedCachePath,
-            final boolean failFastOnSlicedCacheMiss, final SlippyTilePersistenceScheme pbfScheme,
-            final Sharding pbfSharding, final Sharding sharding, final String countryName)
+            final String pbfPath, final String rawAtlasCachePath, final String lineSlicedCachePath,
+            final String waterRelationSubAtlasCachePath, final String fullySlicedCachePath,
+            final boolean failFastOnRawAtlasCacheMiss, final boolean failFastOnSlicedCacheMiss,
+            final SlippyTilePersistenceScheme pbfScheme, final Sharding pbfSharding,
+            final Sharding sharding, final String countryName)
     {
         logger.info("Using raw atlas flavor {}", atlasFlavor);
-
-        final Atlas rawAtlas = generateRawAtlas(pbfPath, shardToBuild);
+        final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
+                + shardToBuild.getName() + FileSuffix.ATLAS;
         if (atlasFlavor == RawAtlasFlavor.RawAtlas)
         {
+            final Atlas rawAtlas = generateRawAtlas(pbfPath, shardToBuild);
+            saveAtlas(rawAtlasCachePath, filename, (PackedAtlas) rawAtlas);
             return (PackedAtlas) rawAtlas;
         }
 
-        final Atlas slicedAtlas = generateSlicedAtlasGivenRawAtlas(countryName, countryBoundaryMap,
-                rawAtlas);
-        if (atlasFlavor == RawAtlasFlavor.SlicedRawAtlas)
+        final Function<Shard, Optional<Atlas>> rawAtlasFetcher = rawAtlasFetcher(countryName,
+                rawAtlasCachePath, pbfPath, failFastOnRawAtlasCacheMiss);
+
+        final Function<Shard, Optional<Atlas>> lineSlicedAtlasFetcher = lineSlicedAtlasFetcher(
+                countryName, countryBoundaryMap, lineSlicedCachePath, rawAtlasFetcher);
+
+        final Atlas fullySlicedAtlas = generateFullySlicedAtlas(countryName, shardToBuild,
+                countryBoundaryMap, sharding, lineSlicedAtlasFetcher);
+        if (atlasFlavor == RawAtlasFlavor.SlicedAtlas)
         {
-            return (PackedAtlas) slicedAtlas;
+            saveAtlas(fullySlicedCachePath, filename, (PackedAtlas) fullySlicedAtlas);
+            return (PackedAtlas) fullySlicedAtlas;
         }
 
-        final Atlas sectionedAtlas = generateSectionedAtlasGivenSlicedAtlas(countryName,
-                shardToBuild, countryBoundaryMap, sharding, slicedCachePath,
-                failFastOnSlicedCacheMiss, pbfPath);
-        if (atlasFlavor == RawAtlasFlavor.SectionedRawAtlas)
+        final Function<Shard, Optional<Atlas>> fullySlicedAtlasFetcher = fullySlicedAtlasFetcher(
+                countryName, countryBoundaryMap, fullySlicedCachePath, sharding,
+                lineSlicedAtlasFetcher);
+
+        final Atlas sectionedAtlas = generateSectionedAtlas(countryName, shardToBuild,
+                countryBoundaryMap, sharding, fullySlicedAtlasFetcher);
+        if (atlasFlavor == RawAtlasFlavor.SectionedAtlas)
         {
             return (PackedAtlas) sectionedAtlas;
         }
 
         throw new CoreException("RawAtlasFlavor value {} was invalid!", atlasFlavor.toString());
+    }
+
+    private void saveAtlas(final String cachePath, final String filename, final PackedAtlas atlas)
+    {
+        final Path cacheFile = Paths.get(cachePath, filename);
+        final File atlasFile = new File(cacheFile.toString());
+        atlas.setSaveSerializationFormat(AtlasSerializationFormat.PROTOBUF);
+        atlas.save(atlasFile);
     }
 }
