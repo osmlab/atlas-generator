@@ -232,7 +232,7 @@ public class AtlasGenerator extends SparkJob
         final JavaPairRDD<String, Atlas> fullySlicedRawAtlasShardsRDD = countryRawAtlasRDD
                 .mapToPair(AtlasGeneratorHelper.sliceRawAtlasRelations(broadcastBoundaries,
                         broadcastSharding, lineSlicedSubAtlasPath, lineSlicedAtlasPath, atlasScheme,
-                        sparkContext, broadcastLoadingOptions, tasks))
+                        sparkContext))
                 .filter(tuple -> tuple._2() != null);
 
         // Persist the RDD and save the intermediary state

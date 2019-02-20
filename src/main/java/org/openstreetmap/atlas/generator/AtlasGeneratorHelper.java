@@ -90,11 +90,10 @@ public final class AtlasGeneratorHelper implements Serializable
     static final Predicate<AtlasEntity> pointPredicate = entity -> entity instanceof Point;
 
     // Bring in all lines that will become edges
-    static final Predicate<AtlasEntity> relationPredicate = entity ->
-    {
-        return entity.getType().equals(ItemType.RELATION) && Validators.isOfType(entity,
-                NaturalTag.class, NaturalTag.WATER, NaturalTag.COASTLINE);
-    };
+    static final Predicate<AtlasEntity> relationPredicate = entity -> entity.getType()
+            .equals(ItemType.RELATION)
+            && Validators.isOfType(entity, NaturalTag.class, NaturalTag.WATER,
+                    NaturalTag.COASTLINE);
 
     // Dynamic expansion filter will be a combination of points and lines
     public static final Predicate<AtlasEntity> subAtlasFilter = entity -> pointPredicate
@@ -115,10 +114,7 @@ public final class AtlasGeneratorHelper implements Serializable
             final StringList countriesForShardList = boundaries
                     .countryCodesOverlappingWith(shard.bounds());
             final Set<String> countriesForShard = new HashSet<>();
-            countriesForShardList.forEach(countryCode ->
-            {
-                countriesForShard.add(countryCode);
-            });
+            countriesForShardList.forEach(countriesForShard::add);
 
             final Set<Resource> atlasResources = new HashSet<>();
             // If this is the initial shard, load in all sliced lines not just water relation lines
@@ -506,7 +502,7 @@ public final class AtlasGeneratorHelper implements Serializable
             // Grab the tuple contents
             final String shardName = tuple._1();
             final Atlas rawAtlas = tuple._2();
-            logger.info("Starting slicing raw Atlas {}", rawAtlas.getName());
+            logger.info("Starting line slicing raw Atlas {}", rawAtlas.getName());
             final Time start = Time.now();
 
             try
@@ -528,13 +524,14 @@ public final class AtlasGeneratorHelper implements Serializable
 
             catch (final Throwable e) // NOSONAR
             {
-                throw new CoreException("Slicing raw Atlas failed for {}", shardName, e);
+                throw new CoreException("Line slicing raw Atlas failed for {}", shardName, e);
             }
 
-            logger.info("Finished slicing raw Atlas for {} in {}", shardName, start.elapsedSince());
+            logger.info("Finished line slicing raw Atlas for {} in {}", shardName,
+                    start.elapsedSince());
 
             // Report on memory usage
-            logger.info("Printing memory after loading sliced raw Atlas for {}", shardName);
+            logger.info("Printing memory after loading line sliced raw Atlas for {}", shardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
@@ -545,9 +542,7 @@ public final class AtlasGeneratorHelper implements Serializable
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlasRelations(
             final Broadcast<CountryBoundaryMap> boundaries, final Broadcast<Sharding> sharding,
             final String lineSlicedSubAtlasPath, final String lineSlicedAtlasPath,
-            final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> sparkContext,
-            final Broadcast<Map<String, String>> loadingOptions,
-            final List<AtlasGenerationTask> tasks)
+            final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> sparkContext)
     {
         return tuple ->
         {
@@ -556,7 +551,7 @@ public final class AtlasGeneratorHelper implements Serializable
             // Grab the tuple contents
             final String shardName = tuple._1();
             final Atlas rawAtlas = tuple._2();
-            logger.info("Starting slicing raw Atlas {}", rawAtlas.getName());
+            logger.info("Starting relation slicing raw Atlas {}", rawAtlas.getName());
             final Time start = Time.now();
 
             try
@@ -585,13 +580,14 @@ public final class AtlasGeneratorHelper implements Serializable
 
             catch (final Throwable e) // NOSONAR
             {
-                throw new CoreException("Slicing raw Atlas failed for {}", shardName, e);
+                throw new CoreException("Relation slicing raw Atlas failed for {}", shardName, e);
             }
 
-            logger.info("Finished slicing raw Atlas for {} in {}", shardName, start.elapsedSince());
+            logger.info("Finished relation slicing raw Atlas for {} in {}", shardName,
+                    start.elapsedSince());
 
             // Report on memory usage
-            logger.info("Printing memory after loading sliced raw Atlas for {}", shardName);
+            logger.info("Printing memory after loading fully sliced Atlas for {}", shardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
