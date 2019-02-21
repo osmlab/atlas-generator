@@ -103,7 +103,7 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
 
     @SuppressWarnings("unchecked")
-    protected static Function<Shard, Optional<Atlas>> atlasFetcher(
+    public static Function<Shard, Optional<Atlas>> atlasFetcher(
             final HadoopAtlasFileCache lineSlicedSubAtlasCache,
             final HadoopAtlasFileCache lineSlicedAtlasCache, final CountryBoundaryMap boundaries,
             final String countryBeingSliced, final Shard initialShard)
