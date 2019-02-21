@@ -1,6 +1,10 @@
 project.ext.versions = [
     checkstyle: '7.6.1',
+<<<<<<< HEAD
     atlas: '5.3.7-SNAPSHOT',
+=======
+    atlas: '5.4.0',
+>>>>>>> upstream/dev
     spark: '1.6.0-cdh5.7.0',
     snappy: '1.1.1.6',
 ]
