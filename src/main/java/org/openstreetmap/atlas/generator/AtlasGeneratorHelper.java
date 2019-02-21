@@ -3,11 +3,13 @@ package org.openstreetmap.atlas.generator;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
@@ -20,16 +22,23 @@ import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
+import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
+import org.openstreetmap.atlas.geography.atlas.items.ItemType;
+import org.openstreetmap.atlas.geography.atlas.items.Point;
+import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasCountrySlicer;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.statistics.Counter;
+import org.openstreetmap.atlas.geography.atlas.sub.AtlasCutType;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.tags.NaturalTag;
+import org.openstreetmap.atlas.tags.annotations.validation.Validators;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
 import org.openstreetmap.atlas.utilities.time.Time;
@@ -74,8 +83,76 @@ public final class AtlasGeneratorHelper implements Serializable
 
     private static final long serialVersionUID = 1300098384789754747L;
     private static final Logger logger = LoggerFactory.getLogger(AtlasGeneratorHelper.class);
+    private static final String LINE_SLICED_SUBATLAS_NAMESPACE = "lineSlicedSubAtlas";
+    private static final String LINE_SLICED_ATLAS_NAMESPACE = "lineSlicedAtlas";
+
+    // Bring in all points that are part of any line that will become an edge
+    static final Predicate<AtlasEntity> pointPredicate = entity -> entity instanceof Point;
+
+    // Bring in all lines that will become edges
+    static final Predicate<AtlasEntity> relationPredicate = entity -> entity.getType()
+            .equals(ItemType.RELATION)
+            && Validators.isOfType(entity, NaturalTag.class, NaturalTag.WATER,
+                    NaturalTag.COASTLINE);
+
+    // Dynamic expansion filter will be a combination of points and lines
+    public static final Predicate<AtlasEntity> subAtlasFilter = entity -> pointPredicate
+            .test(entity) || relationPredicate.test(entity);
 
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
+
+    @SuppressWarnings("unchecked")
+    protected static Function<Shard, Optional<Atlas>> atlasFetcher(
+            final HadoopAtlasFileCache lineSlicedSubAtlasCache,
+            final HadoopAtlasFileCache lineSlicedAtlasCache, final CountryBoundaryMap boundaries,
+            final String countryBeingSliced, final Shard initialShard)
+    {
+        // & Serializable is very important as that function will be passed around by Spark, and
+        // functions are not serializable by default.
+        return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
+        {
+            final StringList countriesForShardList = boundaries
+                    .countryCodesOverlappingWith(shard.bounds());
+            final Set<String> countriesForShard = new HashSet<>();
+            countriesForShardList.forEach(countriesForShard::add);
+
+            final Set<Resource> atlasResources = new HashSet<>();
+            // If this is the initial shard, load in all sliced lines not just water relation lines
+            if (shard.equals(initialShard))
+            {
+                final Optional<Resource> cachedInitialShardResource = lineSlicedAtlasCache
+                        .get(countryBeingSliced, shard);
+                if (cachedInitialShardResource.isPresent())
+                {
+                    // Add the full line sliced data to the multi atlas, then remove this country
+                    // from the list of countries with the shard-- the remaining countries will have
+                    // their shards added before returning and we don't want to double add this
+                    // initial shard
+                    atlasResources.add(cachedInitialShardResource.get());
+                    countriesForShard.remove(countryBeingSliced);
+                }
+                else
+                {
+                    logger.error("No Atlas file found for initial Shard {}!", shard);
+                    return Optional.empty();
+                }
+            }
+
+            // Multi-atlas all remaining sliced water relation data together and return that
+            countriesForShard.forEach(country ->
+            {
+                final Optional<Resource> cachedAtlas = lineSlicedSubAtlasCache.get(country, shard);
+                if (cachedAtlas.isPresent())
+                {
+                    logger.debug("Cache hit, loading sliced subAtlas for Shard {} and country {}",
+                            shard, country);
+                    atlasResources.add(cachedAtlas.get());
+                }
+            });
+            return Optional.ofNullable(MultiAtlas.loadFromPackedAtlas(atlasResources));
+
+        };
+    }
 
     /**
      * @param atlasCache
@@ -86,6 +163,7 @@ public final class AtlasGeneratorHelper implements Serializable
      *            All available shards for given country, to avoid fetching shards that do not exist
      * @return A function that returns an {@link Atlas} given a {@link Shard}
      */
+    @SuppressWarnings("unchecked")
     protected static Function<Shard, Optional<Atlas>> atlasFetcher(
             final HadoopAtlasFileCache atlasCache, final String country,
             final Set<Shard> validShards)
@@ -389,6 +467,161 @@ public final class AtlasGeneratorHelper implements Serializable
 
             // Output the Name/Atlas couple
             return new Tuple2<>(tuple._1(), slicedAtlas);
+        };
+    }
+
+    /**
+     * @param boundaries
+     *            The {@link CountryBoundaryMap} to use for slicing
+     * @return a Spark {@link PairFunction} that processes a tuple of shard-name and raw atlas,
+     *         slices the raw atlas and returns the sliced raw atlas for that shard name.
+     */
+    protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlasLines(
+            final Broadcast<CountryBoundaryMap> boundaries)
+    {
+        return tuple ->
+        {
+            final Atlas slicedAtlas;
+
+            // Grab the tuple contents
+            final String shardName = tuple._1();
+            final Atlas rawAtlas = tuple._2();
+            logger.info("Starting line slicing raw Atlas {}", rawAtlas.getName());
+            final Time start = Time.now();
+
+            try
+            {
+                // Extract the country code
+                final String countryName = shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0];
+                if (countryName != null)
+                {
+                    // Slice the Atlas
+                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries.getValue())
+                            .sliceLines(rawAtlas);
+                }
+                else
+                {
+                    slicedAtlas = null;
+                    logger.error("Unable to extract valid country code for {}", shardName);
+                }
+            }
+
+            catch (final Throwable e) // NOSONAR
+            {
+                throw new CoreException("Line slicing raw Atlas failed for {}", shardName, e);
+            }
+
+            logger.info("Finished line slicing raw Atlas for {} in {}", shardName,
+                    start.elapsedSince());
+
+            // Report on memory usage
+            logger.info("Printing memory after loading line sliced raw Atlas for {}", shardName);
+            Memory.printCurrentMemory();
+
+            // Output the Name/Atlas couple
+            return new Tuple2<>(tuple._1(), slicedAtlas);
+        };
+    }
+
+    protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlasRelations(
+            final Broadcast<CountryBoundaryMap> boundaries, final Broadcast<Sharding> sharding,
+            final String lineSlicedSubAtlasPath, final String lineSlicedAtlasPath,
+            final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> sparkContext)
+    {
+        return tuple ->
+        {
+            final Atlas slicedAtlas;
+
+            // Grab the tuple contents
+            final String shardName = tuple._1();
+            final Atlas rawAtlas = tuple._2();
+            logger.info("Starting relation slicing raw Atlas {}", rawAtlas.getName());
+            final Time start = Time.now();
+
+            try
+            {
+                // Calculate the shard, country name and possible shards
+                final String countryShardString = tuple._1();
+                final CountryShard countryShard = CountryShard.forName(countryShardString);
+                final String country = countryShard.getCountry();
+
+                final HadoopAtlasFileCache lineSlicedSubAtlasCache = new HadoopAtlasFileCache(
+                        lineSlicedSubAtlasPath, LINE_SLICED_SUBATLAS_NAMESPACE, atlasScheme,
+                        sparkContext);
+
+                final HadoopAtlasFileCache lineSlicedAtlasCache = new HadoopAtlasFileCache(
+                        lineSlicedAtlasPath, LINE_SLICED_ATLAS_NAMESPACE, atlasScheme,
+                        sparkContext);
+
+                final Function<Shard, Optional<Atlas>> atlasFetcher = AtlasGeneratorHelper
+                        .atlasFetcher(lineSlicedSubAtlasCache, lineSlicedAtlasCache,
+                                boundaries.getValue(), country, countryShard.getShard());
+
+                // Slice the Atlas
+                slicedAtlas = new RawAtlasCountrySlicer(country, boundaries.getValue(),
+                        sharding.getValue(), atlasFetcher).sliceRelations(countryShard.getShard());
+            }
+
+            catch (final Throwable e) // NOSONAR
+            {
+                throw new CoreException("Relation slicing raw Atlas failed for {}", shardName, e);
+            }
+
+            logger.info("Finished relation slicing raw Atlas for {} in {}", shardName,
+                    start.elapsedSince());
+
+            // Report on memory usage
+            logger.info("Printing memory after loading fully sliced Atlas for {}", shardName);
+            Memory.printCurrentMemory();
+
+            // Output the Name/Atlas couple
+            return new Tuple2<>(tuple._1(), slicedAtlas);
+        };
+    }
+
+    protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlasWaterRelations()
+    {
+        return tuple ->
+        {
+            final Atlas subAtlas;
+
+            // Grab the tuple contents
+            final String shardName = tuple._1();
+            final Atlas subAtlasFromRawShardAtlas = tuple._2();
+            logger.info("Starting sub Atlas for water relations of raw sub Atlas {}",
+                    subAtlasFromRawShardAtlas.getName());
+            final Time start = Time.now();
+
+            try
+            {
+                // Slice the Atlas
+                final Optional<Atlas> subAtlasOptional = subAtlasFromRawShardAtlas
+                        .subAtlas(subAtlasFilter, AtlasCutType.SOFT_CUT);
+                if (subAtlasOptional.isPresent())
+                {
+                    subAtlas = subAtlasOptional.get();
+                }
+                else
+                {
+                    subAtlas = null;
+                    logger.error("Unable to extract valid subAtlas code for {}", shardName);
+                }
+
+            }
+
+            catch (final Throwable e) // NOSONAR
+            {
+                throw new CoreException("Water relations sub Atlas failed for {}", shardName, e);
+            }
+
+            logger.info("Finished sub Atlas for {} in {}", shardName, start.elapsedSince());
+
+            // Report on memory usage
+            logger.info("Printing memory after loading sub Atlas for {}", shardName);
+            Memory.printCurrentMemory();
+
+            // Output the Name/Atlas couple
+            return new Tuple2<>(tuple._1(), subAtlas);
         };
     }
 
