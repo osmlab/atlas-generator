@@ -12,20 +12,22 @@ import org.openstreetmap.atlas.generator.tools.caching.HadoopAtlasFileCache;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
+import org.openstreetmap.atlas.geography.atlas.builder.text.TextAtlasBuilder;
 import org.openstreetmap.atlas.geography.atlas.items.Line;
+import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasCountrySlicer;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.streaming.resource.File;
+import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 
 /**
  * @author james-gage
  */
-public class DynamicRelationSlicingTest
+public class DynamicRelationSlicingIntegrationTest
 {
     public static final String ABC_100 = "resource://test/atlas/ABC/ABC_1-0-0.atlas";
     public static final String ABC_101 = "resource://test/atlas/ABC/ABC_1-0-1.atlas";
@@ -36,18 +38,22 @@ public class DynamicRelationSlicingTest
 
     static
     {
-        addResource(ABC_100, "ABC_1-0-0.atlas");
-        addResource(ABC_101, "ABC_1-0-1.atlas");
-        addResource(ABC_110, "ABC_1-1-0.atlas");
-        addResource(ABC_111, "ABC_1-1-1.atlas");
-        addResource(DEF_101, "DEF_1-0-1.atlas");
-        addResource(DEF_111, "DEF_1-1-1.atlas");
+        addTextResource(ABC_100, "ABC_1-0-0.txt");
+        addTextResource(ABC_101, "ABC_1-0-1.txt");
+        addTextResource(ABC_110, "ABC_1-1-0.txt");
+        addTextResource(ABC_111, "ABC_1-1-1.txt");
+        addTextResource(DEF_101, "DEF_1-0-1.txt");
+        addTextResource(DEF_111, "DEF_1-1-1.txt");
     }
 
-    private static void addResource(final String path, final String name)
+    private static void addTextResource(final String path, final String name)
     {
-        ResourceFileSystem.addResource(path, new InputStreamResource(
-                () -> DynamicRelationSlicingTest.class.getResourceAsStream(name)));
+        final TextAtlasBuilder builder = new TextAtlasBuilder();
+        final PackedAtlas atlas = builder.read(new InputStreamResource(
+                () -> DynamicRelationSlicingIntegrationTest.class.getResourceAsStream(name)));
+        final ByteArrayResource res = new ByteArrayResource();
+        atlas.save(res);
+        ResourceFileSystem.addResource(path, res);
     }
 
     /**
@@ -59,11 +65,12 @@ public class DynamicRelationSlicingTest
     public void testRelationSlicing()
     {
         // parameter setup
-        final Sharding sharding = new DynamicTileSharding(new File(
-                DynamicRelationSlicingTest.class.getResource("simpleSharding.txt").getFile()));
+        final Sharding sharding = new DynamicTileSharding(
+                new InputStreamResource(() -> DynamicRelationSlicingIntegrationTest.class
+                        .getResourceAsStream("simpleSharding.txt")));
 
-        final CountryBoundaryMap boundaryMap = CountryBoundaryMap
-                .fromPlainText(new InputStreamResource(() -> DynamicRelationSlicingTest.class
+        final CountryBoundaryMap boundaryMap = CountryBoundaryMap.fromPlainText(
+                new InputStreamResource(() -> DynamicRelationSlicingIntegrationTest.class
                         .getResourceAsStream("simpleBoundaryFile.txt")));
 
         final Map<String, String> sparkOptions = new HashMap<>();
@@ -102,7 +109,7 @@ public class DynamicRelationSlicingTest
                 totalAreaDEF += polygon.surface().asDm7Squared();
             }
         }
-        Assert.assertTrue(totalAreaDEF == 5.9870426059188685E17);
+        Assert.assertEquals(totalAreaDEF, 5.9870426059188685E17, 0);
 
         double totalAreaABC = 0;
         for (final Line line : relationSlicedAtlasABC.lines())
@@ -113,6 +120,6 @@ public class DynamicRelationSlicingTest
                 totalAreaABC += polygon.surface().asDm7Squared();
             }
         }
-        Assert.assertTrue(totalAreaABC == 8.9912430112087885E17);
+        Assert.assertEquals(totalAreaABC, 8.9912430112087885E17, 0);
     }
 }
