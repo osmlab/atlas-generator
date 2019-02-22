@@ -129,8 +129,7 @@ public class AtlasGenerator extends SparkJob
         final String shardingName = (String) command.get(AtlasGeneratorParameters.SHARDING_TYPE);
         final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
         final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(pbfShardingName, configuration())
-                : sharding;
+                ? AtlasSharding.forString(pbfShardingName, configuration()) : sharding;
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String shouldAlwaysSliceConfiguration = (String) command
                 .get(AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION);

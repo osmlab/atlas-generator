@@ -520,7 +520,6 @@ public final class AtlasGeneratorHelper implements Serializable
             // Output the Name/Atlas couple
             return new Tuple2<>(tuple._1(), slicedAtlas);
         };
-
     }
 
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlasRelations(
