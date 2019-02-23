@@ -1,0 +1,10 @@
+# Nodes
+# Edges
+# Areas
+# Lines
+39129001000 && 47.4998005,-56.5379009:59.2142675,-43.2112052:64.5297752,-26.249956:66.048691,-16.1539744:66.2121066,-0.8080823:66.048691,21.4030772:63.467681,31.0952195:60.0310939,46.0372724:49.3749606,57.3447718:33.4568467,66.6330749:19.0251204,68.248432:-1.2110237,66.2292356:-10.0,60.19155:-10.0,-58.517268:-2.0183749,-56.1340617:9.6466449,-65.0185255:24.6451463,-64.6146863:37.7240637,-63.4031685:47.4998005,-56.5379009 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> ABC || last_edit_version -> 1 || water -> yes
+# Points
+39129001001 && -10.0,60.19155 && iso_country_code -> ABC,DEF || synthetic_boundary_node -> YES
+39073000000 && -1.2110237,66.2292356 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> ABC || last_edit_version -> 1 || water -> yes
+# Relations
+39133000000 && 39129001000 -> outer -> L && last_edit_user_name -> myself || last_edit_changeset -> 1 || natural -> water || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || last_edit_version -> 1 || water -> lake

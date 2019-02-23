@@ -1,0 +1,15 @@
+# Nodes
+# Edges
+# Areas
+# Lines
+39129002000 && -10.0,60.19155:-18.2590593,54.5178969:-44.1229399,40.3835227:-54.5899884,28.2683447:-65.5517521,29.0760232:-71.9446008,-4.4426357:-68.8335866,-28.2691524:-61.0240601,-50.0764727:-43.8323336,-37.1536162:-43.2468558,-59.3647758:-25.0109256,-62.9993292:-10.0,-58.517268:-10.0,60.19155 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+# Points
+39093000000 && -25.0109256,-62.9993292 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39091000000 && -43.2468558,-59.3647758 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39089000000 && -43.8323336,-37.1536162 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39085000000 && -68.8335866,-28.2691524 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39087000000 && -61.0240601,-50.0764727 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39083000000 && -71.9446008,-4.4426357 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39129002002 && -10.0,-58.517268 && iso_country_code -> ABC,DEF || synthetic_boundary_node -> YES
+# Relations
+39133000000 && 39129002000 -> outer -> L && last_edit_user_name -> myself || last_edit_changeset -> 1 || natural -> water || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || last_edit_version -> 1 || water -> lake

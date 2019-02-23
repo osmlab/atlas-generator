@@ -1,0 +1,144 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <node id='-65120' action='modify' lat='59.2142675346' lon='-43.21120524013'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65122' action='modify' lat='64.52977522263' lon='-26.24995609213'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65124' action='modify' lat='66.04869107577' lon='-16.15397445641'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65126' action='modify' lat='66.21210662348' lon='-0.80808237012'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65128' action='modify' lat='66.04869107577' lon='21.40307722845'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65130' action='modify' lat='63.4676810657' lon='31.09521959874'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65132' action='modify' lat='60.03109396771' lon='46.0372724196'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65134' action='modify' lat='49.37496067683' lon='57.3447718516'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65136' action='modify' lat='33.45684677442' lon='66.63307495646'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65138' action='modify' lat='19.02512042895' lon='68.24843201818'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65140' action='modify' lat='-1.21102377707' lon='66.22923569103'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65142' action='modify' lat='-18.25905938774' lon='54.5178969936'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65144' action='modify' lat='-44.12293993574' lon='40.3835227036'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65146' action='modify' lat='-54.58998842247' lon='28.26834474074'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65148' action='modify' lat='-65.55175219909' lon='29.0760232716'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65150' action='modify' lat='-71.94460081717' lon='-4.44263575898'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65152' action='modify' lat='-68.83358661336' lon='-28.26915241927'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65154' action='modify' lat='-61.02406019246' lon='-50.07647275242'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65156' action='modify' lat='-43.83233369877' lon='-37.1536162587'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65158' action='modify' lat='-43.2468558881' lon='-59.36477585728'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65160' action='modify' lat='-25.01092564849' lon='-62.99932924613'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65162' action='modify' lat='-2.01837490396' lon='-56.13406173385'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65164' action='modify' lat='9.64664494592' lon='-65.01852557328'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65166' action='modify' lat='24.6451463024' lon='-64.61468630785'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65168' action='modify' lat='37.7240637381' lon='-63.40316851156'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65170' action='modify' lat='47.499800587' lon='-56.53790099928'>
+    <tag k='water' v='yes' />
+  </node>
+  <node id='-65172' action='modify' lat='-53.16169519678' lon='55.32557552446' />
+  <node id='-65174' action='modify' lat='-44.41212365679' lon='59.76780744417' />
+  <node id='-65176' action='modify' lat='-39.92544897843' lon='67.84459275275' />
+  <node id='-65178' action='modify' lat='-35.45393943168' lon='73.49834246875' />
+  <node id='-65180' action='modify' lat='-29.67236073996' lon='79.55593145018' />
+  <node id='-65182' action='modify' lat='-34.46103136729' lon='85.20968116618' />
+  <node id='-65184' action='modify' lat='-40.84822216971' lon='82.38280630818' />
+  <node id='-65186' action='modify' lat='-41.45636707083' lon='77.53673512303' />
+  <node id='-65188' action='modify' lat='-48.31138179861' lon='70.67146761075' />
+  <node id='-65190' action='modify' lat='-58.16461279651' lon='67.84459275275' />
+  <node id='-65192' action='modify' lat='-61.98727355099' lon='59.36396817875' />
+  <node id='-65194' action='modify' lat='-59.0065284013' lon='54.92173625903' />
+  <way id='-65196' action='modify'>
+    <nd ref='-65170' />
+    <nd ref='-65120' />
+    <nd ref='-65122' />
+    <nd ref='-65124' />
+    <nd ref='-65126' />
+    <nd ref='-65128' />
+    <nd ref='-65130' />
+    <nd ref='-65132' />
+    <nd ref='-65134' />
+    <nd ref='-65136' />
+    <nd ref='-65138' />
+    <nd ref='-65140' />
+    <nd ref='-65142' />
+    <nd ref='-65144' />
+    <nd ref='-65146' />
+    <nd ref='-65148' />
+    <nd ref='-65150' />
+    <nd ref='-65152' />
+    <nd ref='-65154' />
+    <nd ref='-65156' />
+    <nd ref='-65158' />
+    <nd ref='-65160' />
+    <nd ref='-65162' />
+    <nd ref='-65164' />
+    <nd ref='-65166' />
+    <nd ref='-65168' />
+    <nd ref='-65170' />
+    <tag k='water' v='yes' />
+  </way>
+  <way id='-65198' action='modify'>
+    <nd ref='-65194' />
+    <nd ref='-65172' />
+    <nd ref='-65174' />
+    <nd ref='-65176' />
+    <nd ref='-65178' />
+    <nd ref='-65180' />
+    <nd ref='-65182' />
+    <nd ref='-65184' />
+    <nd ref='-65186' />
+    <nd ref='-65188' />
+    <nd ref='-65190' />
+    <nd ref='-65192' />
+    <nd ref='-65194' />
+  </way>
+  <relation id='-65200' action='modify'>
+    <member type='way' ref='-65198' role='Outer' />
+    <member type='way' ref='-65196' role='Outer' />
+    <tag k='natural' v='water' />
+    <tag k='water' v='lake' />
+  </relation>
+</osm>

@@ -1,0 +1,26 @@
+# Nodes
+# Edges
+# Areas
+# Lines
+39131000000 && -59.0065284,54.9217362:-53.1616951,55.3255755:-44.4121236,59.7678074:-39.9254489,67.8445927:-35.4539394,73.4983424:-29.6723607,79.5559314:-34.4610313,85.2096811:-40.8482221,82.3828063:-41.456367,77.5367351:-48.3113817,70.6714676:-58.1646127,67.8445927:-61.9872735,59.3639681:-59.0065284,54.9217362 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39129002000 && -10.0,60.19155:-18.2590593,54.5178969:-44.1229399,40.3835227:-54.5899884,28.2683447:-65.5517521,29.0760232:-71.9446008,-4.4426357:-68.8335866,-28.2691524:-61.0240601,-50.0764727:-43.8323336,-37.1536162:-43.2468558,-59.3647758:-25.0109256,-62.9993292:-10.0,-58.517268:-10.0,60.19155 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+# Points
+39123000000 && -58.1646127,67.8445927 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39081000000 && -65.5517521,29.0760232 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39125000000 && -61.9872735,59.3639681 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39077000000 && -44.1229399,40.3835227 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39121000000 && -48.3113817,70.6714676 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39079000000 && -54.5899884,28.2683447 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39075000000 && -18.2590593,54.5178969 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1 || water -> yes
+39119000000 && -41.456367,77.5367351 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39115000000 && -34.4610313,85.2096811 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39117000000 && -40.8482221,82.3828063 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39127000000 && -59.0065284,54.9217362 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39113000000 && -29.6723607,79.5559314 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39109000000 && -39.9254489,67.8445927 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39111000000 && -35.4539394,73.4983424 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39107000000 && -44.4121236,59.7678074 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+39129002001 && -10.0,60.19155 && iso_country_code -> ABC,DEF || synthetic_boundary_node -> YES
+39105000000 && -53.1616951,55.3255755 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || iso_country_code -> DEF || last_edit_version -> 1
+# Relations
+39133000000 && 39129002000 -> outer -> L || 39131000000 -> outer -> L && last_edit_user_name -> myself || last_edit_changeset -> 1 || natural -> water || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || last_edit_version -> 1 || water -> lake
