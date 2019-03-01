@@ -23,8 +23,8 @@ import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
-import org.openstreetmap.atlas.geography.atlas.items.ItemType;
-import org.openstreetmap.atlas.geography.atlas.items.Point;
+import org.openstreetmap.atlas.geography.atlas.items.Line;
+import org.openstreetmap.atlas.geography.atlas.items.Relation;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
@@ -86,17 +86,17 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final String LINE_SLICED_SUBATLAS_NAMESPACE = "lineSlicedSubAtlas";
     private static final String LINE_SLICED_ATLAS_NAMESPACE = "lineSlicedAtlas";
 
-    // Bring in all points that are part of any line that will become an edge
-    static final Predicate<AtlasEntity> pointPredicate = entity -> entity instanceof Point;
-
-    // Bring in all lines that will become edges
-    static final Predicate<AtlasEntity> relationPredicate = entity -> entity.getType()
-            .equals(ItemType.RELATION)
+    static final Predicate<AtlasEntity> linePredicate = entity -> entity instanceof Line
             && Validators.isOfType(entity, NaturalTag.class, NaturalTag.WATER,
                     NaturalTag.COASTLINE);
+    // Bring in all lines that will become edges
+    static final Predicate<AtlasEntity> relationPredicate = entity -> entity instanceof Relation
+            && ((Relation) entity).flatten().stream()
+                    .anyMatch(member -> linePredicate.test((AtlasEntity) member));
 
     // Dynamic expansion filter will be a combination of points and lines
-    public static final Predicate<AtlasEntity> subAtlasFilter = entity -> pointPredicate
+    @SuppressWarnings("unchecked")
+    public static final Predicate<AtlasEntity> subAtlasFilter = (Predicate<AtlasEntity> & Serializable) entity -> linePredicate
             .test(entity) || relationPredicate.test(entity);
 
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
@@ -578,7 +578,8 @@ public final class AtlasGeneratorHelper implements Serializable
         };
     }
 
-    protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlasWaterRelations()
+    protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlas(
+            final Predicate<AtlasEntity> filter, final AtlasCutType cutType)
     {
         return tuple ->
         {
@@ -594,8 +595,8 @@ public final class AtlasGeneratorHelper implements Serializable
             try
             {
                 // Slice the Atlas
-                final Optional<Atlas> subAtlasOptional = subAtlasFromRawShardAtlas
-                        .subAtlas(subAtlasFilter, AtlasCutType.SOFT_CUT);
+                final Optional<Atlas> subAtlasOptional = subAtlasFromRawShardAtlas.subAtlas(filter,
+                        cutType);
                 if (subAtlasOptional.isPresent())
                 {
                     subAtlas = subAtlasOptional.get();

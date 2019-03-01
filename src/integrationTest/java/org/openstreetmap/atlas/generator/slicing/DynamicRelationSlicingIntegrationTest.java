@@ -109,7 +109,7 @@ public class DynamicRelationSlicingIntegrationTest
                 totalAreaDEF += polygon.surface().asDm7Squared();
             }
         }
-        Assert.assertEquals(totalAreaDEF, 5.9870426059188685E17, 0);
+        Assert.assertEquals(5.9870426059188685E17, totalAreaDEF, 0);
 
         double totalAreaABC = 0;
         for (final Line line : relationSlicedAtlasABC.lines())
@@ -120,6 +120,6 @@ public class DynamicRelationSlicingIntegrationTest
                 totalAreaABC += polygon.surface().asDm7Squared();
             }
         }
-        Assert.assertEquals(totalAreaABC, 8.9912430112087885E17, 0);
+        Assert.assertEquals(8.9912430112087885E17, totalAreaABC, 0);
     }
 }
