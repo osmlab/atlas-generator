@@ -6,6 +6,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.http.HttpHost;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.index.strtree.STRtree;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.MultiPolygon;
@@ -26,10 +29,6 @@ import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.index.strtree.STRtree;
 
 /**
  * Checks intersection of country boundary and shards to validate missing shards.
