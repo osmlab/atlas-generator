@@ -163,7 +163,8 @@ public final class AtlasGeneratorParameters
         final String waySectioningConfiguration = (String) command
                 .get(WAY_SECTIONING_CONFIGURATION);
         propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), waySectioningConfiguration == null
-                ? null : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
+                ? null
+                : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
 
         final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
         propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
@@ -174,8 +175,9 @@ public final class AtlasGeneratorParameters
                 : FileSystemHelper.resource(pbfWayConfiguration, sparkContext).all());
 
         final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
-        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), pbfRelationConfiguration == null
-                ? null : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
+        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
+                pbfRelationConfiguration == null ? null
+                        : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
 
         return propertyMap;
     }
