@@ -1,5 +1,5 @@
 project.ext.versions = [
-    checkstyle: '7.6.1',
+    checkstyle: '8.18',
     atlas: '5.5.0',
     spark: '1.6.0-cdh5.7.0',
     snappy: '1.1.1.6',
@@ -12,4 +12,3 @@ project.ext.packages = [
     ],
     snappy: "org.xerial.snappy:snappy-java:${versions.snappy}",
 ]
-
