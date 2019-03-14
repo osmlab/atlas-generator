@@ -1,7 +1,7 @@
 task downloadPbf {
     doLast {
         mkdir "${buildDir}/example/data/pbfSource/"
-        ant.get(src: "https://apple.box.com/shared/static/1wj4fiuwg88dczgkwxrva8udbbqjn6y5.pbf",
+        ant.get(src: "https://dl.dropboxusercontent.com/s/ddvpimpnbv6o43t/belize-geofabrik-2019-03-13T21-14-02Z.osm.pbf",
             dest: "${buildDir}/example/data/pbfSource/belize.osm.pbf",
             skipexisting: 'true')
     }
@@ -10,7 +10,7 @@ task downloadPbf {
 task downloadBoundaries {
     doLast {
         mkdir "${buildDir}/example/data/"
-        ant.get(src: "https://apple.box.com/shared/static/k06amjcm32p83klwd5roex3m8vxj0mvx.gz",
+        ant.get(src: "https://dl.dropboxusercontent.com/s/5a5q6tro5lx4m07/world_boundaries_osm_20171013.txt.gz",
             dest: "${buildDir}/example/data/boundaries.txt.gz",
             skipexisting: 'true')
     }
@@ -19,7 +19,7 @@ task downloadBoundaries {
 task downloadShardingTree {
     doLast {
         mkdir "${buildDir}/example/data/"
-        ant.get(src: "https://apple.box.com/shared/static/2p2nz3khyusaup3mdxmuyr4mifwx1bmx.txt",
+        ant.get(src: "https://dl.dropboxusercontent.com/s/pb99909ake348mx/tree-6-14-100000.txt",
             dest: "${buildDir}/example/data/sharding.txt",
             skipexisting: 'true')
     }
