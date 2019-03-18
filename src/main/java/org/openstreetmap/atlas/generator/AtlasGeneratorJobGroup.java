@@ -103,7 +103,7 @@ public enum AtlasGeneratorJobGroup
         return this.keyClass;
     }
 
-    public Class<?> getOutputClass()
+    public Class<? extends MultipleOutputFormat<?, ?>> getOutputClass()
     {
         return this.outputClass;
     }
