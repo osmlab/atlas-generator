@@ -83,11 +83,11 @@ public class AtlasGeneratorIntegrationTest
                     new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-233.ldgeojson.gz")));
             Assert.assertTrue(resourceFileSystem.exists(
                     new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-234.ldgeojson.gz")));
-            Assert.assertEquals(405,
+            Assert.assertEquals(402,
                     Iterables.size(resourceForName(resourceFileSystem,
                             LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-234.ldgeojson.gz")
                                     .lines()));
-            Assert.assertEquals(405,
+            Assert.assertEquals(402,
                     Iterables.size(resourceForName(resourceFileSystem,
                             LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-233.ldgeojson.gz")
                                     .lines()));
