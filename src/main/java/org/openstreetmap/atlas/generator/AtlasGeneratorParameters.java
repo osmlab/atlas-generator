@@ -82,6 +82,13 @@ public final class AtlasGeneratorParameters
                     + " always be attempted regardless of the number of countries it intersects according to the"
                     + " country boundary map's grid index.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
+
+    public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
+            "shouldIncludeFilteredOutputConfiguration",
+            "The path to the configuration file that defines which will be included in filtered output."
+                    + " Filtered output will only be generated if this switch is specificed, and will be"
+                    + " stored in a separate subdirectory.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<Boolean> USE_JAVA_FORMAT = new Switch<>("useJavaFormat",
             "Generate the atlas files using the java serialization atlas format (as opposed to the protobuf format).",
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
@@ -188,7 +195,8 @@ public final class AtlasGeneratorParameters
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME,
-                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT, LINE_DELIMITED_GEOJSON_OUTPUT);
+                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT, LINE_DELIMITED_GEOJSON_OUTPUT,
+                SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
     }
 
     private AtlasGeneratorParameters()

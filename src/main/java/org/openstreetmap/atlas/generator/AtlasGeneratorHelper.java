@@ -22,7 +22,6 @@ import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
-import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
 import org.openstreetmap.atlas.geography.atlas.items.Line;
 import org.openstreetmap.atlas.geography.atlas.items.Relation;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
@@ -38,6 +37,7 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.tags.NaturalTag;
+import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.tags.annotations.validation.Validators;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
@@ -86,17 +86,15 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final String LINE_SLICED_SUBATLAS_NAMESPACE = "lineSlicedSubAtlas";
     private static final String LINE_SLICED_ATLAS_NAMESPACE = "lineSlicedAtlas";
 
-    static final Predicate<AtlasEntity> linePredicate = entity -> entity instanceof Line
-            && Validators.isOfType(entity, NaturalTag.class, NaturalTag.WATER,
-                    NaturalTag.COASTLINE);
+    static final Predicate<Taggable> linePredicate = entity -> entity instanceof Line && Validators
+            .isOfType(entity, NaturalTag.class, NaturalTag.WATER, NaturalTag.COASTLINE);
     // Bring in all lines that will become edges
-    static final Predicate<AtlasEntity> relationPredicate = entity -> entity instanceof Relation
-            && ((Relation) entity).flatten().stream()
-                    .anyMatch(member -> linePredicate.test((AtlasEntity) member));
+    static final Predicate<Taggable> relationPredicate = entity -> entity instanceof Relation
+            && ((Relation) entity).flatten().stream().anyMatch(linePredicate::test);
 
     // Dynamic expansion filter will be a combination of points and lines
     @SuppressWarnings("unchecked")
-    public static final Predicate<AtlasEntity> subAtlasFilter = (Predicate<AtlasEntity> & Serializable) entity -> linePredicate
+    public static final Predicate<Taggable> subAtlasFilter = (Predicate<Taggable> & Serializable) entity -> linePredicate
             .test(entity) || relationPredicate.test(entity);
 
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
@@ -579,7 +577,7 @@ public final class AtlasGeneratorHelper implements Serializable
     }
 
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlas(
-            final Predicate<AtlasEntity> filter, final AtlasCutType cutType)
+            final Predicate<Taggable> filter, final AtlasCutType cutType)
     {
         return tuple ->
         {
@@ -587,15 +585,14 @@ public final class AtlasGeneratorHelper implements Serializable
 
             // Grab the tuple contents
             final String shardName = tuple._1();
-            final Atlas subAtlasFromRawShardAtlas = tuple._2();
-            logger.info("Starting sub Atlas for water relations of raw sub Atlas {}",
-                    subAtlasFromRawShardAtlas.getName());
+            final Atlas originalAtlas = tuple._2();
+            logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
             final Time start = Time.now();
 
             try
             {
                 // Slice the Atlas
-                final Optional<Atlas> subAtlasOptional = subAtlasFromRawShardAtlas.subAtlas(filter,
+                final Optional<Atlas> subAtlasOptional = originalAtlas.subAtlas(filter::test,
                         cutType);
                 if (subAtlasOptional.isPresent())
                 {
@@ -611,7 +608,7 @@ public final class AtlasGeneratorHelper implements Serializable
 
             catch (final Throwable e) // NOSONAR
             {
-                throw new CoreException("Water relations sub Atlas failed for {}", shardName, e);
+                throw new CoreException("Sub Atlas failed for {}", shardName, e);
             }
 
             logger.info("Finished sub Atlas for {} in {}", shardName, start.elapsedSince());

@@ -123,6 +123,19 @@ public class AtlasGenerator extends SparkJob
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String shouldAlwaysSliceConfiguration = (String) command
                 .get(AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION);
+        final String shouldIncludeFilteredOutputConfiguration = (String) command
+                .get(AtlasGeneratorParameters.SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
+        final Predicate<Taggable> taggableOutputFilter;
+        if (shouldIncludeFilteredOutputConfiguration == null)
+        {
+            taggableOutputFilter = taggable -> false;
+        }
+        else
+        {
+            taggableOutputFilter = AtlasGeneratorParameters.getTaggableFilterFrom(FileSystemHelper
+                    .resource(shouldIncludeFilteredOutputConfiguration, sparkContext));
+        }
+
         final Predicate<Taggable> shouldAlwaysSlicePredicate;
         if (shouldAlwaysSliceConfiguration == null)
         {
@@ -281,6 +294,14 @@ public class AtlasGenerator extends SparkJob
             saveAsHadoop(deltasRDD, AtlasGeneratorJobGroup.DELTAS, output);
         }
 
+        if (shouldIncludeFilteredOutputConfiguration != null)
+        {
+            final JavaPairRDD<String, Atlas> subAtlasRDD = countryAtlasShardsRDD.mapToPair(
+                    AtlasGeneratorHelper.subatlas(taggableOutputFilter, AtlasCutType.SOFT_CUT))
+                    .filter(tuple -> tuple._2() != null);
+            saveAsHadoop(subAtlasRDD, AtlasGeneratorJobGroup.TAGGABLE_FILTERED_OUTPUT, output);
+        }
+
         countryAtlasShardsRDD.unpersist();
     }
 
@@ -313,5 +334,4 @@ public class AtlasGenerator extends SparkJob
                 new JobConf(configuration()));
         logger.info(SAVED_MESSAGE, group.getDescription());
     }
-
 }
