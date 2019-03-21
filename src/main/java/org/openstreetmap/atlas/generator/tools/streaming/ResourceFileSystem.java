@@ -22,6 +22,7 @@ import org.apache.hadoop.util.Progressable;
 import org.apache.spark.SparkConf;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
+import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
 import org.openstreetmap.atlas.utilities.collections.StringList;
@@ -64,6 +65,16 @@ public class ResourceFileSystem extends FileSystem
         final Configuration result = new Configuration();
         result.set(RESOURCE_FILE_SYSTEM_CONFIGURATION, ResourceFileSystem.class.getCanonicalName());
         return result;
+    }
+
+    public static void dumpToDisk(final File folder)
+    {
+        files().forEach(file ->
+        {
+            final String subPath = file.substring(String.valueOf(SCHEME + "://").length());
+            final File output = folder.child(subPath);
+            STORE.get(file).copyTo(output);
+        });
     }
 
     public static Set<String> files()
