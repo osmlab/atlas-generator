@@ -251,7 +251,7 @@ public class AtlasMissingShardVerifier extends Command
         final Set<CountryShard> missingCountryShards = missingShardFile.linesList().stream()
                 .map(CountryShard::forName).collect(Collectors.toSet());
         final File wayFilterFile = (File) command.get(WAY_FILTER);
-        ConfiguredTaggableFilter wayFilter;
+        final ConfiguredTaggableFilter wayFilter;
         if (wayFilterFile != null)
         {
             wayFilter = new ConfiguredTaggableFilter(new StandardConfiguration(wayFilterFile));
