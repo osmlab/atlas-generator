@@ -52,6 +52,9 @@ public class AtlasMissingShardVerifier extends Command
     private static final Switch<StringList> PROXY_SETTINGS = new Switch<>("proxySettings",
             "Proxy host and port number, split by comma", value -> StringList.split(value, ","),
             Optionality.OPTIONAL);
+    private static final Switch<File> WAY_FILTER = new Switch<>("wayFilter",
+            "The json resource that defines what ways are ingested to atlas", File::new,
+            Optionality.OPTIONAL);
 
     public static void main(final String[] args)
     {
@@ -153,16 +156,13 @@ public class AtlasMissingShardVerifier extends Command
 
     public int verifier(final CountryBoundaryMap boundaries,
             final Set<CountryShard> missingCountryShardsUntrimmed, final File output,
-            final String server, final HttpHost proxy)
+            final String server, final HttpHost proxy, final ConfiguredTaggableFilter filter)
     {
         int returnCode = 0;
         final Set<CountryShard> missingCountryShards = removeShardsWithZeroIntersection(
                 missingCountryShardsUntrimmed, boundaries);
         final String masterQuery = createMasterQuery(boundaries, missingCountryShards);
         final OverpassClient client = new OverpassClient(server, proxy);
-        final ConfiguredTaggableFilter filter = new ConfiguredTaggableFilter(
-                new StandardConfiguration(new InputStreamResource(
-                        AtlasMissingShardVerifier.class.getResourceAsStream(FILTER_CONFIG))));
         try (SafeBufferedWriter writer = output.writer())
         {
             final List<OverpassOsmNode> nodes = client.nodesFromQuery(masterQuery);
@@ -250,6 +250,18 @@ public class AtlasMissingShardVerifier extends Command
         }
         final Set<CountryShard> missingCountryShards = missingShardFile.linesList().stream()
                 .map(CountryShard::forName).collect(Collectors.toSet());
+        final File wayFilterFile = (File) command.get(WAY_FILTER);
+        ConfiguredTaggableFilter wayFilter;
+        if (wayFilterFile != null)
+        {
+            wayFilter = new ConfiguredTaggableFilter(new StandardConfiguration(wayFilterFile));
+        }
+        else
+        {
+            wayFilter = new ConfiguredTaggableFilter(
+                    new StandardConfiguration(new InputStreamResource(
+                            AtlasMissingShardVerifier.class.getResourceAsStream(FILTER_CONFIG))));
+        }
         final String server = (String) command.get(OVERPASS_SERVER);
         final StringList proxySettings = (StringList) command.get(PROXY_SETTINGS);
         HttpHost proxy = null;
@@ -269,7 +281,8 @@ public class AtlasMissingShardVerifier extends Command
         final int returnCode;
         try
         {
-            returnCode = verifier(boundaries, missingCountryShards, output, server, proxy);
+            returnCode = verifier(boundaries, missingCountryShards, output, server, proxy,
+                    wayFilter);
         }
         catch (final Exception e)
         {
@@ -283,6 +296,6 @@ public class AtlasMissingShardVerifier extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(BOUNDARIES, OUTPUT, MISSING_SHARDS, OVERPASS_SERVER,
-                PROXY_SETTINGS);
+                PROXY_SETTINGS, WAY_FILTER);
     }
 }
