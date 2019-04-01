@@ -34,39 +34,44 @@ public enum AtlasGeneratorJobGroup
             "fullySlicedAtlas",
             Atlas.class,
             MultipleAtlasOutputFormat.class),
-    WAY_SECTIONED(
+    EDGE_SUB(
             4,
+            "Edge-only Sub Atlas Creation",
+            "edgeOnlySubAtlas",
+            Atlas.class,
+            MultipleAtlasOutputFormat.class),
+    WAY_SECTIONED(
+            5,
             "Way Sectioned Atlas Creation",
             "atlas",
             Atlas.class,
             MultipleAtlasOutputFormat.class),
     WAY_SECTIONED_PBF(
-            4,
+            5,
             "Way Sectioned Atlas Creation",
             "atlas",
             Atlas.class,
             MultipleAtlasProtoOutputFormat.class),
     SHARD_STATISTICS(
-            5,
+            6,
             "Shard Statistics Creation",
             "shardStats",
             AtlasStatistics.class,
             MultipleAtlasStatisticsOutputFormat.class),
     COUNTRY_STATISTICS(
-            6,
+            7,
             "Country Statistics Creations",
             "countryStats",
             AtlasStatistics.class,
             MultipleAtlasCountryStatisticsOutputFormat.class),
     DELTAS(
-            7,
+            8,
             "Atlas Deltas Creation",
             "deltas",
             AtlasDelta.class,
             RemovedMultipleAtlasDeltaOutputFormat.class),
-
     TAGGABLE_FILTERED_OUTPUT(
-            8,
+            9,
             "Taggable Filtered SubAtlas Creation",
             "filteredOutput",
             Atlas.class,
