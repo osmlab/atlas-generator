@@ -15,6 +15,7 @@ import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.builder.text.TextAtlasBuilder;
 import org.openstreetmap.atlas.geography.atlas.items.Line;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
+import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasCountrySlicer;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
@@ -94,9 +95,12 @@ public class DynamicRelationSlicingIntegrationTest
                 initialShardDEF.getShard());
 
         // the operation we are testing
-        final Atlas relationSlicedAtlasDEF = new RawAtlasCountrySlicer("DEF", boundaryMap, sharding,
+
+        final Atlas relationSlicedAtlasDEF = new RawAtlasCountrySlicer(AtlasLoadingOption
+                .createOptionWithAllEnabled(boundaryMap).setAdditionalCountryCodes("DEF"), sharding,
                 atlasFetcherDEF).sliceRelations(initialShardDEF.getShard());
-        final Atlas relationSlicedAtlasABC = new RawAtlasCountrySlicer("ABC", boundaryMap, sharding,
+        final Atlas relationSlicedAtlasABC = new RawAtlasCountrySlicer(AtlasLoadingOption
+                .createOptionWithAllEnabled(boundaryMap).setAdditionalCountryCodes("ABC"), sharding,
                 atlasFetcherABC).sliceRelations(initialShardABC.getShard());
 
         // Sum the areas and check it is the size expected

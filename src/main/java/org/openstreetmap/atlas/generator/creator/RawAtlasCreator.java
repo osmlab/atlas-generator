@@ -323,14 +323,18 @@ public class RawAtlasCreator extends Command
             final CountryBoundaryMap countryBoundaryMap, final Sharding sharding,
             final Function<Shard, Optional<Atlas>> lineSlicedAtlasFetcher)
     {
-        return new RawAtlasCountrySlicer(countryName, countryBoundaryMap, sharding,
-                lineSlicedAtlasFetcher).sliceRelations(shardToBuild);
+        return new RawAtlasCountrySlicer(
+                AtlasLoadingOption.createOptionWithAllEnabled(countryBoundaryMap)
+                        .setAdditionalCountryCodes(countryName),
+                sharding, lineSlicedAtlasFetcher).sliceRelations(shardToBuild);
     }
 
     private Atlas generateLineSlicedAtlas(final String countryName,
             final CountryBoundaryMap countryBoundaryMap, final Atlas rawAtlas)
     {
-        return new RawAtlasCountrySlicer(countryName, countryBoundaryMap).sliceLines(rawAtlas);
+        return new RawAtlasCountrySlicer(
+                AtlasLoadingOption.createOptionWithAllEnabled(countryBoundaryMap)
+                        .setAdditionalCountryCodes(countryName)).sliceLines(rawAtlas);
     }
 
     private Atlas generateRawAtlas(final String pbfPath, final Shard shardToBuild)

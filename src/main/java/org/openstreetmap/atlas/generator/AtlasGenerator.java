@@ -200,7 +200,8 @@ public class AtlasGenerator extends SparkJob
 
         // Slice the raw Atlas and filter any null atlases
         final JavaPairRDD<String, Atlas> lineSlicedAtlasRDD = countryRawAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.sliceRawAtlasLines(broadcastBoundaries))
+                .mapToPair(AtlasGeneratorHelper.sliceRawAtlasLines(broadcastBoundaries,
+                        broadcastLoadingOptions))
                 .filter(tuple -> tuple._2() != null);
         lineSlicedAtlasRDD.cache();
         saveAsHadoop(lineSlicedAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED, output);
@@ -219,7 +220,7 @@ public class AtlasGenerator extends SparkJob
         // Relation slice the line sliced Atlas and filter any null atlases
         final JavaPairRDD<String, Atlas> fullySlicedRawAtlasShardsRDD = countryRawAtlasRDD
                 .mapToPair(AtlasGeneratorHelper.sliceRawAtlasRelations(broadcastBoundaries,
-                        broadcastSharding,
+                        broadcastLoadingOptions, broadcastSharding,
                         getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.LINE_SLICED_SUB.getCacheFolder()),
                         getAlternateSubFolderOutput(output,
@@ -233,14 +234,27 @@ public class AtlasGenerator extends SparkJob
         lineSlicedAtlasRDD.unpersist();
         lineSlicedSubAtlasRDD.unpersist();
 
+        final Predicate<Taggable> edgeFilter = AtlasGeneratorParameters.buildAtlasLoadingOption(
+                broadcastBoundaries.getValue(), broadcastLoadingOptions.getValue()).getEdgeFilter();
+        final JavaPairRDD<String, Atlas> edgeOnlySubAtlasRDD = fullySlicedRawAtlasShardsRDD
+                .mapToPair(AtlasGeneratorHelper.subatlas(edgeFilter, AtlasCutType.SILK_CUT))
+                .filter(tuple -> tuple._2() != null);
+        edgeOnlySubAtlasRDD.cache();
+        saveAsHadoop(edgeOnlySubAtlasRDD, AtlasGeneratorJobGroup.EDGE_SUB, output);
+
         // Section the sliced Atlas
         final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = fullySlicedRawAtlasShardsRDD
                 .mapToPair(AtlasGeneratorHelper.sectionRawAtlas(broadcastBoundaries,
                         broadcastSharding, sparkContext, broadcastLoadingOptions,
                         getAlternateSubFolderOutput(output,
+                                AtlasGeneratorJobGroup.EDGE_SUB.getCacheFolder()),
+                        getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.FULLY_SLICED.getCacheFolder()),
                         atlasScheme, tasks));
         countryAtlasShardsRDD.cache();
+
+        // Remove the edge-only subatlas as we've finished way-sectioning
+        edgeOnlySubAtlasRDD.unpersist();
 
         if (useJavaFormat)
         {

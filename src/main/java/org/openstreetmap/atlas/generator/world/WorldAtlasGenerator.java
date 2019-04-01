@@ -192,9 +192,7 @@ public class WorldAtlasGenerator extends Command
                 .withMetaData(metaData).build();
         if (loadingOptions.isCountrySlicing())
         {
-            atlas = new RawAtlasCountrySlicer(
-                    loadingOptions.getCountryBoundaryMap().getLoadedCountries(),
-                    loadingOptions.getCountryBoundaryMap()).slice(atlas);
+            atlas = new RawAtlasCountrySlicer(loadingOptions).slice(atlas);
         }
         if (loadingOptions.isWaySectioning())
         {

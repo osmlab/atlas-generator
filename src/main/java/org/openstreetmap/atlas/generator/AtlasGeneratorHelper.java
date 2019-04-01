@@ -151,6 +151,35 @@ public final class AtlasGeneratorHelper implements Serializable
         };
     }
 
+    @SuppressWarnings("unchecked")
+    public static Function<Shard, Optional<Atlas>> atlasFetcher(
+            final HadoopAtlasFileCache subAtlasCache, final HadoopAtlasFileCache atlasCache,
+            final String countryBeingSliced, final Shard initialShard)
+    {
+        // & Serializable is very important as that function will be passed around by Spark, and
+        // functions are not serializable by default.
+        return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
+        {
+            final Optional<Resource> cachedInitialShardResource;
+            // If this is the initial shard, load from full Atlas cache, not subAtlas cache
+            if (shard.equals(initialShard))
+            {
+                cachedInitialShardResource = atlasCache.get(countryBeingSliced, shard);
+            }
+            else
+            {
+                // Otherwise, load from subatlas cache
+                cachedInitialShardResource = subAtlasCache.get(countryBeingSliced, shard);
+            }
+            if (!cachedInitialShardResource.isPresent())
+            {
+                logger.error("No Atlas file found for initial Shard {}!", shard);
+                return Optional.empty();
+            }
+            return Optional.ofNullable(ATLAS_LOADER.load(cachedInitialShardResource.get()));
+        };
+    }
+
     /**
      * @param atlasCache
      *            The cache object for the Atlas files
@@ -353,7 +382,9 @@ public final class AtlasGeneratorHelper implements Serializable
      *            Spark context (or configuration) as a key-value map
      * @param loadingOptions
      *            The basic required properties to create an {@link AtlasLoadingOption}
-     * @param slicedRawAtlasPath
+     * @param edgeSubAtlasPath
+     *            The path where the edge-only sub atlas files were saved
+     * @param slicedAtlasPath
      *            The path where the sliced raw atlas files were saved
      * @param atlasScheme
      *            The folder structure of the output atlas
@@ -367,8 +398,9 @@ public final class AtlasGeneratorHelper implements Serializable
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sectionRawAtlas(
             final Broadcast<CountryBoundaryMap> boundaries, final Broadcast<Sharding> sharding,
             final Map<String, String> sparkContext,
-            final Broadcast<Map<String, String>> loadingOptions, final String slicedRawAtlasPath,
-            final SlippyTilePersistenceScheme atlasScheme, final List<AtlasGenerationTask> tasks)
+            final Broadcast<Map<String, String>> loadingOptions, final String edgeSubAtlasPath,
+            final String slicedAtlasPath, final SlippyTilePersistenceScheme atlasScheme,
+            final List<AtlasGenerationTask> tasks)
     {
         return tuple ->
         {
@@ -385,12 +417,14 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String country = countryShard.getCountry();
                 final Set<Shard> possibleShards = getAllShardsForCountry(tasks, country);
 
-                // Instantiate the cache
-                final HadoopAtlasFileCache atlasCache = new HadoopAtlasFileCache(slicedRawAtlasPath,
+                // Instantiate the caches
+                final HadoopAtlasFileCache atlasCache = new HadoopAtlasFileCache(slicedAtlasPath,
+                        atlasScheme, sparkContext);
+                final HadoopAtlasFileCache edgeSubCache = new HadoopAtlasFileCache(edgeSubAtlasPath,
                         atlasScheme, sparkContext);
                 // Create the fetcher
                 final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
-                        .atlasFetcher(atlasCache, country, possibleShards);
+                        .atlasFetcher(edgeSubCache, atlasCache, country, countryShard.getShard());
                 // Section the Atlas
                 atlas = new WaySectionProcessor(countryShard.getShard(), atlasLoadingOption,
                         sharding.getValue(), slicedRawAtlasFetcher).run();
@@ -418,11 +452,14 @@ public final class AtlasGeneratorHelper implements Serializable
     /**
      * @param boundaries
      *            The {@link CountryBoundaryMap} to use for slicing
+     * @param loadingOptions
+     *            The basic required properties to create an {@link AtlasLoadingOption}
      * @return a Spark {@link PairFunction} that processes a tuple of shard-name and raw atlas,
      *         slices the raw atlas and returns the sliced raw atlas for that shard name.
      */
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlas(
-            final Broadcast<CountryBoundaryMap> boundaries)
+            final Broadcast<CountryBoundaryMap> boundaries,
+            final Broadcast<Map<String, String>> loadingOptions)
     {
         return tuple ->
         {
@@ -440,9 +477,13 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String countryName = shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0];
                 if (countryName != null)
                 {
+                    // Set the country code that is being processed!
+                    final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
+                            .buildAtlasLoadingOption(boundaries.getValue(),
+                                    loadingOptions.getValue());
+                    atlasLoadingOption.setAdditionalCountryCodes(countryName);
                     // Slice the Atlas
-                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries.getValue())
-                            .slice(rawAtlas);
+                    slicedAtlas = new RawAtlasCountrySlicer(atlasLoadingOption).slice(rawAtlas);
                 }
                 else
                 {
@@ -470,11 +511,14 @@ public final class AtlasGeneratorHelper implements Serializable
     /**
      * @param boundaries
      *            The {@link CountryBoundaryMap} to use for slicing
+     * @param loadingOptions
+     *            The basic required properties to create an {@link AtlasLoadingOption}
      * @return a Spark {@link PairFunction} that processes a tuple of shard-name and raw atlas,
      *         slices the raw atlas and returns the sliced raw atlas for that shard name.
      */
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlasLines(
-            final Broadcast<CountryBoundaryMap> boundaries)
+            final Broadcast<CountryBoundaryMap> boundaries,
+            final Broadcast<Map<String, String>> loadingOptions)
     {
         return tuple ->
         {
@@ -492,8 +536,15 @@ public final class AtlasGeneratorHelper implements Serializable
                 final String countryName = shardName.split(CountryShard.COUNTRY_SHARD_SEPARATOR)[0];
                 if (countryName != null)
                 {
+                    // Set the country code that is being processed!
+                    final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
+                            .buildAtlasLoadingOption(boundaries.getValue(),
+                                    loadingOptions.getValue());
+                    atlasLoadingOption.setAdditionalCountryCodes(countryName);
+                    logger.error("Country codes during line slicing was: {}",
+                            atlasLoadingOption.getCountryCodes());
                     // Slice the Atlas
-                    slicedAtlas = new RawAtlasCountrySlicer(countryName, boundaries.getValue())
+                    slicedAtlas = new RawAtlasCountrySlicer(atlasLoadingOption)
                             .sliceLines(rawAtlas);
                 }
                 else
@@ -521,7 +572,8 @@ public final class AtlasGeneratorHelper implements Serializable
     }
 
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRawAtlasRelations(
-            final Broadcast<CountryBoundaryMap> boundaries, final Broadcast<Sharding> sharding,
+            final Broadcast<CountryBoundaryMap> boundaries,
+            final Broadcast<Map<String, String>> loadingOptions, final Broadcast<Sharding> sharding,
             final String lineSlicedSubAtlasPath, final String lineSlicedAtlasPath,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> sparkContext)
     {
@@ -554,9 +606,12 @@ public final class AtlasGeneratorHelper implements Serializable
                         .atlasFetcher(lineSlicedSubAtlasCache, lineSlicedAtlasCache,
                                 boundaries.getValue(), country, countryShard.getShard());
 
-                // Slice the Atlas
-                slicedAtlas = new RawAtlasCountrySlicer(country, boundaries.getValue(),
-                        sharding.getValue(), atlasFetcher).sliceRelations(countryShard.getShard());
+                // Set the country code that is being processed!
+                final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
+                        .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
+                atlasLoadingOption.setAdditionalCountryCodes(country);
+                slicedAtlas = new RawAtlasCountrySlicer(atlasLoadingOption, sharding.getValue(),
+                        atlasFetcher).sliceRelations(countryShard.getShard());
             }
 
             catch (final Throwable e) // NOSONAR
