@@ -69,7 +69,13 @@ public enum AtlasGeneratorJobGroup
             "Atlas Deltas Creation",
             "deltas",
             AtlasDelta.class,
-            RemovedMultipleAtlasDeltaOutputFormat.class);
+            RemovedMultipleAtlasDeltaOutputFormat.class),
+    TAGGABLE_FILTERED_OUTPUT(
+            9,
+            "Taggable Filtered SubAtlas Creation",
+            "filteredOutput",
+            Atlas.class,
+            MultipleAtlasOutputFormat.class);
 
     private final String description;
     private final Integer identifier;
