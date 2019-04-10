@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +40,7 @@ public class ResourceFileSystem extends FileSystem
     private static final Logger logger = LoggerFactory.getLogger(ResourceFileSystem.class);
 
     // The store that contains all the known resources in the file system
-    private static final Map<String, Resource> STORE = new HashMap<>();
+    private static final Map<String, Resource> STORE = new ConcurrentHashMap<>();
     public static final String SCHEME = "resource";
     public static final String RESOURCE_FILE_SYSTEM_CONFIGURATION = "fs." + SCHEME + ".impl";
     private static final Statistics STATISTICS = new Statistics(SCHEME);
@@ -49,6 +50,11 @@ public class ResourceFileSystem extends FileSystem
     public static void addResource(final String name, final Resource resource)
     {
         STORE.put(name, resource);
+    }
+
+    public static void clear()
+    {
+        STORE.clear();
     }
 
     public static SparkConf configuredConf()
