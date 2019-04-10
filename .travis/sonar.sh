@@ -11,8 +11,8 @@ then
 		-Dsonar.organization=osmlab \
 		-Dsonar.host.url=https://sonarcloud.io \
 		-Dsonar.login=$SONAR_TOKEN \
-		-Dsonar.junit.reportPaths=build/test-results/test \
-		-Dsonar.jacoco.reportPaths=build/jacoco/test.exec \
+		-Dsonar.junit.reportPaths=build/test-results/test,build/test-results/integrationTest \
+		-Dsonar.jacoco.reportPaths=build/jacoco/test.exec,build/jacoco/integrationTest.exec \
 		-Dsonar.pullrequest.key=$TRAVIS_PULL_REQUEST \
 		-Dsonar.pullrequest.branch=$SONAR_PULLREQUEST_BRANCH \
 		-Dsonar.pullrequest.base=$TRAVIS_BRANCH \
@@ -27,6 +27,6 @@ else
 		-Dsonar.organization=osmlab \
 		-Dsonar.host.url=https://sonarcloud.io \
 		-Dsonar.login=$SONAR_TOKEN \
-		-Dsonar.junit.reportPaths=build/test-results/test \
-		-Dsonar.jacoco.reportPaths=build/jacoco/test.exec
+		-Dsonar.junit.reportPaths=build/test-results/test,build/test-results/integrationTest \
+		-Dsonar.jacoco.reportPaths=build/jacoco/test.exec,build/jacoco/integrationTest.exec
 fi
