@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
@@ -84,7 +85,6 @@ public class PbfVerifier extends Command
         // get the count of all pbf files generated
         final int pbfFileCount = pbfFiles.size();
 
-        // get the count of pbf tiles that should have been generated
         final File slippyTileFile = (File) command.get(SLIPPY_TILE_FILE);
 
         final HashMap<String, Rectangle> shardToBounds = parseSlippyTileFile(slippyTileFile);
@@ -92,6 +92,7 @@ public class PbfVerifier extends Command
         final Integer expectedPbfCount;
         try
         {
+            // get the count of pbf tiles that should have been generated
             expectedPbfCount = Integer.parseInt(slippyTileFile.firstLine());
 
             // subtract the number of pbfs generated from the expected count
@@ -112,8 +113,6 @@ public class PbfVerifier extends Command
                 return 1;
             }
             // try to load each pbf, any that fail should be logged
-            // create a parallel stream, load each pbf path using RawAtlasGenerator with
-            // AtlasLoadingOption set to no slicing
             final AtomicInteger count = new AtomicInteger();
             pbfFiles.parallelStream().forEach(pbfFile ->
             {
@@ -131,7 +130,7 @@ public class PbfVerifier extends Command
                 }
                 catch (final Exception e)
                 {
-                    logger.error("Error while building " + pbfFile.getName() + "!");
+                    throw new CoreException("Error while building " + pbfFile.getName() + "!", e);
                 }
             });
         }
