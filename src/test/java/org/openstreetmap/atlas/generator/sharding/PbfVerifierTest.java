@@ -57,9 +57,15 @@ public class PbfVerifierTest
 
         final Integer expectedPbfCount = Integer.parseInt(this.slippyTileFile.firstLine());
 
-        final int returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFileNames,
+        // no pbfs are missing
+        int returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFileNames,
                 expectedPbfCount);
         Assert.assertEquals(0, returnCode);
+
+        // a pbf is now missing, the check should fail
+        pbfFileNames.remove("10-313-381.pbf");
+        returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFileNames, expectedPbfCount);
+        Assert.assertEquals(1, returnCode);
     }
 
     @Test
