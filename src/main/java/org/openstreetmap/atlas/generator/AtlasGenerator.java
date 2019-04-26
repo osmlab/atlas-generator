@@ -218,7 +218,7 @@ public class AtlasGenerator extends SparkJob
         saveAsHadoop(lineSlicedSubAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED_SUB, output);
 
         // Relation slice the line sliced Atlas and filter any null atlases
-        final JavaPairRDD<String, Atlas> fullySlicedRawAtlasShardsRDD = countryRawAtlasRDD
+        final JavaPairRDD<String, Atlas> fullySlicedRawAtlasShardsRDD = lineSlicedAtlasRDD
                 .mapToPair(AtlasGeneratorHelper.sliceRawAtlasRelations(broadcastBoundaries,
                         broadcastLoadingOptions, broadcastSharding,
                         getAlternateSubFolderOutput(output,
