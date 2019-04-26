@@ -12,7 +12,6 @@ import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.Rectangle;
-import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
 import org.openstreetmap.atlas.streaming.resource.File;
@@ -52,7 +51,7 @@ public class PbfVerifier extends Command
         new PbfVerifier().run(args);
     }
 
-    public static HashMap<String, Rectangle> parseSlippyTileFile(final File slippyTileFile)
+    public static HashMap<String, Rectangle> parseSlippyTileFile(final Resource slippyTileFile)
     {
         final Integer size = Integer.parseInt(slippyTileFile.firstLine());
         final HashMap<String, Rectangle> shardToBounds = new HashMap<>(size);
@@ -70,10 +69,58 @@ public class PbfVerifier extends Command
         return shardToBounds;
     }
 
+    public int buildAllPbfs(final List<Resource> pbfFiles)
+    {
+        // try to load each pbf, any that fail should be logged
+        final AtomicInteger count = new AtomicInteger();
+        pbfFiles.parallelStream().forEach(pbfFile ->
+        {
+            final RawAtlasGenerator rawAtlasGenerator = new RawAtlasGenerator(pbfFile,
+                    AtlasLoadingOption.createOptionWithNoSlicing(), MultiPolygon.MAXIMUM);
+            try
+            {
+                rawAtlasGenerator.buildNoTrim();
+                final int currentCount = count.getAndIncrement();
+                if (currentCount % LOGGING_RATE == 0)
+                {
+                    logger.info("Processed " + currentCount + " PBF files.");
+                }
+            }
+            catch (final Exception e)
+            {
+                throw new CoreException("Error while building " + pbfFile.getName() + "!", e);
+            }
+        });
+        return 0;
+    }
+
+    public int checkForMissingPbfs(final HashMap<String, Rectangle> shardToBounds,
+            final List<String> pbfFileNames, final int expectedPbfCount)
+    {
+        // number of pbfs actually built
+        final int pbfFileCount = pbfFileNames.size();
+        final Integer missingPbfCount = expectedPbfCount - pbfFileCount;
+        if (missingPbfCount != 0)
+        {
+            logger.error("There are " + missingPbfCount + " pbfs missing!");
+            shardToBounds.keySet().forEach(pbfName ->
+            {
+                if (!pbfFileNames.contains(pbfName))
+                {
+                    logger.error(pbfName + " is missing!");
+                }
+            });
+            return 1;
+        }
+        logger.info("There are no pbfs missing!");
+        return 0;
+    }
+
     @Override
     protected int onRun(final CommandMap command)
     {
         final String pbfPath = (String) command.get(PBF_PATH);
+        final File slippyTileFile = (File) command.get(SLIPPY_TILE_FILE);
         final Map<String, String> configuration = new HashMap<>();
         configuration.put("fs.file.impl", "org.apache.hadoop.fs.LocalFileSystem");
         final List<Resource> pbfFiles = FileSystemHelper.listResourcesRecursively(pbfPath,
@@ -81,58 +128,23 @@ public class PbfVerifier extends Command
         final List<String> pbfFileNames = pbfFiles.stream().map(file -> file.getName())
                 .collect(Collectors.toList());
         final Time start = Time.now();
-
-        // get the count of all pbf files generated
-        final int pbfFileCount = pbfFiles.size();
-
-        final File slippyTileFile = (File) command.get(SLIPPY_TILE_FILE);
-
         final HashMap<String, Rectangle> shardToBounds = parseSlippyTileFile(slippyTileFile);
-
         final Integer expectedPbfCount;
         try
         {
-            // get the count of pbf tiles that should have been generated
+            // get the count of pbf tiles that should have been generated from the slippyTile file
             expectedPbfCount = Integer.parseInt(slippyTileFile.firstLine());
-
-            // subtract the number of pbfs generated from the expected count
-            final Integer missingPbfCount = expectedPbfCount - pbfFileCount;
-
-            // since there can be empty PBF files, any missing file is a problem! fail if there
-            // aren't the same # of pbfs as the slippytileFile
-            if (missingPbfCount != 0)
+            // Since there can be empty PBF files, any missing file is a problem! Fail if there
+            // aren't the same # of pbfs as the slippytileFile expects, and log those that are
+            // missing
+            final int returnCode = checkForMissingPbfs(shardToBounds, pbfFileNames,
+                    expectedPbfCount);
+            if (returnCode != 0)
             {
-                logger.error("There are " + missingPbfCount + " slippy tiles missing!");
-                shardToBounds.keySet().forEach(pbfName ->
-                {
-                    if (!pbfFileNames.contains(pbfName))
-                    {
-                        logger.error(pbfName + " is missing!");
-                    }
-                });
-                return 1;
+                return returnCode;
             }
-            // try to load each pbf, any that fail should be logged
-            final AtomicInteger count = new AtomicInteger();
-            pbfFiles.parallelStream().forEach(pbfFile ->
-            {
-                final RawAtlasGenerator rawAtlasGenerator = new RawAtlasGenerator(pbfFile,
-                        AtlasLoadingOption.createOptionWithNoSlicing(),
-                        forPolygon(shardToBounds.get(pbfFile.getName())));
-                try
-                {
-                    final Atlas atlas = rawAtlasGenerator.buildNoTrim();
-                    final int currentCount = count.getAndIncrement();
-                    if (currentCount % LOGGING_RATE == 0)
-                    {
-                        logger.info("Processed " + currentCount + " PBF files.");
-                    }
-                }
-                catch (final Exception e)
-                {
-                    throw new CoreException("Error while building " + pbfFile.getName() + "!", e);
-                }
-            });
+            // Attempt to build all pbfs, and throw an exception if any fail
+            buildAllPbfs(pbfFiles);
         }
         catch (final NumberFormatException e)
         {
