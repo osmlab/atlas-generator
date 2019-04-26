@@ -10,11 +10,9 @@ import org.apache.hadoop.fs.PathFilter;
  */
 public class PbfFilePathFilter implements PathFilter
 {
-
     @Override
     public boolean accept(final Path path)
     {
         return path.getName().endsWith(".pbf");
     }
-
 }

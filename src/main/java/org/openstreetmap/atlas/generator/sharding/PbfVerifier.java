@@ -164,5 +164,4 @@ public class PbfVerifier extends Command
     {
         return new SwitchList().with(SLIPPY_TILE_FILE, PBF_PATH);
     }
-
 }

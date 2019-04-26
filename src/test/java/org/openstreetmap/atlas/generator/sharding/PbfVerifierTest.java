@@ -75,5 +75,4 @@ public class PbfVerifierTest
                 .parseSlippyTileFile(this.slippyTileFile);
         Assert.assertEquals(2, shardToBounds.keySet().size());
     }
-
 }
