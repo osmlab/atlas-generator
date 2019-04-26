@@ -84,12 +84,12 @@ public class PbfVerifier extends Command
                 final int currentCount = count.getAndIncrement();
                 if (currentCount % LOGGING_RATE == 0)
                 {
-                    logger.info("Processed " + currentCount + " PBF files.");
+                    logger.info("Processed {} PBF files.", currentCount);
                 }
             }
             catch (final Exception e)
             {
-                throw new CoreException("Error while building " + pbfFile.getName() + "!", e);
+                throw new CoreException("Error while building {}!", pbfFile.getName(), e);
             }
         });
         return 0;
@@ -103,12 +103,12 @@ public class PbfVerifier extends Command
         final Integer missingPbfCount = expectedPbfCount - pbfFileCount;
         if (missingPbfCount != 0)
         {
-            logger.error("There are " + missingPbfCount + " pbfs missing!");
+            logger.error("There are {} pbfs missing!", missingPbfCount);
             shardToBounds.keySet().forEach(pbfName ->
             {
                 if (!pbfFileNames.contains(pbfName))
                 {
-                    logger.error(pbfName + " is missing!");
+                    logger.error("{} is missing!", pbfName);
                 }
             });
             return 1;
@@ -153,8 +153,8 @@ public class PbfVerifier extends Command
             return 1;
         }
         logger.info("---------------------------------------------");
-        logger.info("All " + expectedPbfCount + " pbfs are present and valid!");
-        logger.info("Verification ran in: " + start.elapsedSince().asMinutes() + " minutes.");
+        logger.info("All {} pbfs are present and valid!", expectedPbfCount);
+        logger.info("Verification ran in: {} minutes.", start.elapsedSince().asMinutes());
         logger.info("---------------------------------------------");
         return 0;
     }
