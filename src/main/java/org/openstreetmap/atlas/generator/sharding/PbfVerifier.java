@@ -58,6 +58,7 @@ public class PbfVerifier extends Command
         for (final String line : slippyTileFile.lines())
         {
             final StringList splitLine = StringList.split(line, "|");
+            // the form of the slippyTile file is "pbfName.pbf|POLYGON( BOUNDS )"
             if (splitLine.size() == 2)
             {
                 final String boundsString = splitLine.get(0);
