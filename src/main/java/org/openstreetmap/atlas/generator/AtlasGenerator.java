@@ -199,9 +199,8 @@ public class AtlasGenerator extends SparkJob
         saveAsHadoop(countryRawAtlasRDD, AtlasGeneratorJobGroup.RAW, output);
 
         // Slice the raw Atlas and filter any null atlases
-        final JavaPairRDD<String, Atlas> lineSlicedAtlasRDD = countryRawAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.sliceRawAtlasLines(broadcastBoundaries,
-                        broadcastLoadingOptions))
+        final JavaPairRDD<String, Atlas> lineSlicedAtlasRDD = countryRawAtlasRDD.mapToPair(
+                AtlasGeneratorHelper.sliceLines(broadcastBoundaries, broadcastLoadingOptions))
                 .filter(tuple -> tuple._2() != null);
         lineSlicedAtlasRDD.cache();
         saveAsHadoop(lineSlicedAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED, output);
@@ -219,7 +218,7 @@ public class AtlasGenerator extends SparkJob
 
         // Relation slice the line sliced Atlas and filter any null atlases
         final JavaPairRDD<String, Atlas> fullySlicedRawAtlasShardsRDD = lineSlicedAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.sliceRawAtlasRelations(broadcastBoundaries,
+                .mapToPair(AtlasGeneratorHelper.sliceRelations(broadcastBoundaries,
                         broadcastLoadingOptions, broadcastSharding,
                         getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.LINE_SLICED_SUB.getCacheFolder()),
@@ -244,8 +243,8 @@ public class AtlasGenerator extends SparkJob
 
         // Section the sliced Atlas
         final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = fullySlicedRawAtlasShardsRDD
-                .mapToPair(AtlasGeneratorHelper.sectionRawAtlas(broadcastBoundaries,
-                        broadcastSharding, sparkContext, broadcastLoadingOptions,
+                .mapToPair(AtlasGeneratorHelper.sectionAtlas(broadcastBoundaries, broadcastSharding,
+                        sparkContext, broadcastLoadingOptions,
                         getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.EDGE_SUB.getCacheFolder()),
                         getAlternateSubFolderOutput(output,
