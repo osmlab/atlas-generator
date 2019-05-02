@@ -261,7 +261,7 @@ public final class AtlasGeneratorHelper implements Serializable
             }
             logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
                     countryShardName, start.elapsedSince().asMilliseconds());
-            return result;
+            return result.iterator();
         };
     }
 
@@ -477,6 +477,7 @@ public final class AtlasGeneratorHelper implements Serializable
             final Atlas rawAtlas = tuple._2();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
                     shardName);
+
             final Time start = Time.now();
 
             final Atlas slicedAtlas;

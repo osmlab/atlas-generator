@@ -60,7 +60,7 @@ public enum AtlasGeneratorJobGroup
             MultipleAtlasStatisticsOutputFormat.class),
     COUNTRY_STATISTICS(
             7,
-            "Country Statistics Creations",
+            "Country Statistics Creation",
             "countryStats",
             AtlasStatistics.class,
             MultipleAtlasCountryStatisticsOutputFormat.class),

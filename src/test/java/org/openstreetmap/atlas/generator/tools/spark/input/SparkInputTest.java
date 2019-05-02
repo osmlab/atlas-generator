@@ -15,6 +15,7 @@ import org.apache.spark.input.PortableDataStream;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
@@ -56,6 +57,7 @@ public class SparkInputTest
         }
     }
 
+    @Ignore
     @Test
     public void testBinaryFileReader()
     {

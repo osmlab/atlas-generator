@@ -51,6 +51,7 @@ public class AtlasGenerator extends SparkJob
     private static final Logger logger = LoggerFactory.getLogger(AtlasGenerator.class);
 
     private static final String SAVED_MESSAGE = "\n\n********** SAVED FOR STEP: {} **********\n";
+    private static final String EXCEPTION_MESSAGE = "Exception after task {} :";
 
     public static final String LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER = "ldgeojson";
 
@@ -206,7 +207,15 @@ public class AtlasGenerator extends SparkJob
         saveAsHadoop(lineSlicedAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED, output);
 
         // Remove the raw atlas RDD from cache since we've cached the sliced RDD
-        countryRawAtlasRDD.unpersist();
+        try
+        {
+            countryRawAtlasRDD.unpersist();
+        }
+        catch (final Exception exception)
+        {
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
+                    exception);
+        }
 
         // Subatlas the raw shard Atlas files based on water relations
         final JavaPairRDD<String, Atlas> lineSlicedSubAtlasRDD = lineSlicedAtlasRDD
@@ -230,9 +239,16 @@ public class AtlasGenerator extends SparkJob
         saveAsHadoop(fullySlicedRawAtlasShardsRDD, AtlasGeneratorJobGroup.FULLY_SLICED, output);
 
         // Remove the line sliced atlas RDD from cache since we've cached the fully sliced RDD
-        lineSlicedAtlasRDD.unpersist();
-        lineSlicedSubAtlasRDD.unpersist();
-
+        try
+        {
+            lineSlicedAtlasRDD.unpersist();
+            lineSlicedSubAtlasRDD.unpersist();
+        }
+        catch (final Exception exception)
+        {
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
+                    exception);
+        }
         final Predicate<Taggable> edgeFilter = AtlasGeneratorParameters.buildAtlasLoadingOption(
                 broadcastBoundaries.getValue(), broadcastLoadingOptions.getValue()).getEdgeFilter();
         final JavaPairRDD<String, Atlas> edgeOnlySubAtlasRDD = fullySlicedRawAtlasShardsRDD
@@ -252,9 +268,6 @@ public class AtlasGenerator extends SparkJob
                         atlasScheme, tasks));
         countryAtlasShardsRDD.cache();
 
-        // Remove the edge-only subatlas as we've finished way-sectioning
-        edgeOnlySubAtlasRDD.unpersist();
-
         if (useJavaFormat)
         {
             saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED, output);
@@ -262,6 +275,17 @@ public class AtlasGenerator extends SparkJob
         else
         {
             saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF, output);
+        }
+
+        // Remove the edge-only subatlas as we've finished way-sectioning
+        try
+        {
+            edgeOnlySubAtlasRDD.unpersist();
+        }
+        catch (final Exception exception)
+        {
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(),
+                    exception);
         }
 
         if (lineDelimitedGeojsonOutput)
@@ -274,8 +298,15 @@ public class AtlasGenerator extends SparkJob
         }
 
         // Remove the sliced atlas RDD from cache since we've cached the final RDD
-        fullySlicedRawAtlasShardsRDD.unpersist();
-
+        try
+        {
+            fullySlicedRawAtlasShardsRDD.unpersist();
+        }
+        catch (final Exception exception)
+        {
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(),
+                    exception);
+        }
         // Create the metrics
         final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
                 .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(broadcastSharding));
@@ -297,7 +328,16 @@ public class AtlasGenerator extends SparkJob
 
         // Save aggregated metrics
         saveAsHadoop(reducedStatisticsRDD, AtlasGeneratorJobGroup.COUNTRY_STATISTICS, output);
-        statisticsRDD.unpersist();
+
+        try
+        {
+            statisticsRDD.unpersist();
+        }
+        catch (final Exception exception)
+        {
+            logger.warn(EXCEPTION_MESSAGE,
+                    AtlasGeneratorJobGroup.COUNTRY_STATISTICS.getDescription(), exception);
+        }
 
         // Compute the deltas, if needed
         if (!previousOutputForDelta.isEmpty())
@@ -315,7 +355,15 @@ public class AtlasGenerator extends SparkJob
             saveAsHadoop(subAtlasRDD, AtlasGeneratorJobGroup.TAGGABLE_FILTERED_OUTPUT, output);
         }
 
-        countryAtlasShardsRDD.unpersist();
+        try
+        {
+            countryAtlasShardsRDD.unpersist();
+        }
+        catch (final Exception exception)
+        {
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
+                    exception);
+        }
     }
 
     @Override
