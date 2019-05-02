@@ -482,8 +482,8 @@ public final class SparkInput
                 // Now that all the file names are distributed, we can start reading the inside of
                 // the files. Even if the files are large, this will be distributed.
                 final Map<String, String> map = toMap(context.getConf());
-                return paths.flatMapToPair(
-                        elasticPath -> elasticFunction.apply(new Path(elasticPath), map));
+                return paths.flatMapToPair(elasticPath -> elasticFunction
+                        .apply(new Path(elasticPath), map).iterator());
             }
             catch (final Exception e)
             {

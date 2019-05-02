@@ -43,10 +43,6 @@ configurations
         {
             force packages.atlas
             force packages.spark.core
-            // http://stackoverflow.com/questions/31039367/spark-parallelize-could-not-find-creator-property-with-name-id
-            // This is to avoid a JsonMappingException for something named 'id'
-            // in org.apache.spark.rdd.RDDOperationScope
-            force 'com.fasterxml.jackson.core:jackson-databind:2.4.4'
             // Snappy 1.1.1.6 is the one that has the proper .so libs.
             // https://github.com/xerial/snappy-java/issues/6
             force packages.snappy
@@ -64,7 +60,6 @@ dependencies
 {
     compile packages.atlas
     compile packages.spark.core
-
     shaded project.configurations.getByName('compile')
 }
 

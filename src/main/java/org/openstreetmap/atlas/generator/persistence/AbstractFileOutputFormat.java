@@ -37,7 +37,8 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
         return new RecordWriter<String, T>()
         {
             private final String resourceName = getQualifiedFileNameWithExtension(name);
-            private final Path path = FileOutputFormat.getTaskOutputPath(job, this.resourceName);
+            private final Path outputPath = FileOutputFormat.getOutputPath(job);
+            private final Path path = new Path(this.outputPath, this.resourceName);
             private final FileSystem fileSystem = this.path.getFileSystem(job);
             private FSDataOutputStream dataOutputStream;
 

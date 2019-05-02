@@ -57,7 +57,7 @@ public abstract class ShardedSparkJob extends SparkJob
             if (boundaries == null)
             {
                 logger.error("No boundaries found for country {}!", countryName);
-                return new ArrayList<>();
+                return new ArrayList<Tuple2<String, Shard>>().iterator();
             }
 
             logger.info("Generating shards for country {}", countryName);
@@ -72,7 +72,7 @@ public abstract class ShardedSparkJob extends SparkJob
             // parallelized
             final List<Tuple2<String, Shard>> countryShards = new ArrayList<>();
             shards.forEach(shard -> countryShards.add(new Tuple2<>(countryName, shard)));
-            return countryShards;
+            return countryShards.iterator();
         };
     }
 
