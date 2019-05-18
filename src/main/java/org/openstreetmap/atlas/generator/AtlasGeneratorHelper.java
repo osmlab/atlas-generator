@@ -21,7 +21,6 @@ import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
-import org.openstreetmap.atlas.geography.atlas.items.Relation;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
@@ -34,10 +33,7 @@ import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
-import org.openstreetmap.atlas.tags.NaturalTag;
-import org.openstreetmap.atlas.tags.RelationTypeTag;
 import org.openstreetmap.atlas.tags.Taggable;
-import org.openstreetmap.atlas.tags.annotations.validation.Validators;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
 import org.openstreetmap.atlas.utilities.time.Time;
@@ -90,16 +86,6 @@ public final class AtlasGeneratorHelper implements Serializable
     private static final Logger logger = LoggerFactory.getLogger(AtlasGeneratorHelper.class);
     private static final String LINE_SLICED_SUBATLAS_NAMESPACE = "lineSlicedSubAtlas";
     private static final String LINE_SLICED_ATLAS_NAMESPACE = "lineSlicedAtlas";
-
-    // Bring in all lines that will become edges
-    static final Predicate<Taggable> relationPredicate = entity -> entity instanceof Relation
-            && Validators.isOfType(entity, NaturalTag.class, NaturalTag.WATER)
-            && Validators.isOfType(entity, RelationTypeTag.class, RelationTypeTag.MULTIPOLYGON);
-
-    // Dynamic expansion filter will be a combination of points and lines
-    @SuppressWarnings("unchecked")
-    public static final Predicate<Taggable> subAtlasFilter = (Predicate<Taggable> & Serializable) entity -> relationPredicate
-            .test(entity);
 
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
 
