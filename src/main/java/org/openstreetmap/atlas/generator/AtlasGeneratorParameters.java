@@ -64,6 +64,10 @@ public final class AtlasGeneratorParameters
             "waySectioningConfiguration",
             "The path to the configuration file that defines where to section Ways to make Edges.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
+
+    public static final Switch<String> SLICING_CONFIGURATION = new Switch<>("slicingConfiguration",
+            "The path to the configuration file that defines which relations to dynamically expand when slicing.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> PBF_WAY_CONFIGURATION = new Switch<>(
             "osmPbfWayConfiguration",
             "The path to the configuration file that defines which PBF Ways becomes an Atlas Entity.",
@@ -153,6 +157,13 @@ public final class AtlasGeneratorParameters
                     getTaggableFilterFrom(new StringResource(pbfRelationConfiguration)));
         }
 
+        final String slicingConfiguration = properties.get(SLICING_CONFIGURATION.getName());
+        if (slicingConfiguration != null)
+        {
+            atlasLoadingOption.setSlicingFilter(
+                    getTaggableFilterFrom(new StringResource(slicingConfiguration)));
+        }
+
         return atlasLoadingOption;
     }
 
@@ -186,6 +197,10 @@ public final class AtlasGeneratorParameters
                 pbfRelationConfiguration == null ? null
                         : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
 
+        final String slicingConfiguration = (String) command.get(SLICING_CONFIGURATION);
+        propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ? null
+                : FileSystemHelper.resource(slicingConfiguration, sparkContext).all());
+
         return propertyMap;
     }
 
@@ -194,9 +209,9 @@ public final class AtlasGeneratorParameters
         return new SwitchList().with(COUNTRIES, COUNTRY_SHAPES, SHARDING_TYPE, PBF_PATH, PBF_SCHEME,
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
-                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, ATLAS_SCHEME,
-                SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT, LINE_DELIMITED_GEOJSON_OUTPUT,
-                SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
+                PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, SLICING_CONFIGURATION,
+                ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT,
+                LINE_DELIMITED_GEOJSON_OUTPUT, SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
     }
 
     private AtlasGeneratorParameters()

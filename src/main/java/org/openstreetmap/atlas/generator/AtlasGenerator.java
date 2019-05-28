@@ -218,9 +218,12 @@ public class AtlasGenerator extends SparkJob
         }
 
         // Subatlas the raw shard Atlas files based on water relations
+        final Predicate<Taggable> slicingFilter = AtlasGeneratorParameters
+                .buildAtlasLoadingOption(broadcastBoundaries.getValue(),
+                        broadcastLoadingOptions.getValue())
+                .getSlicingFilter();
         final JavaPairRDD<String, Atlas> lineSlicedSubAtlasRDD = lineSlicedAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.subatlas(AtlasGeneratorHelper.subAtlasFilter,
-                        AtlasCutType.SILK_CUT))
+                .mapToPair(AtlasGeneratorHelper.subatlas(slicingFilter, AtlasCutType.SILK_CUT))
                 .filter(tuple -> tuple._2() != null);
         lineSlicedSubAtlasRDD.cache();
         saveAsHadoop(lineSlicedSubAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED_SUB, output);
