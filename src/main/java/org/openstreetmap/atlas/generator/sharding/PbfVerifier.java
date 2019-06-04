@@ -96,8 +96,10 @@ public class PbfVerifier extends Command
     }
 
     public int checkForMissingPbfs(final HashMap<String, Rectangle> shardToBounds,
-            final List<String> pbfFileNames, final int expectedPbfCount)
+            final List<Resource> pbfFiles, final int expectedPbfCount)
     {
+        final List<String> pbfFileNames = pbfFiles.stream().map(file -> file.getName())
+                .collect(Collectors.toList());
         // number of pbfs actually built
         final int pbfFileCount = pbfFileNames.size();
         final Integer missingPbfCount = expectedPbfCount - pbfFileCount;
@@ -113,8 +115,20 @@ public class PbfVerifier extends Command
             });
             return 1;
         }
-        logger.info("There are no pbfs missing!");
-        return 0;
+        int returnCode = 0;
+        for (final Resource pbfFile : pbfFiles)
+        {
+            if (pbfFile.length() == 0)
+            {
+                logger.error("{} is empty, and most likely corrupt!", pbfFile.getName());
+                returnCode = 1;
+            }
+        }
+        if (returnCode == 0)
+        {
+            logger.info("There are no pbfs missing!");
+        }
+        return returnCode;
     }
 
     @Override
@@ -126,8 +140,6 @@ public class PbfVerifier extends Command
         configuration.put("fs.file.impl", "org.apache.hadoop.fs.LocalFileSystem");
         final List<Resource> pbfFiles = FileSystemHelper.listResourcesRecursively(pbfPath,
                 configuration, new PbfFilePathFilter());
-        final List<String> pbfFileNames = pbfFiles.stream().map(file -> file.getName())
-                .collect(Collectors.toList());
         final Time start = Time.now();
         final HashMap<String, Rectangle> shardToBounds = parseSlippyTileFile(slippyTileFile);
         final Integer expectedPbfCount;
@@ -138,8 +150,7 @@ public class PbfVerifier extends Command
             // Since there can be empty PBF files, any missing file is a problem! Fail if there
             // aren't the same # of pbfs as the slippytileFile expects, and log those that are
             // missing
-            final int returnCode = checkForMissingPbfs(shardToBounds, pbfFileNames,
-                    expectedPbfCount);
+            final int returnCode = checkForMissingPbfs(shardToBounds, pbfFiles, expectedPbfCount);
             if (returnCode != 0)
             {
                 return returnCode;

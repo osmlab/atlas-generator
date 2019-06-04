@@ -50,21 +50,15 @@ public class PbfVerifierTest
                 .parseSlippyTileFile(this.slippyTileFile);
 
         final PbfVerifier pbfVerifier = new PbfVerifier();
-
-        final List<String> pbfFileNames = new ArrayList<>();
-        pbfFileNames.add("10-313-380.pbf");
-        pbfFileNames.add("10-313-381.pbf");
-
         final Integer expectedPbfCount = Integer.parseInt(this.slippyTileFile.firstLine());
 
         // no pbfs are missing
-        int returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFileNames,
-                expectedPbfCount);
+        int returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFiles, expectedPbfCount);
         Assert.assertEquals(0, returnCode);
 
         // a pbf is now missing, the check should fail
-        pbfFileNames.remove("10-313-381.pbf");
-        returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFileNames, expectedPbfCount);
+        pbfFiles.remove(this.pbf2);
+        returnCode = pbfVerifier.checkForMissingPbfs(shardToBounds, pbfFiles, expectedPbfCount);
         Assert.assertEquals(1, returnCode);
     }
 
