@@ -6,6 +6,7 @@ import java.util.Map;
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
+import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -24,8 +25,6 @@ import org.openstreetmap.atlas.utilities.runtime.CommandMap;
  */
 public final class AtlasGeneratorParameters
 {
-    private static final String SHARDING_DEFAULT = "slippy@10";
-
     public static final Switch<StringList> COUNTRIES = new Switch<>("countries",
             "Comma separated list of countries to be included in the final Atlas",
             value -> StringList.split(value, ","), Optionality.REQUIRED);
@@ -46,9 +45,6 @@ public final class AtlasGeneratorParameters
                     + " (everything under the same folder)",
             SlippyTilePersistenceScheme::getSchemeInstanceFromString, Optionality.OPTIONAL,
             AbstractMultipleAtlasBasedOutputFormat.DEFAULT_SCHEME);
-    public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
-            "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
-            SHARDING_DEFAULT);
     public static final Switch<String> PREVIOUS_OUTPUT_FOR_DELTA = new Switch<>(
             "previousOutputForDelta",
             "The path of the output of the previous job that can be used for delta computation",
@@ -64,7 +60,6 @@ public final class AtlasGeneratorParameters
             "waySectioningConfiguration",
             "The path to the configuration file that defines where to section Ways to make Edges.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
-
     public static final Switch<String> SLICING_CONFIGURATION = new Switch<>("slicingConfiguration",
             "The path to the configuration file that defines which relations to dynamically expand when slicing.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
@@ -86,7 +81,6 @@ public final class AtlasGeneratorParameters
                     + " always be attempted regardless of the number of countries it intersects according to the"
                     + " country boundary map's grid index.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
-
     public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
             "shouldIncludeFilteredOutputConfiguration",
             "The path to the configuration file that defines which will be included in filtered output."
@@ -100,6 +94,10 @@ public final class AtlasGeneratorParameters
             "lineDelimitedGeojsonOutput",
             "Output each shard as a line delimited geojson outout file in the ldgeojson folder.",
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
+    private static final String SHARDING_DEFAULT = "slippy@10";
+    public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
+            "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
+            SHARDING_DEFAULT);
 
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
@@ -211,7 +209,8 @@ public final class AtlasGeneratorParameters
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, SLICING_CONFIGURATION,
                 ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT,
-                LINE_DELIMITED_GEOJSON_OUTPUT, SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
+                LINE_DELIMITED_GEOJSON_OUTPUT, SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
+                PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
     }
 
     private AtlasGeneratorParameters()

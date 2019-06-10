@@ -21,7 +21,7 @@ import org.openstreetmap.atlas.utilities.runtime.Command.Switch;
 /**
  * @author matthieun
  */
-public final class PersistenceTools
+public class PersistenceTools
 {
     public static final String SHARDING_FILE = "sharding.txt";
     public static final String BOUNDARIES_FILE = "boundaries.txt.gz";
@@ -34,12 +34,16 @@ public final class PersistenceTools
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
 
     private static final Integer BUFFER_SIZE = 4 * 1024;
+    private final Map<String, String> configurationMap;
 
-    public static CountryBoundaryMap boundaries(final String input,
-            final Map<String, String> configuration)
+    public PersistenceTools(final Map<String, String> configurationMap)
     {
-        final Configuration hadoopConfiguration = ConfigurationConverter
-                .mapToHadoopConfiguration(configuration);
+        this.configurationMap = configurationMap;
+    }
+
+    public CountryBoundaryMap boundaries(final String input)
+    {
+        final Configuration hadoopConfiguration = hadoopConfiguration();
         final Path inputPath = new Path(Paths.get(input, BOUNDARIES_FILE).toString());
         return CountryBoundaryMap.fromPlainText(new InputStreamResource(() ->
         {
@@ -54,31 +58,28 @@ public final class PersistenceTools
         }));
     }
 
-    public static void copyShardingAndBoundariesToOutput(final String input, final String output,
+    public void copyShardingAndBoundariesToOutput(final String input, final String output,
             final Map<String, String> configuration)
     {
-        final Configuration hadoopConfiguration = ConfigurationConverter
-                .mapToHadoopConfiguration(configuration);
-        copyToOutput(input, output, SHARDING_FILE, hadoopConfiguration);
-        copyToOutput(input, output, SHARDING_META, hadoopConfiguration);
-        copyToOutput(input, output, BOUNDARIES_FILE, hadoopConfiguration);
-        copyToOutput(input, output, BOUNDARIES_META, hadoopConfiguration);
+        copyToOutput(input, output, SHARDING_FILE);
+        copyToOutput(input, output, SHARDING_META);
+        copyToOutput(input, output, BOUNDARIES_FILE);
+        copyToOutput(input, output, BOUNDARIES_META);
     }
 
-    public static Sharding sharding(final String input, final Map<String, String> configuration)
+    public Sharding sharding(final String input, final Map<String, String> configuration)
     {
-        final Configuration hadoopConfiguration = ConfigurationConverter
-                .mapToHadoopConfiguration(configuration);
+        final Configuration hadoopConfiguration = hadoopConfiguration();
         final Path inputPath = new Path(Paths.get(input, SHARDING_FILE).toString());
         return AtlasSharding.forString("dynamic@" + inputPath.toUri().toString(),
                 hadoopConfiguration);
     }
 
-    private static void copyToOutput(final String input, final String output, final String name,
-            final Configuration configuration)
+    private void copyToOutput(final String input, final String output, final String name)
     {
         final Path inputPath = new Path(Paths.get(input, name).toString());
         final Path outputPath = new Path(Paths.get(output, name).toString());
+        final Configuration configuration = hadoopConfiguration();
         try (InputStream inputStream = inputPath.getFileSystem(configuration).open(inputPath);
                 OutputStream outputStream = outputPath.getFileSystem(configuration)
                         .create(outputPath))
@@ -91,7 +92,8 @@ public final class PersistenceTools
         }
     }
 
-    private PersistenceTools()
+    private Configuration hadoopConfiguration()
     {
+        return ConfigurationConverter.mapToHadoopConfiguration(this.configurationMap);
     }
 }

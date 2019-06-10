@@ -17,6 +17,7 @@ import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenc
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
+import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
@@ -47,13 +48,11 @@ import scala.Tuple2;
 public class AtlasGenerator extends SparkJob
 {
 
+    public static final String LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER = "ldgeojson";
     private static final long serialVersionUID = 5985696743749843135L;
     private static final Logger logger = LoggerFactory.getLogger(AtlasGenerator.class);
-
     private static final String SAVED_MESSAGE = "\n\n********** SAVED FOR STEP: {} **********\n";
     private static final String EXCEPTION_MESSAGE = "Exception after task {} :";
-
-    public static final String LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER = "ldgeojson";
 
     public static void main(final String[] args)
     {
@@ -99,6 +98,17 @@ public class AtlasGenerator extends SparkJob
     public String getName()
     {
         return "Atlas Generator";
+    }
+
+    @Override
+    public void runAfter(final CommandMap command)
+    {
+        final Boolean copyToOutput = (Boolean) command.get(PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
+        final 
+        if (copyToOutput)
+        {
+            PersistenceTools.copyShardingAndBoundariesToOutput();
+        }
     }
 
     @Override

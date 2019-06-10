@@ -151,7 +151,9 @@ public abstract class SparkJob extends Command implements Serializable
             options.forEach(hadoopConfiguration::set);
 
             FileSystemPerformanceHelper.openRenamePool();
+            runBefore(command);
             start(command);
+            runAfter(command);
             FileSystemPerformanceHelper.waitForAndCloseRenamePool();
             writeStatus(output, SUCCESS_FILE, "Success!");
         }
@@ -160,7 +162,16 @@ public abstract class SparkJob extends Command implements Serializable
             writeStatus(output, FAILED_FILE, "Failed!");
             throw new CoreException("Job {} failed.", getName(), e);
         }
+
         return 0;
+    }
+
+    public void runAfter(final CommandMap command)
+    {
+    }
+
+    public void runBefore(final CommandMap command)
+    {
     }
 
     /**
