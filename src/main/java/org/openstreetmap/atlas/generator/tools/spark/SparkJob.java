@@ -47,9 +47,6 @@ import scala.Tuple2;
  */
 public abstract class SparkJob extends Command implements Serializable
 {
-    private static final long serialVersionUID = -3267868312907886517L;
-    private static final Logger logger = LoggerFactory.getLogger(SparkJob.class);
-
     public static final Switch<String> INPUT = new Switch<>("input", "Input path of the Spark Job",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> OUTPUT = new Switch<>("output",
@@ -74,6 +71,9 @@ public abstract class SparkJob extends Command implements Serializable
     public static final String SUCCESS_FILE = "_SUCCESS";
     public static final String FAILED_FILE = "_FAILED";
     public static final String SAVING_SEPARATOR = "-";
+
+    private static final long serialVersionUID = -3267868312907886517L;
+    private static final Logger logger = LoggerFactory.getLogger(SparkJob.class);
 
     private transient JavaSparkContext context;
 
