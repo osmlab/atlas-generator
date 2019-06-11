@@ -1,6 +1,7 @@
 package org.openstreetmap.atlas.generator;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +28,6 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMapArchiver;
 import org.openstreetmap.atlas.geography.boundary.CountryShardListing;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
@@ -49,6 +49,7 @@ public class AtlasGenerator extends SparkJob
 {
 
     public static final String LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER = "ldgeojson";
+
     private static final long serialVersionUID = 5985696743749843135L;
     private static final Logger logger = LoggerFactory.getLogger(AtlasGenerator.class);
     private static final String SAVED_MESSAGE = "\n\n********** SAVED FOR STEP: {} **********\n";
@@ -71,7 +72,7 @@ public class AtlasGenerator extends SparkJob
      *            {@link Sharding} strategy
      * @return {@link List} of {@link AtlasGenerationTask}s
      */
-    protected static List<AtlasGenerationTask> generateTasks(final StringList countries,
+    protected static List<AtlasGenerationTask> generateTasks(final List<String> countries,
             final CountryBoundaryMap boundaryMap, final Sharding sharding)
     {
         final MultiMapWithSet<String, Shard> countryToShardMap = CountryShardListing
@@ -101,23 +102,12 @@ public class AtlasGenerator extends SparkJob
     }
 
     @Override
-    public void runAfter(final CommandMap command)
-    {
-        final Boolean copyToOutput = (Boolean) command.get(PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
-        final 
-        if (copyToOutput)
-        {
-            PersistenceTools.copyShardingAndBoundariesToOutput();
-        }
-    }
-
-    @Override
     public void start(final CommandMap command)
     {
         final Map<String, String> sparkContext = configurationMap();
 
-        final StringList countries = (StringList) command.get(AtlasGeneratorParameters.COUNTRIES);
-        final String countryShapes = (String) command.get(AtlasGeneratorParameters.COUNTRY_SHAPES);
+        final List<String> countries = ((StringList) command
+                .get(AtlasGeneratorParameters.COUNTRIES)).stream().collect(Collectors.toList());
         final String previousOutputForDelta = (String) command
                 .get(AtlasGeneratorParameters.PREVIOUS_OUTPUT_FOR_DELTA);
         final String pbfPath = (String) command.get(AtlasGeneratorParameters.PBF_PATH);
@@ -125,15 +115,9 @@ public class AtlasGenerator extends SparkJob
                 .get(AtlasGeneratorParameters.PBF_SCHEME);
         final SlippyTilePersistenceScheme atlasScheme = (SlippyTilePersistenceScheme) command
                 .get(AtlasGeneratorParameters.ATLAS_SCHEME);
-        final String pbfShardingName = (String) command.get(AtlasGeneratorParameters.PBF_SHARDING);
-        final String shardingName = (String) command.get(AtlasGeneratorParameters.SHARDING_TYPE);
-        final Sharding sharding = AtlasSharding.forString(shardingName, configuration());
-        final Sharding pbfSharding = pbfShardingName != null
-                ? AtlasSharding.forString(pbfShardingName, configuration())
-                : sharding;
+        final Sharding sharding = atlasSharding(command);
+        final Sharding pbfSharding = pbfSharding(command);
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
-        final String shouldAlwaysSliceConfiguration = (String) command
-                .get(AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION);
         final String shouldIncludeFilteredOutputConfiguration = (String) command
                 .get(AtlasGeneratorParameters.SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
         final Predicate<Taggable> taggableOutputFilter;
@@ -147,37 +131,11 @@ public class AtlasGenerator extends SparkJob
                     .resource(shouldIncludeFilteredOutputConfiguration, sparkContext));
         }
 
-        final Predicate<Taggable> shouldAlwaysSlicePredicate;
-        if (shouldAlwaysSliceConfiguration == null)
-        {
-            shouldAlwaysSlicePredicate = taggable -> false;
-        }
-        else
-        {
-            shouldAlwaysSlicePredicate = AtlasGeneratorParameters.getTaggableFilterFrom(
-                    FileSystemHelper.resource(shouldAlwaysSliceConfiguration, sparkContext));
-        }
         final String output = output(command);
-        final boolean useJavaFormat = (boolean) command
-                .get(AtlasGeneratorParameters.USE_JAVA_FORMAT);
         final boolean lineDelimitedGeojsonOutput = (boolean) command
                 .get(AtlasGeneratorParameters.LINE_DELIMITED_GEOJSON_OUTPUT);
 
-        // This has to be converted here, as we need the Spark Context
-        final Resource countryBoundaries = resource(countryShapes);
-
-        logger.info("Reading country boundaries from {}", countryShapes);
-        final CountryBoundaryMap boundaries = new CountryBoundaryMapArchiver()
-                .read(countryBoundaries);
-        logger.info("Done Reading {} country boundaries from {}", boundaries.size(), countryShapes);
-        if (!boundaries.hasGridIndex())
-        {
-            logger.warn(
-                    "Given country boundary file didn't have grid index. Initializing grid index for {}.",
-                    countries);
-            boundaries.initializeGridIndex(countries.stream().collect(Collectors.toSet()));
-        }
-        boundaries.setShouldAlwaysSlicePredicate(shouldAlwaysSlicePredicate);
+        final CountryBoundaryMap boundaries = boundaries(countries, command);
 
         // Generate country-shard generation tasks
         final Time timer = Time.now();
@@ -280,15 +238,9 @@ public class AtlasGenerator extends SparkJob
                                 AtlasGeneratorJobGroup.FULLY_SLICED.getCacheFolder()),
                         atlasScheme, tasks));
         countryAtlasShardsRDD.cache();
-
-        if (useJavaFormat)
-        {
-            saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED, output);
-        }
-        else
-        {
-            saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF, output);
-        }
+        saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF, output);
+        this.copyToOutput(command, pbfPath, getAlternateSubFolderOutput(output,
+                AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getCacheFolder()));
 
         // Remove the edge-only subatlas as we've finished way-sectioning
         try
@@ -399,6 +351,59 @@ public class AtlasGenerator extends SparkJob
         return result;
     }
 
+    private Sharding atlasSharding(final CommandMap command)
+    {
+        final String shardingName = (String) command.get(AtlasGeneratorParameters.SHARDING_TYPE);
+        return sharding(shardingName, command);
+    }
+
+    private CountryBoundaryMap boundaries(final List<String> countries, final CommandMap command)
+    {
+        final String countryShapes = (String) command.get(AtlasGeneratorParameters.COUNTRY_SHAPES);
+        final CountryBoundaryMap boundaries;
+        if (countryShapes == null)
+        {
+            boundaries = persistenceTools()
+                    .boundaries((String) command.get(AtlasGeneratorParameters.PBF_PATH));
+        }
+        else
+        {
+            boundaries = new CountryBoundaryMapArchiver().read(resource(countryShapes));
+        }
+        final Predicate<Taggable> shouldAlwaysSlicePredicate;
+        final String shouldAlwaysSliceConfiguration = (String) command
+                .get(AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION);
+        if (shouldAlwaysSliceConfiguration == null)
+        {
+            shouldAlwaysSlicePredicate = taggable -> false;
+        }
+        else
+        {
+            shouldAlwaysSlicePredicate = AtlasGeneratorParameters
+                    .getTaggableFilterFrom(resource(shouldAlwaysSliceConfiguration));
+        }
+        if (!boundaries.hasGridIndex())
+        {
+            logger.warn(
+                    "Given country boundary file didn't have grid index. Initializing grid index for {}.",
+                    countries);
+            boundaries.initializeGridIndex(new HashSet<>(countries));
+        }
+        boundaries.setShouldAlwaysSlicePredicate(shouldAlwaysSlicePredicate);
+        return boundaries;
+    }
+
+    private Sharding pbfSharding(final CommandMap command)
+    {
+        final String pbfShardingName = (String) command.get(AtlasGeneratorParameters.PBF_SHARDING);
+        return sharding(pbfShardingName, command);
+    }
+
+    private PersistenceTools persistenceTools()
+    {
+        return new PersistenceTools(configurationMap());
+    }
+
     private void saveAsHadoop(final JavaPairRDD<?, ?> atlasRDD, final AtlasGeneratorJobGroup group,
             final String output)
     {
@@ -407,5 +412,18 @@ public class AtlasGenerator extends SparkJob
                 Text.class, group.getKeyClass(), group.getOutputClass(),
                 new JobConf(configuration()));
         logger.info(SAVED_MESSAGE, group.getDescription());
+    }
+
+    private Sharding sharding(final String shardingName, final CommandMap command)
+    {
+        if (shardingName == null)
+        {
+            return persistenceTools()
+                    .sharding((String) command.get(AtlasGeneratorParameters.PBF_PATH));
+        }
+        else
+        {
+            return AtlasSharding.forString(shardingName, configuration());
+        }
     }
 }

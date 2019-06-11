@@ -29,7 +29,7 @@ public final class AtlasGeneratorParameters
             "Comma separated list of countries to be included in the final Atlas",
             value -> StringList.split(value, ","), Optionality.REQUIRED);
     public static final Switch<String> COUNTRY_SHAPES = new Switch<>("countryShapes",
-            "Shape file containing the countries", StringConverter.IDENTITY, Optionality.REQUIRED);
+            "Shape file containing the countries", StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs", "The path to PBFs",
             StringConverter.IDENTITY, Optionality.REQUIRED);
     public static final Switch<SlippyTilePersistenceScheme> PBF_SCHEME = new Switch<>("pbfScheme",
@@ -87,17 +87,12 @@ public final class AtlasGeneratorParameters
                     + " Filtered output will only be generated if this switch is specificed, and will be"
                     + " stored in a separate subdirectory.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
-    public static final Switch<Boolean> USE_JAVA_FORMAT = new Switch<>("useJavaFormat",
-            "Generate the atlas files using the java serialization atlas format (as opposed to the protobuf format).",
-            Boolean::parseBoolean, Optionality.OPTIONAL, "false");
     public static final Switch<Boolean> LINE_DELIMITED_GEOJSON_OUTPUT = new Switch<>(
             "lineDelimitedGeojsonOutput",
-            "Output each shard as a line delimited geojson outout file in the ldgeojson folder.",
+            "Output each shard as a line delimited geojson output file in the ldgeojson folder.",
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
-    private static final String SHARDING_DEFAULT = "slippy@10";
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
-            "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL,
-            SHARDING_DEFAULT);
+            "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL);
 
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
@@ -208,8 +203,8 @@ public final class AtlasGeneratorParameters
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, SLICING_CONFIGURATION,
-                ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, USE_JAVA_FORMAT,
-                LINE_DELIMITED_GEOJSON_OUTPUT, SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
+                ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, LINE_DELIMITED_GEOJSON_OUTPUT,
+                SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
     }
 

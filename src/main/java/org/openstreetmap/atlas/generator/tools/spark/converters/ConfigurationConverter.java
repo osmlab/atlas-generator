@@ -19,17 +19,6 @@ public final class ConfigurationConverter
         return result;
     }
 
-    public static Configuration hadoopToSparkConfiguration(final SparkConf sparkConfiguration)
-    {
-        final Configuration result = new Configuration();
-        final Tuple2<String, String>[] all = sparkConfiguration.getAll();
-        for (final Tuple2<String, String> tuple : all)
-        {
-            result.set(tuple._1(), tuple._2());
-        }
-        return result;
-    }
-
     public static Configuration mapToHadoopConfiguration(final Map<String, String> map)
     {
         final Configuration result = new Configuration();
@@ -41,6 +30,17 @@ public final class ConfigurationConverter
     {
         final SparkConf result = new SparkConf();
         map.forEach(result::set);
+        return result;
+    }
+
+    public static Configuration sparkToHadoopConfiguration(final SparkConf sparkConfiguration)
+    {
+        final Configuration result = new Configuration();
+        final Tuple2<String, String>[] all = sparkConfiguration.getAll();
+        for (final Tuple2<String, String> tuple : all)
+        {
+            result.set(tuple._1(), tuple._2());
+        }
         return result;
     }
 

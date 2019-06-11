@@ -11,7 +11,8 @@ import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
-import org.openstreetmap.atlas.utilities.collections.StringList;
+
+import com.google.common.collect.Lists;
 
 /**
  * Tests for {@link AtlasGenerator}.
@@ -32,47 +33,48 @@ public class AtlasGeneratorTest
     public void testGenerateTasksEmptyBoundary()
     {
         final CountryBoundaryMap boundaryMap = new CountryBoundaryMap();
-        Assert.assertTrue(AtlasGenerator.generateTasks(new StringList("HTI"), boundaryMap, SHARDING)
-                .isEmpty());
+        Assert.assertTrue(AtlasGenerator
+                .generateTasks(Lists.newArrayList("HTI"), boundaryMap, SHARDING).isEmpty());
     }
 
     @Test
     public void testGenerateTasksEmptyBoundaryAndCountryList()
     {
         final CountryBoundaryMap boundaryMap = new CountryBoundaryMap();
-        Assert.assertTrue(
-                AtlasGenerator.generateTasks(new StringList(), boundaryMap, SHARDING).isEmpty());
+        Assert.assertTrue(AtlasGenerator.generateTasks(Lists.newArrayList(), boundaryMap, SHARDING)
+                .isEmpty());
     }
 
     @Test
     public void testGenerateTasksEmptyCountryList()
     {
-        Assert.assertTrue(AtlasGenerator.generateTasks(new StringList(), HTI_BOUNDARY_MAP, SHARDING)
-                .isEmpty());
+        Assert.assertTrue(AtlasGenerator
+                .generateTasks(Lists.newArrayList(), HTI_BOUNDARY_MAP, SHARDING).isEmpty());
     }
 
     @Test
     public void testGenerateTasksHTI()
     {
         // HTI boundary should have generated 36 tasks
-        testCountry(new StringList("HTI"), HTI_BOUNDARY_MAP, 36);
+        testCountry(Lists.newArrayList("HTI"), HTI_BOUNDARY_MAP, 36);
     }
 
     @Test
     public void testGenerateTasksJAM()
     {
         // JAM boundary should have generated 6 tasks
-        testCountry(new StringList("JAM"), JAM_BOUNDARY_MAP, 6);
+        testCountry(Lists.newArrayList("JAM"), JAM_BOUNDARY_MAP, 6);
     }
 
     @Test
     public void testGenerateTasksWrongCountryList()
     {
         Assert.assertTrue(AtlasGenerator
-                .generateTasks(new StringList("ABC", "XYZ"), JAM_BOUNDARY_MAP, SHARDING).isEmpty());
+                .generateTasks(Lists.newArrayList("ABC", "XYZ"), JAM_BOUNDARY_MAP, SHARDING)
+                .isEmpty());
     }
 
-    private void testCountry(final StringList countries, final CountryBoundaryMap boundaryMap,
+    private void testCountry(final List<String> countries, final CountryBoundaryMap boundaryMap,
             final int expectedTaskSize)
     {
         final List<AtlasGenerationTask> tasks = AtlasGenerator.generateTasks(countries, boundaryMap,

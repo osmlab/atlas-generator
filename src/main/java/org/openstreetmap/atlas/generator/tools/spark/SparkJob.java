@@ -26,6 +26,7 @@ import org.openstreetmap.atlas.generator.tools.spark.context.DefaultSparkContext
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProvider;
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProviderFinder;
 import org.openstreetmap.atlas.generator.tools.spark.converters.SparkOptionsStringConverter;
+import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.AbstractResource;
@@ -151,9 +152,7 @@ public abstract class SparkJob extends Command implements Serializable
             options.forEach(hadoopConfiguration::set);
 
             FileSystemPerformanceHelper.openRenamePool();
-            runBefore(command);
             start(command);
-            runAfter(command);
             FileSystemPerformanceHelper.waitForAndCloseRenamePool();
             writeStatus(output, SUCCESS_FILE, "Success!");
         }
@@ -164,14 +163,6 @@ public abstract class SparkJob extends Command implements Serializable
         }
 
         return 0;
-    }
-
-    public void runAfter(final CommandMap command)
-    {
-    }
-
-    public void runBefore(final CommandMap command)
-    {
     }
 
     /**
@@ -200,6 +191,17 @@ public abstract class SparkJob extends Command implements Serializable
             result.put(key._1(), key._2());
         }
         return result;
+    }
+
+    protected void copyToOutput(final CommandMap command, final String input, final String output)
+    {
+        final Boolean copyToOutput = (Boolean) command
+                .get(PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
+        if (copyToOutput)
+        {
+            new PersistenceTools(configurationMap()).copyShardingAndBoundariesToOutput(input,
+                    output);
+        }
     }
 
     /**

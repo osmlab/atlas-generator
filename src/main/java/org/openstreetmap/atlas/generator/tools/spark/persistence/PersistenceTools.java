@@ -3,7 +3,6 @@ package org.openstreetmap.atlas.generator.tools.spark.persistence;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Paths;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -44,7 +43,7 @@ public class PersistenceTools
     public CountryBoundaryMap boundaries(final String input)
     {
         final Configuration hadoopConfiguration = hadoopConfiguration();
-        final Path inputPath = new Path(Paths.get(input, BOUNDARIES_FILE).toString());
+        final Path inputPath = new Path(strip(input) + BOUNDARIES_FILE);
         return CountryBoundaryMap.fromPlainText(new InputStreamResource(() ->
         {
             try
@@ -58,8 +57,7 @@ public class PersistenceTools
         }));
     }
 
-    public void copyShardingAndBoundariesToOutput(final String input, final String output,
-            final Map<String, String> configuration)
+    public void copyShardingAndBoundariesToOutput(final String input, final String output)
     {
         copyToOutput(input, output, SHARDING_FILE);
         copyToOutput(input, output, SHARDING_META);
@@ -67,23 +65,42 @@ public class PersistenceTools
         copyToOutput(input, output, BOUNDARIES_META);
     }
 
-    public Sharding sharding(final String input, final Map<String, String> configuration)
+    public Sharding sharding(final String input)
     {
         final Configuration hadoopConfiguration = hadoopConfiguration();
-        final Path inputPath = new Path(Paths.get(input, SHARDING_FILE).toString());
+        final Path inputPath = new Path(strip(input) + SHARDING_FILE);
         return AtlasSharding.forString("dynamic@" + inputPath.toUri().toString(),
                 hadoopConfiguration);
     }
 
+    final String strip(final String input)
+    {
+        final String inputString;
+        if (input.endsWith("/"))
+        {
+            inputString = input;
+        }
+        else
+        {
+            inputString = input + "/";
+        }
+        return inputString;
+    }
+
     private void copyToOutput(final String input, final String output, final String name)
     {
-        final Path inputPath = new Path(Paths.get(input, name).toString());
-        final Path outputPath = new Path(Paths.get(output, name).toString());
+        final Path inputPath = new Path(strip(input) + name);
+        final Path outputPath = new Path(strip(output) + name);
         final Configuration configuration = hadoopConfiguration();
         try (InputStream inputStream = inputPath.getFileSystem(configuration).open(inputPath);
                 OutputStream outputStream = outputPath.getFileSystem(configuration)
                         .create(outputPath))
         {
+            if (inputStream == null)
+            {
+                throw new CoreException(
+                        "{} does not exist and thus cannot be copied to the output.", inputPath);
+            }
             IOUtils.copyBytes(inputStream, outputStream, BUFFER_SIZE, true);
         }
         catch (final IOException e)
