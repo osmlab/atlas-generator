@@ -43,7 +43,7 @@ public class PersistenceTools
     public CountryBoundaryMap boundaries(final String input)
     {
         final Configuration hadoopConfiguration = hadoopConfiguration();
-        final Path inputPath = new Path(strip(input) + BOUNDARIES_FILE);
+        final Path inputPath = new Path(appendDirectorySeparator(input) + BOUNDARIES_FILE);
         return CountryBoundaryMap.fromPlainText(new InputStreamResource(() ->
         {
             try
@@ -68,12 +68,12 @@ public class PersistenceTools
     public Sharding sharding(final String input)
     {
         final Configuration hadoopConfiguration = hadoopConfiguration();
-        final Path inputPath = new Path(strip(input) + SHARDING_FILE);
+        final Path inputPath = new Path(appendDirectorySeparator(input) + SHARDING_FILE);
         return AtlasSharding.forString("dynamic@" + inputPath.toUri().toString(),
                 hadoopConfiguration);
     }
 
-    final String strip(final String input)
+    private String appendDirectorySeparator(final String input)
     {
         final String inputString;
         if (input.endsWith("/"))
@@ -89,8 +89,8 @@ public class PersistenceTools
 
     private void copyToOutput(final String input, final String output, final String name)
     {
-        final Path inputPath = new Path(strip(input) + name);
-        final Path outputPath = new Path(strip(output) + name);
+        final Path inputPath = new Path(appendDirectorySeparator(input) + name);
+        final Path outputPath = new Path(appendDirectorySeparator(output) + name);
         final Configuration configuration = hadoopConfiguration();
         try (InputStream inputStream = inputPath.getFileSystem(configuration).open(inputPath);
                 OutputStream outputStream = outputPath.getFileSystem(configuration)
