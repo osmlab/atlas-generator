@@ -396,7 +396,15 @@ public class AtlasGenerator extends SparkJob
     private Sharding pbfSharding(final CommandMap command)
     {
         final String pbfShardingName = (String) command.get(AtlasGeneratorParameters.PBF_SHARDING);
-        return sharding(pbfShardingName, command);
+        try
+        {
+            return sharding(pbfShardingName, command);
+        }
+        catch (final Exception e)
+        {
+            logger.warn("PBF Sharding unavailable, defaulting to atlas sharding.");
+        }
+        return atlasSharding(command);
     }
 
     private PersistenceTools persistenceTools()
