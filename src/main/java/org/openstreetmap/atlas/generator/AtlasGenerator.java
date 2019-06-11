@@ -249,8 +249,8 @@ public class AtlasGenerator extends SparkJob
         }
         catch (final Exception exception)
         {
-            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(),
-                    exception);
+            logger.warn(EXCEPTION_MESSAGE,
+                    AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(), exception);
         }
 
         if (lineDelimitedGeojsonOutput)
@@ -269,8 +269,8 @@ public class AtlasGenerator extends SparkJob
         }
         catch (final Exception exception)
         {
-            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(),
-                    exception);
+            logger.warn(EXCEPTION_MESSAGE,
+                    AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(), exception);
         }
         // Create the metrics
         final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
