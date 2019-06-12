@@ -6,11 +6,13 @@ import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 
@@ -19,14 +21,15 @@ import org.openstreetmap.atlas.utilities.collections.StringList;
  */
 public class AtlasGeneratorIntegrationTest
 {
-    public static final String BOUNDARY = "resource://test/boundaries/DMA.txt";
-    public static final String TREE_13 = "resource://test/sharding/tree-6-13-100000.txt";
-    public static final String TREE_14 = "resource://test/sharding/tree-6-14-100000.txt";
     public static final String PBF = "resource://test/pbf";
+    public static final String INPUT_SHARDING = PBF + "/" + PersistenceTools.SHARDING_FILE;
+    public static final String INPUT_SHARDING_META = PBF + "/" + PersistenceTools.SHARDING_META;
+    public static final String INPUT_BOUNDARIES = PBF + "/" + PersistenceTools.BOUNDARIES_FILE;
+    public static final String INPUT_BOUNDARIES_META = PBF + "/" + PersistenceTools.BOUNDARIES_META;
     public static final String PBF_233 = PBF + "/9/9-168-233.osm.pbf";
     public static final String PBF_234 = PBF + "/9/9-168-234.osm.pbf";
     public static final String OUTPUT = "resource://test/output";
-    public static final String ATLAS_OUTPUT = "resource://test/atlas/DMA";
+    public static final String ATLAS_OUTPUT = "resource://test/atlas";
     public static final String LINE_DELIMITED_GEOJSON_OUTPUT = "resource://test/"
             + AtlasGenerator.LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER + "/DMA";
 
@@ -34,15 +37,21 @@ public class AtlasGeneratorIntegrationTest
     {
         addResource(PBF_233, "DMA_cutout.osm.pbf");
         addResource(PBF_234, "DMA_cutout.osm.pbf");
-        addResource(TREE_13, "tree-6-13-100000.txt");
-        addResource(TREE_14, "tree-6-14-100000.txt");
-        addResource(BOUNDARY, "DMA.txt");
+        addResource(INPUT_SHARDING, "tree-6-14-100000.txt");
+        addResource(INPUT_BOUNDARIES, "DMA.txt");
+        addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
+        addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
     }
 
     private static void addResource(final String path, final String name)
     {
         ResourceFileSystem.addResource(path, new InputStreamResource(
                 () -> AtlasGeneratorIntegrationTest.class.getResourceAsStream(name)));
+    }
+
+    private static void addResourceContents(final String path, final String contents)
+    {
+        ResourceFileSystem.addResource(path, new StringResource(contents));
     }
 
     @Test
@@ -53,13 +62,11 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-output=" + OUTPUT);
         arguments.add("-startedFolder=resource://test/started");
         arguments.add("-countries=DMA");
-        arguments.add("-countryShapes=" + BOUNDARY);
         arguments.add("-pbfs=" + PBF);
-        arguments.add("-pbfSharding=dynamic@" + TREE_14);
         arguments.add("-pbfScheme=zz/zz-xx-yy.osm.pbf");
         arguments.add("-atlasScheme=zz/");
-        arguments.add("-sharding=dynamic@" + TREE_13);
         arguments.add("-lineDelimitedGeojsonOutput=true");
+        arguments.add("-copyShardingAndBoundaries=true");
         arguments.add(
                 "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
 
@@ -75,10 +82,10 @@ public class AtlasGeneratorIntegrationTest
 
         try (ResourceFileSystem resourceFileSystem = new ResourceFileSystem())
         {
-            Assert.assertTrue(
-                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(
-                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/9/DMA_9-168-234.atlas")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(ATLAS_OUTPUT + "/DMA/9/DMA_9-168-233.atlas")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(ATLAS_OUTPUT + "/DMA/9/DMA_9-168-234.atlas")));
             Assert.assertTrue(resourceFileSystem.exists(
                     new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-233.ldgeojson.gz")));
             Assert.assertTrue(resourceFileSystem.exists(
@@ -87,10 +94,19 @@ public class AtlasGeneratorIntegrationTest
                     Iterables.size(resourceForName(resourceFileSystem,
                             LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-234.ldgeojson.gz")
                                     .lines()));
-            Assert.assertEquals(402,
+            Assert.assertEquals(336,
                     Iterables.size(resourceForName(resourceFileSystem,
                             LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-233.ldgeojson.gz")
                                     .lines()));
+
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(ATLAS_OUTPUT + "/" + PersistenceTools.SHARDING_FILE)));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(ATLAS_OUTPUT + "/" + PersistenceTools.SHARDING_META)));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(ATLAS_OUTPUT + "/" + PersistenceTools.BOUNDARIES_FILE)));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(ATLAS_OUTPUT + "/" + PersistenceTools.BOUNDARIES_META)));
         }
         catch (IllegalArgumentException | IOException e)
         {
@@ -109,12 +125,12 @@ public class AtlasGeneratorIntegrationTest
         {
             try
             {
-                return resourceFileSystem.open(
-                        new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-234.ldgeojson.gz"));
+                return resourceFileSystem.open(new Path(name));
             }
             catch (final Exception e)
             {
-                throw new CoreException("Unable to open Resource in ResourceFileSystem");
+                throw new CoreException("Unable to open Resource {} in ResourceFileSystem", name,
+                        e);
             }
         }).withDecompressor(decompressor);
     }

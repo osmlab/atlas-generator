@@ -26,6 +26,7 @@ import org.openstreetmap.atlas.generator.tools.spark.context.DefaultSparkContext
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProvider;
 import org.openstreetmap.atlas.generator.tools.spark.context.SparkContextProviderFinder;
 import org.openstreetmap.atlas.generator.tools.spark.converters.SparkOptionsStringConverter;
+import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.AbstractResource;
@@ -47,9 +48,6 @@ import scala.Tuple2;
  */
 public abstract class SparkJob extends Command implements Serializable
 {
-    private static final long serialVersionUID = -3267868312907886517L;
-    private static final Logger logger = LoggerFactory.getLogger(SparkJob.class);
-
     public static final Switch<String> INPUT = new Switch<>("input", "Input path of the Spark Job",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> OUTPUT = new Switch<>("output",
@@ -74,6 +72,9 @@ public abstract class SparkJob extends Command implements Serializable
     public static final String SUCCESS_FILE = "_SUCCESS";
     public static final String FAILED_FILE = "_FAILED";
     public static final String SAVING_SEPARATOR = "-";
+
+    private static final long serialVersionUID = -3267868312907886517L;
+    private static final Logger logger = LoggerFactory.getLogger(SparkJob.class);
 
     private transient JavaSparkContext context;
 
@@ -160,6 +161,7 @@ public abstract class SparkJob extends Command implements Serializable
             writeStatus(output, FAILED_FILE, "Failed!");
             throw new CoreException("Job {} failed.", getName(), e);
         }
+
         return 0;
     }
 
@@ -189,6 +191,17 @@ public abstract class SparkJob extends Command implements Serializable
             result.put(key._1(), key._2());
         }
         return result;
+    }
+
+    protected void copyToOutput(final CommandMap command, final String input, final String output)
+    {
+        final Boolean copyToOutput = (Boolean) command
+                .get(PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
+        if (copyToOutput)
+        {
+            new PersistenceTools(configurationMap()).copyShardingAndBoundariesToOutput(input,
+                    output);
+        }
     }
 
     /**

@@ -428,14 +428,14 @@ public final class AtlasGeneratorHelper implements Serializable
             catch (final Throwable e) // NOSONAR
             {
                 throw new CoreException(ERROR_MESSAGE,
-                        AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(), countryShardString,
-                        e);
+                        AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
+                        countryShardString, e);
             }
 
-            logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(),
+            logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
                     countryShardString, start.elapsedSince().asMilliseconds());
             // Report on memory usage
-            logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED.getDescription(),
+            logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
                     countryShardString);
             Memory.printCurrentMemory();
 

@@ -40,12 +40,6 @@ public enum AtlasGeneratorJobGroup
             "edgeOnlySubAtlas",
             Atlas.class,
             MultipleAtlasOutputFormat.class),
-    WAY_SECTIONED(
-            5,
-            "Way Sectioned Atlas Creation",
-            "atlas",
-            Atlas.class,
-            MultipleAtlasOutputFormat.class),
     WAY_SECTIONED_PBF(
             5,
             "Way Sectioned Atlas Creation",
