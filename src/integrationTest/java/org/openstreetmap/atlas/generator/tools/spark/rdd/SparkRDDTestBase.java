@@ -25,44 +25,44 @@ public class SparkRDDTestBase extends DefaultSparkContextProvider
     @Before
     public void initialize()
     {
-        if (sparkContext == null)
+        if (this.sparkContext == null)
         {
-            sparkContext = new DefaultSparkContextProvider().apply(getConfiguration());
+            this.sparkContext = new DefaultSparkContextProvider().apply(getConfiguration());
         }
     }
 
     @After
     public void stopContext()
     {
-        if (sparkContext != null)
+        if (this.sparkContext != null)
         {
-            sparkContext.stop();
+            this.sparkContext.stop();
         }
-    }
-
-    protected JavaSparkContext getSparkContext()
-    {
-        return sparkContext;
-    }
-
-    protected Map<String, String> getFileSystemConfiguration()
-    {
-        return fileSystemConfig;
-    }
-
-    protected void setFileSystemConfiguration(final Map<String, String> fileSystemConfiguration)
-    {
-        this.fileSystemConfig = fileSystemConfiguration;
     }
 
     protected SparkConf getConfiguration()
     {
-        return configuration;
+        return this.configuration;
+    }
+
+    protected Map<String, String> getFileSystemConfiguration()
+    {
+        return this.fileSystemConfig;
+    }
+
+    protected JavaSparkContext getSparkContext()
+    {
+        return this.sparkContext;
     }
 
     protected void setConfiguration(final SparkConf configuration)
     {
         this.configuration = configuration;
+    }
+
+    protected void setFileSystemConfiguration(final Map<String, String> fileSystemConfiguration)
+    {
+        this.fileSystemConfig = fileSystemConfiguration;
     }
 
 }
