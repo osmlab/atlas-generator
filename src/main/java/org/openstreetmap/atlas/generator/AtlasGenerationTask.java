@@ -36,6 +36,15 @@ final class AtlasGenerationTask implements Serializable
         this.allShards = allShards;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s - %s:%s%s", this.getCountry(), this.getShard(),
+                System.lineSeparator(),
+                this.getAllShards().stream().map(shard -> String.format(" - %s", shard))
+                        .collect(Collectors.joining(System.lineSeparator())));
+    }
+
     Set<Shard> getAllShards()
     {
         return this.allShards;
@@ -49,14 +58,5 @@ final class AtlasGenerationTask implements Serializable
     Shard getShard()
     {
         return this.shard;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s - %s:%s%s", this.getCountry(), this.getShard(),
-                System.lineSeparator(),
-                this.getAllShards().stream().map(shard -> String.format(" - %s", shard))
-                        .collect(Collectors.joining(System.lineSeparator())));
     }
 }
