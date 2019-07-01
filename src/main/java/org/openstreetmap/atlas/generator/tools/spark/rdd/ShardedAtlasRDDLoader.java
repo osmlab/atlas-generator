@@ -31,15 +31,10 @@ import scala.Tuple2;
  */
 public class ShardedAtlasRDDLoader
 {
-
     private static final Logger logger = LoggerFactory
             .getLogger(ShardedAtlasRDDLoader.class.getCanonicalName());
 
     private static final AtlasResourceLoader ATLAS_LOADER = new AtlasResourceLoader();
-
-    protected ShardedAtlasRDDLoader()
-    {
-    }
 
     /**
      * Load sharded atlas file and turn it into spark RDD
@@ -123,9 +118,21 @@ public class ShardedAtlasRDDLoader
         return atlas;
     }
 
+    private static String atlasPath(final String atlasDirectory, final String country,
+            final String shardName)
+    {
+        return SparkFileHelper.combine(atlasDirectory + "/" + country, String.format("%s%s",
+                getAtlasName(country, shardName), FileSuffix.ATLAS.toString()));
+    }
+
+    private static String getAtlasName(final String country, final String shardName)
+    {
+        return String.format("%s_%s", country, shardName);
+    }
+
     /**
      * Helper method to generate country shards
-     * 
+     *
      * @param sharding
      *            - sharding information
      * @param country
@@ -147,15 +154,7 @@ public class ShardedAtlasRDDLoader
         return countryShards;
     }
 
-    private static String atlasPath(final String atlasDirectory, final String country,
-            final String shardName)
+    protected ShardedAtlasRDDLoader()
     {
-        return SparkFileHelper.combine(atlasDirectory + "/" + country, String.format("%s%s",
-                getAtlasName(country, shardName), FileSuffix.ATLAS.toString()));
-    }
-
-    private static String getAtlasName(final String country, final String shardName)
-    {
-        return String.format("%s_%s", country, shardName);
     }
 }

@@ -2,7 +2,8 @@ project.ext.versions = [
     checkstyle: '8.18',
     atlas: '5.6.8',
     spark: '2.4.0-cdh6.2.0',
-    snappy: '1.1.1.6'
+    snappy: '1.1.1.6',
+    atlas_checkstyle: '5.6.9',
 ]
 
 project.ext.packages = [
@@ -10,5 +11,7 @@ project.ext.packages = [
     spark:[
         core: "org.apache.spark:spark-core_2.11:${versions.spark}",
     ],
-    snappy: "org.xerial.snappy:snappy-java:${versions.snappy}"
+    snappy: "org.xerial.snappy:snappy-java:${versions.snappy}",
+    checkstyle: "com.puppycrawl.tools:checkstyle:${versions.checkstyle}",
+    atlas_checkstyle: "org.openstreetmap.atlas:atlas:${versions.atlas_checkstyle}",
 ]

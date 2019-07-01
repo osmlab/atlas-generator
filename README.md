@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/osmlab/atlas-generator.svg?branch=master)](https://travis-ci.org/osmlab/atlas-generator)
 [![quality gate](https://sonarcloud.io/api/project_badges/measure?project=org.openstreetmap.atlas%3Aatlas-generator&metric=alert_status)](https://sonarcloud.io/dashboard?id=org.openstreetmap.atlas%3Aatlas-generator)
 [![Maven Central](https://img.shields.io/maven-central/v/org.openstreetmap.atlas/atlas-generator.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.openstreetmap.atlas%22%20AND%20a:%22atlas-generator%22)
+[![CircleCI](https://circleci.com/gh/osmlab/atlas-generator/tree/master.svg?style=svg)](https://circleci.com/gh/osmlab/atlas-generator/tree/master)
 
 AtlasGenerator is a Spark Job that generates [Atlas](https://github.com/osmlab/atlas) shards from OSM pbf shards (built from an OSM database with osmosis).
 
