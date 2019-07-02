@@ -1,17 +1,15 @@
 package org.openstreetmap.atlas.generator.sharding;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.AtlasGenerator;
+import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
+import org.openstreetmap.atlas.generator.tools.spark.converters.ConfigurationConverter;
 import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.geography.sharding.SlippyTileSharding;
-import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 
 /**
@@ -54,26 +52,8 @@ public final class AtlasSharding
         }
         if ("dynamic".equals(split.get(0)))
         {
-            final Path definition = new Path(split.get(1));
-            try
-            {
-                final FileSystem fileSystem = definition.getFileSystem(configuration);
-                return new DynamicTileSharding(new InputStreamResource(() ->
-                {
-                    try
-                    {
-                        return fileSystem.open(definition);
-                    }
-                    catch (final Exception e)
-                    {
-                        throw new CoreException("Failed opening {}", definition, e);
-                    }
-                }));
-            }
-            catch (final IOException e)
-            {
-                throw new CoreException("Failed reading {}", definition, e);
-            }
+            return new DynamicTileSharding(SparkJob.resource(split.get(1),
+                    ConfigurationConverter.hadoopToMapConfiguration(configuration)));
         }
         throw new CoreException("Sharding type {} is not recognized.", split.get(0));
     }

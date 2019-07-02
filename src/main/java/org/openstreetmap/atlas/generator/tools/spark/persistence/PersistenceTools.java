@@ -10,10 +10,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
+import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.converters.ConfigurationConverter;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.utilities.runtime.Command.Optionality;
 import org.openstreetmap.atlas.utilities.runtime.Command.Switch;
 
@@ -42,19 +42,8 @@ public class PersistenceTools
 
     public CountryBoundaryMap boundaries(final String input)
     {
-        final Configuration hadoopConfiguration = hadoopConfiguration();
-        final Path inputPath = new Path(appendDirectorySeparator(input) + BOUNDARIES_FILE);
-        return CountryBoundaryMap.fromPlainText(new InputStreamResource(() ->
-        {
-            try
-            {
-                return inputPath.getFileSystem(hadoopConfiguration).open(inputPath);
-            }
-            catch (final IOException e)
-            {
-                throw new CoreException("Unable to open {}", inputPath.toUri().toString(), e);
-            }
-        }));
+        return CountryBoundaryMap.fromPlainText(SparkJob.resource(
+                appendDirectorySeparator(input) + BOUNDARIES_FILE, this.configurationMap));
     }
 
     public void copyShardingAndBoundariesToOutput(final String input, final String output)
