@@ -8,7 +8,9 @@ import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
+import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
+import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -38,15 +40,28 @@ public class AtlasGeneratorIntegrationTest
         addResource(PBF_233, "DMA_cutout.osm.pbf");
         addResource(PBF_234, "DMA_cutout.osm.pbf");
         addResource(INPUT_SHARDING, "tree-6-14-100000.txt");
-        addResource(INPUT_BOUNDARIES, "DMA.txt");
+        addResource(INPUT_BOUNDARIES, "DMA.txt", true);
         addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
         addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
     }
 
+    public static void addResource(final String path, final String name, final boolean gzipIt)
+    {
+        Resource input = new InputStreamResource(
+                () -> AtlasGeneratorIntegrationTest.class.getResourceAsStream(name));
+        if (gzipIt)
+        {
+            final ByteArrayResource newInput = new ByteArrayResource();
+            newInput.setCompressor(Compressor.GZIP);
+            input.copyTo(newInput);
+            input = newInput;
+        }
+        ResourceFileSystem.addResource(path, input);
+    }
+
     private static void addResource(final String path, final String name)
     {
-        ResourceFileSystem.addResource(path, new InputStreamResource(
-                () -> AtlasGeneratorIntegrationTest.class.getResourceAsStream(name)));
+        addResource(path, name, false);
     }
 
     private static void addResourceContents(final String path, final String contents)

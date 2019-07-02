@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.tools.spark.converters;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -12,6 +13,14 @@ import scala.Tuple2;
  */
 public final class ConfigurationConverter
 {
+    public static Map<String, String> hadoopToMapConfiguration(
+            final Configuration hadoopConfiguration)
+    {
+        final Map<String, String> result = new HashMap<>();
+        hadoopConfiguration.forEach(entry -> result.put(entry.getKey(), entry.getValue()));
+        return result;
+    }
+
     public static SparkConf hadoopToSparkConfiguration(final Configuration hadoopConfiguration)
     {
         final SparkConf result = new SparkConf();
