@@ -35,6 +35,7 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
@@ -557,6 +558,45 @@ public final class AtlasGeneratorHelper implements Serializable
 
             // Output the Name/Atlas couple
             return new Tuple2<>(tuple._1(), slicedAtlas);
+        };
+    }
+
+    protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlas(
+            final ConfiguredFilter filter, final AtlasCutType cutType)
+    {
+        return tuple ->
+        {
+            final Atlas subAtlas;
+            // Grab the tuple contents
+            final String shardName = tuple._1();
+            final Atlas originalAtlas = tuple._2();
+            logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
+            final Time start = Time.now();
+            try
+            {
+                // Slice the Atlas
+                final Optional<Atlas> subAtlasOptional = originalAtlas.subAtlas(filter::test,
+                        cutType);
+                if (subAtlasOptional.isPresent())
+                {
+                    subAtlas = subAtlasOptional.get();
+                }
+                else
+                {
+                    subAtlas = null;
+                    logger.error("Unable to extract valid subAtlas code for {}", shardName);
+                }
+            }
+            catch (final Throwable e) // NOSONAR
+            {
+                throw new CoreException("Sub Atlas failed for {}", shardName, e);
+            }
+            logger.info("Finished sub Atlas for {} in {}", shardName, start.elapsedSince());
+            // Report on memory usage
+            logger.info("Printing memory after loading sub Atlas for {}", shardName);
+            Memory.printCurrentMemory();
+            // Output the Name/Atlas couple
+            return new Tuple2<>(tuple._1(), subAtlas);
         };
     }
 
