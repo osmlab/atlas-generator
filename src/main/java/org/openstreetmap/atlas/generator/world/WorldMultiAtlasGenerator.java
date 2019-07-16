@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
 public class WorldMultiAtlasGenerator extends Command
 {
     private static final Switch<String> ATLAS_PATH = new Switch<>("atlasPath",
-            "The path to the ferry atlas root directory", value -> value, Optionality.REQUIRED);
+            "The path to the atlas directory", value -> value, Optionality.REQUIRED);
     private static final Switch<String> OUTPUT_PATH = new Switch<>("outputPath",
-            "The path to the output world ferry atlas", value -> value, Optionality.REQUIRED);
+            "The path to the output world multi atlas", value -> value, Optionality.REQUIRED);
     private static final Logger logger = LoggerFactory.getLogger(WorldMultiAtlasGenerator.class);
 
     public static void main(final String[] args)
