@@ -47,7 +47,7 @@ public class WorldMultiAtlasGenerator extends Command
         final PackedAtlasCloner packedAtlasCloner = new PackedAtlasCloner();
         final Atlas finalAtlas = packedAtlasCloner.cloneFrom(multiAtlas);
         finalAtlas.save(new File(outputPath));
-        logger.info("Final atlas saved to " + outputPath);
+        logger.info("Final atlas saved to {}", outputPath);
         return 0;
     }
 

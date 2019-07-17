@@ -564,7 +564,7 @@ public final class AtlasGeneratorHelper implements Serializable
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlas(
             final ConfiguredFilter filter, final AtlasCutType cutType)
     {
-        return tuple ->
+        return (Serializable & PairFunction<Tuple2<String, Atlas>, String, Atlas>) tuple ->
         {
             final Atlas subAtlas;
             // Grab the tuple contents
@@ -587,7 +587,7 @@ public final class AtlasGeneratorHelper implements Serializable
                     logger.error("Unable to extract valid subAtlas code for {}", shardName);
                 }
             }
-            catch (final Throwable e) // NOSONAR
+            catch (final Exception e) // NOSONAR
             {
                 throw new CoreException("Sub Atlas failed for {}", shardName, e);
             }
@@ -603,7 +603,7 @@ public final class AtlasGeneratorHelper implements Serializable
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlas(
             final Predicate<Taggable> filter, final AtlasCutType cutType)
     {
-        return tuple ->
+        return (Serializable & PairFunction<Tuple2<String, Atlas>, String, Atlas>) tuple ->
         {
             final Atlas subAtlas;
 
@@ -630,7 +630,7 @@ public final class AtlasGeneratorHelper implements Serializable
 
             }
 
-            catch (final Throwable e) // NOSONAR
+            catch (final Exception e) // NOSONAR
             {
                 throw new CoreException("Sub Atlas failed for {}", shardName, e);
             }

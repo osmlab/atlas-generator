@@ -1,0 +1,16 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "filters":
+        {
+            "nothingFilter":
+            {
+                "predicate":
+                {
+                    "command": "true"
+                }
+            }
+        }
+    }
+}

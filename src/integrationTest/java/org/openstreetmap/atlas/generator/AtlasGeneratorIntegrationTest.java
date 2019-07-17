@@ -34,6 +34,8 @@ public class AtlasGeneratorIntegrationTest
     public static final String ATLAS_OUTPUT = "resource://test/atlas";
     public static final String LINE_DELIMITED_GEOJSON_OUTPUT = "resource://test/"
             + AtlasGenerator.LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER + "/DMA";
+    public static final String CONFIGURED_OUTPUT_FILTER = "resource://test/filter/nothingFilter.json";
+    public static final String FILTER_NAME = "nothingFitler";
 
     static
     {
@@ -41,6 +43,7 @@ public class AtlasGeneratorIntegrationTest
         addResource(PBF_234, "DMA_cutout.osm.pbf");
         addResource(INPUT_SHARDING, "tree-6-14-100000.txt");
         addResource(INPUT_BOUNDARIES, "DMA.txt", true);
+        addResource(CONFIGURED_OUTPUT_FILTER, "nothingFilter.json");
         addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
         addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
     }
@@ -82,6 +85,8 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-atlasScheme=zz/");
         arguments.add("-lineDelimitedGeojsonOutput=true");
         arguments.add("-copyShardingAndBoundaries=true");
+        arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
+        arguments.add("-configuredFilterName=" + FILTER_NAME);
         arguments.add(
                 "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
 
@@ -122,6 +127,11 @@ public class AtlasGeneratorIntegrationTest
                     .exists(new Path(ATLAS_OUTPUT + "/" + PersistenceTools.BOUNDARIES_FILE)));
             Assert.assertTrue(resourceFileSystem
                     .exists(new Path(ATLAS_OUTPUT + "/" + PersistenceTools.BOUNDARIES_META)));
+
+            Assert.assertTrue(resourceFileSystem.exists(
+                    new Path("resource://test/configuredOutput/DMA/9/DMA_9-168-233.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(
+                    new Path("resource://test/configuredOutput/DMA/9/DMA_9-168-234.atlas")));
         }
         catch (IllegalArgumentException | IOException e)
         {
