@@ -69,6 +69,12 @@ public enum AtlasGeneratorJobGroup
             "Taggable Filtered SubAtlas Creation",
             "filteredOutput",
             Atlas.class,
+            MultipleAtlasOutputFormat.class),
+    CONFIGURED_FILTERED_OUTPUT(
+            10,
+            "Configured Filtered SubAtlas Creation",
+            "configuredOutput",
+            Atlas.class,
             MultipleAtlasOutputFormat.class);
 
     private final String description;

@@ -13,6 +13,7 @@ import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command.Optionality;
@@ -93,6 +94,18 @@ public final class AtlasGeneratorParameters
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL);
+    public static final Switch<String> CONFIGURED_FILTER_OUTPUT = new Switch<>(
+            "configuredOutputFilter", "Path to configuration file for filtered output",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
+    public static final Switch<String> CONFIGURED_FILTER_NAME = new Switch<>("configuredFilterName",
+            "Name of the filter to be used for configured output", StringConverter.IDENTITY,
+            Optionality.OPTIONAL);
+
+    public static ConfiguredFilter getConfiguredFilterFrom(final String name,
+            final Resource configurationResource)
+    {
+        return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+    }
 
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
@@ -205,7 +218,8 @@ public final class AtlasGeneratorParameters
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, SLICING_CONFIGURATION,
                 ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, LINE_DELIMITED_GEOJSON_OUTPUT,
                 SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
-                PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
+                PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
+                CONFIGURED_FILTER_NAME);
     }
 
     private AtlasGeneratorParameters()

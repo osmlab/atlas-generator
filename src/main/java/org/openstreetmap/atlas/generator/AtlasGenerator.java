@@ -12,6 +12,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.broadcast.Broadcast;
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.AtlasGeneratorHelper.NamedAtlasStatistics;
 import org.openstreetmap.atlas.generator.persistence.MultipleLineDelimitedGeojsonOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
@@ -30,6 +31,7 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.time.Time;
@@ -120,7 +122,12 @@ public class AtlasGenerator extends SparkJob
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String shouldIncludeFilteredOutputConfiguration = (String) command
                 .get(AtlasGeneratorParameters.SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
+        final String configuredFilterPath = (String) command
+                .get(AtlasGeneratorParameters.CONFIGURED_FILTER_OUTPUT);
+        final String configuredFilterName = (String) command
+                .get(AtlasGeneratorParameters.CONFIGURED_FILTER_NAME);
         final Predicate<Taggable> taggableOutputFilter;
+        ConfiguredFilter configuredOutputFilter = null;
         if (shouldIncludeFilteredOutputConfiguration == null)
         {
             taggableOutputFilter = taggable -> false;
@@ -129,6 +136,17 @@ public class AtlasGenerator extends SparkJob
         {
             taggableOutputFilter = AtlasGeneratorParameters.getTaggableFilterFrom(FileSystemHelper
                     .resource(shouldIncludeFilteredOutputConfiguration, sparkContext));
+        }
+        if (configuredFilterPath != null)
+        {
+            if (configuredFilterName == null)
+            {
+                throw new CoreException(
+                        "A filter name must be provided for configured filter output!");
+            }
+            configuredOutputFilter = AtlasGeneratorParameters.getConfiguredFilterFrom(
+                    configuredFilterName,
+                    FileSystemHelper.resource(configuredFilterPath, sparkContext));
         }
 
         final String output = output(command);
@@ -318,6 +336,14 @@ public class AtlasGenerator extends SparkJob
                     AtlasGeneratorHelper.subatlas(taggableOutputFilter, AtlasCutType.SOFT_CUT))
                     .filter(tuple -> tuple._2() != null);
             saveAsHadoop(subAtlasRDD, AtlasGeneratorJobGroup.TAGGABLE_FILTERED_OUTPUT, output);
+        }
+
+        if (configuredOutputFilter != null)
+        {
+            final JavaPairRDD<String, Atlas> subAtlasRDD = countryAtlasShardsRDD.mapToPair(
+                    AtlasGeneratorHelper.subatlas(configuredOutputFilter, AtlasCutType.SOFT_CUT))
+                    .filter(tuple -> tuple._2() != null);
+            saveAsHadoop(subAtlasRDD, AtlasGeneratorJobGroup.CONFIGURED_FILTERED_OUTPUT, output);
         }
 
         try
