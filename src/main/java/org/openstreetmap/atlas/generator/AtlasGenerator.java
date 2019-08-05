@@ -207,7 +207,7 @@ public class AtlasGenerator extends SparkJob
         final Predicate<Taggable> slicingFilter = AtlasGeneratorParameters
                 .buildAtlasLoadingOption(broadcastBoundaries.getValue(),
                         broadcastLoadingOptions.getValue())
-                .getSlicingFilter();
+                .getRelationSlicingFilter();
         final JavaPairRDD<String, Atlas> lineSlicedSubAtlasRDD = lineSlicedAtlasRDD
                 .mapToPair(AtlasGeneratorHelper.subatlas(slicingFilter, AtlasCutType.SILK_CUT))
                 .filter(tuple -> tuple._2() != null);
@@ -396,18 +396,6 @@ public class AtlasGenerator extends SparkJob
         {
             boundaries = new CountryBoundaryMapArchiver().read(resource(countryShapes));
         }
-        final Predicate<Taggable> shouldAlwaysSlicePredicate;
-        final String shouldAlwaysSliceConfiguration = (String) command
-                .get(AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION);
-        if (shouldAlwaysSliceConfiguration == null)
-        {
-            shouldAlwaysSlicePredicate = taggable -> false;
-        }
-        else
-        {
-            shouldAlwaysSlicePredicate = AtlasGeneratorParameters
-                    .getTaggableFilterFrom(resource(shouldAlwaysSliceConfiguration));
-        }
         if (!boundaries.hasGridIndex())
         {
             logger.warn(
@@ -415,7 +403,6 @@ public class AtlasGenerator extends SparkJob
                     countries);
             boundaries.initializeGridIndex(new HashSet<>(countries));
         }
-        boundaries.setShouldAlwaysSlicePredicate(shouldAlwaysSlicePredicate);
         return boundaries;
     }
 

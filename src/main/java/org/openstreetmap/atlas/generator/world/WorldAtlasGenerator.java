@@ -1,7 +1,6 @@
 package org.openstreetmap.atlas.generator.world;
 
 import java.util.Map;
-import java.util.function.Predicate;
 
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
@@ -23,7 +22,6 @@ import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
-import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
@@ -127,17 +125,6 @@ public class WorldAtlasGenerator extends Command
         final Shard world = SlippyTile.ROOT;
         final String forceSlicingConfiguration = (String) command
                 .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
-        final Predicate<Taggable> forceSlicingPredicate;
-        if (forceSlicingConfiguration == null)
-        {
-            forceSlicingPredicate = taggable -> false;
-        }
-        else
-        {
-            forceSlicingPredicate = AtlasGeneratorParameters
-                    .getTaggableFilterFrom(new File(forceSlicingConfiguration));
-        }
-        countryBoundaryMap.setShouldAlwaysSlicePredicate(forceSlicingPredicate);
 
         final Time start = Time.now();
 
@@ -145,6 +132,11 @@ public class WorldAtlasGenerator extends Command
         final AtlasLoadingOption loadingOptions = AtlasLoadingOption
                 .createOptionWithAllEnabled(countryBoundaryMap)
                 .setAdditionalCountryCodes(countryBoundaryMap.allCountryNames());
+        if (forceSlicingConfiguration != null)
+        {
+            loadingOptions.setForceSlicingFilter(AtlasGeneratorParameters
+                    .getTaggableFilterFrom(new File(forceSlicingConfiguration)));
+        }
 
         if (edgeConfiguration != null)
         {

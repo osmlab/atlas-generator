@@ -163,10 +163,18 @@ public final class AtlasGeneratorParameters
                     getTaggableFilterFrom(new StringResource(pbfRelationConfiguration)));
         }
 
+        final String forceSlicingConfiguration = properties
+                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION.getName());
+        if (forceSlicingConfiguration != null)
+        {
+            atlasLoadingOption.setRelationSlicingFilter(
+                    getTaggableFilterFrom(new StringResource(forceSlicingConfiguration)));
+        }
+
         final String slicingConfiguration = properties.get(SLICING_CONFIGURATION.getName());
         if (slicingConfiguration != null)
         {
-            atlasLoadingOption.setSlicingFilter(
+            atlasLoadingOption.setRelationSlicingFilter(
                     getTaggableFilterFrom(new StringResource(slicingConfiguration)));
         }
 
