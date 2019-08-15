@@ -8,6 +8,7 @@ import org.openstreetmap.atlas.generator.AtlasGenerator;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.converters.ConfigurationConverter;
 import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
+import org.openstreetmap.atlas.geography.sharding.GeoHashSharding;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.geography.sharding.SlippyTileSharding;
 import org.openstreetmap.atlas.utilities.collections.StringList;
@@ -49,6 +50,12 @@ public final class AtlasSharding
                         SLIPPY_ZOOM_MAXIMUM);
             }
             return new SlippyTileSharding(zoom);
+        }
+        if ("geohash".equals(split.get(0)))
+        {
+            final int precision;
+            precision = Integer.valueOf(split.get(1));
+            return new GeoHashSharding(precision);
         }
         if ("dynamic".equals(split.get(0)))
         {
