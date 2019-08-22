@@ -14,26 +14,33 @@ import java.util.Set;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
+import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.builder.text.TextAtlasBuilder;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
+import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
+import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
+import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.utilities.scalars.Distance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+
+import scala.Tuple2;
 
 /**
  * @author tian_du
@@ -81,8 +88,10 @@ public class ShardedAtlasRDDLoaderTest extends SparkRDDTestBase implements Seria
     }
     private final String country = "OMN";
 
-    private final Set<String> sampleShardNames = new HashSet<>(
-            Arrays.asList("7-84-54", "7-85-55", "6-42-28"));
+    private final Set<CountryShard> sampleCountryShards = new HashSet<>(
+            Arrays.asList(new CountryShard(this.country, SlippyTile.forName("7-84-54")),
+                    new CountryShard(this.country, SlippyTile.forName("7-85-55")),
+                    new CountryShard(this.country, SlippyTile.forName("6-42-28"))));
 
     private List<Atlas> sampleInputAtlas;
     private CountryBoundaryMap boundaries;
@@ -121,17 +130,18 @@ public class ShardedAtlasRDDLoaderTest extends SparkRDDTestBase implements Seria
                 fileSystemConfig);
         this.sampleInputAtlas = new ArrayList<>();
 
-        this.sampleShardNames.forEach(shardName ->
+        this.sampleCountryShards.forEach(countryShard ->
         {
             try
             {
-                final Atlas atlas = ShardedAtlasRDDLoader.loadOneAtlasShard(this.country, shardName,
+                final Atlas atlas = ShardedAtlasRDDLoader.loadOneAtlasShard(
+                        countryShard.getCountry(), countryShard.getShard().getName(),
                         TEST_BASE_DIR + "atlas", fileSystemConfig);
                 this.sampleInputAtlas.add(atlas);
             }
             catch (final CoreException exception)
             {
-                logger.error("exception loading atlas {}", shardName);
+                logger.error("exception loading atlas {}", countryShard);
                 exception.printStackTrace();
             }
         });
@@ -140,7 +150,74 @@ public class ShardedAtlasRDDLoaderTest extends SparkRDDTestBase implements Seria
         setFileSystemConfiguration(fileSystemConfig);
     }
 
-    @Ignore
+    @Test
+    public void testGenerateCountryShardedAtlasRDD()
+    {
+        // calling the method to generate the RDD
+        final JavaPairRDD<CountryShard, List<Atlas>> countryShardedAtlasRDD = ShardedAtlasRDDLoader
+                .generateCountryShardedAtlasRDD(getSparkContext(), new StringList(this.country),
+                        this.boundaries, this.atlasSharding, TEST_BASE_DIR + "atlas",
+                        getFileSystemConfiguration());
+
+        // Collect RDD for assertion test
+        final List<Tuple2<CountryShard, List<Atlas>>> countryShardedAtlas = countryShardedAtlasRDD
+                .collect();
+
+        // asserting the generated number of country sharded atlas should be the same as the sample
+        // input, since the missing atlas will be filtered out
+        assertEquals(countryShardedAtlas.size(), this.sampleCountryShards.size());
+        for (final Tuple2<CountryShard, List<Atlas>> entry : countryShardedAtlas)
+        {
+            assertEquals(entry._2().size(), 1);
+        }
+    }
+
+    @Test
+    public void testGenerateExpandedCountryShardedAtlasRDD()
+    {
+        final Distance expandedDistance = Distance.meters(100);
+
+        // calling the method to generate the RDD
+        final JavaPairRDD<CountryShard, List<Atlas>> expandedCountryShardedAtlasRDD = ShardedAtlasRDDLoader
+                .generateExpandedCountryShardedAtlasRDD(getSparkContext(), expandedDistance,
+                        new StringList(this.country), this.boundaries, this.atlasSharding,
+                        TEST_BASE_DIR + "atlas", getFileSystemConfiguration());
+
+        // Manually generated the shard <-> expanded shards mapping
+        final Map<CountryShard, Set<Shard>> shardWithExpandedShardList = new HashMap<>();
+        for (final CountryShard countryShard : this.sampleCountryShards)
+        {
+            final Rectangle expandedBoundingBox = countryShard.getShard().bounds()
+                    .expand(expandedDistance);
+            final Set<Shard> expandedShards = Sets.newHashSet();
+            this.atlasSharding.shards(expandedBoundingBox.bounds()).forEach(shard ->
+            {
+                // For testing purpose, only sample shards will be put into the map
+                if (this.sampleCountryShards.contains(new CountryShard(this.country, shard)))
+                {
+                    expandedShards.add(shard);
+                }
+            });
+            shardWithExpandedShardList.put(countryShard, expandedShards);
+        }
+
+        // Collect RDD for assertion test
+        final List<Tuple2<CountryShard, List<Atlas>>> expandedCountryShardedAtlas = expandedCountryShardedAtlasRDD
+                .collect();
+
+        // Every central shard should have more than one atlas associated with it after expansion
+        // The number of Atlas for each Shard in this test should be the number of available Atlas
+        // from the sample test files
+        for (final Map.Entry<CountryShard, Set<Shard>> entry : shardWithExpandedShardList
+                .entrySet())
+        {
+            final CountryShard countryShard = entry.getKey();
+            final Set<Shard> expandedShards = entry.getValue();
+            assertEquals(shardWithExpandedShardList.get(countryShard).size(),
+                    expandedShards.size());
+        }
+    }
+
     @Test
     public void testShardedAtlasRDDLoading()
     {
@@ -161,4 +238,5 @@ public class ShardedAtlasRDDLoaderTest extends SparkRDDTestBase implements Seria
         logger.info(multiAtlas.summary());
         logger.info(multiAtlasFromRDD.summary());
     }
+
 }
