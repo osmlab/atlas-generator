@@ -138,7 +138,8 @@ public final class AtlasGeneratorHelper implements Serializable
                     atlasResources.add(cachedAtlas.get());
                 }
             });
-            return Optional.ofNullable(MultiAtlas.loadFromPackedAtlas(atlasResources));
+            return atlasResources.isEmpty() ? Optional.empty()
+                    : Optional.ofNullable(MultiAtlas.loadFromPackedAtlas(atlasResources));
         };
     }
 
