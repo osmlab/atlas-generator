@@ -16,6 +16,8 @@ import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
 import org.openstreetmap.atlas.utilities.caching.strategies.NamespaceCachingStrategy;
+import org.openstreetmap.atlas.utilities.runtime.Retry;
+import org.openstreetmap.atlas.utilities.scalars.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +65,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
     private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
     private static final String GLOBAL_HADOOP_FILECACHE_NAMESPACE = "__HadoopAtlasFileCache_global_namespace__";
+    private static final int RETRY_ATTEMPTS = 5;
 
     private final String parentAtlasPath;
     private final SlippyTilePersistenceScheme atlasScheme;
@@ -132,7 +135,10 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     {
         super(new NamespaceCachingStrategy(namespace), uri ->
         {
-            if (!FileSystemHelper.exists(uri.toString(), configuration))
+            final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND);
+            final boolean exists = retry
+                    .run(() -> FileSystemHelper.exists(uri.toString(), configuration));
+            if (!exists)
             {
                 logger.warn("Fetcher: resource {} does not exist!", uri);
                 return Optional.empty();
