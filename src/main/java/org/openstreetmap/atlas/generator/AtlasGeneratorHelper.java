@@ -228,11 +228,13 @@ public final class AtlasGeneratorHelper implements Serializable
             final List<Tuple2<String, AtlasDelta>> result = new ArrayList<>();
             try
             {
-                final Optional<Atlas> alter = new AtlasLocator(sparkContext).atlasForShard(
-                        SparkFileHelper.combine(previousOutputForDelta,
-                                StringList.split(countryShardName,
-                                        CountryShard.COUNTRY_SHARD_SEPARATOR).get(0)),
-                        countryShardName);
+                final Optional<Atlas> alter = new AtlasLocator(sparkContext)
+                        .atlasForShard(
+                                SparkFileHelper
+                                        .combine(previousOutputForDelta,
+                                                StringList.split(countryShardName,
+                                                        Shard.SHARD_DATA_SEPARATOR).get(0)),
+                                countryShardName);
                 if (alter.isPresent())
                 {
                     logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
@@ -310,8 +312,7 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             final String countryName = task.getCountry();
             final Shard shard = task.getShard();
-            final String name = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                    + shard.getName();
+            final String name = countryName + Shard.SHARD_DATA_SEPARATOR + shard.getName();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.RAW.getDescription(), name);
             final Time start = Time.now();
 
@@ -347,8 +348,7 @@ public final class AtlasGeneratorHelper implements Serializable
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
-            return new Tuple2<>(
-                    name + CountryShard.COUNTRY_SHARD_SEPARATOR + atlasScheme.getScheme(), atlas);
+            return new Tuple2<>(name + Shard.SHARD_DATA_SEPARATOR + atlasScheme.getScheme(), atlas);
         };
     }
 

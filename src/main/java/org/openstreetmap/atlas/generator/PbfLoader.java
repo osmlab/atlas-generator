@@ -19,7 +19,6 @@ import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.clipping.Clip.ClipType;
-import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -97,9 +96,8 @@ public class PbfLoader implements Serializable
 
             // Add shard information to the meta data
             metaDataTags.put("countryShards",
-                    this.countryShards
-                            .stream().map(countryShard -> countryName
-                                    + CountryShard.COUNTRY_SHARD_SEPARATOR + countryShard.getName())
+                    this.countryShards.stream().map(countryShard -> countryName
+                            + Shard.SHARD_DATA_SEPARATOR + countryShard.getName())
                             .collect(Collectors.joining(",")));
             metaDataTags.put(shard.getName() + "_boundary", loadingArea.toString());
 

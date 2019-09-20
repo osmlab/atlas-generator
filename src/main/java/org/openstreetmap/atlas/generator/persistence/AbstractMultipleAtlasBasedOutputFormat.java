@@ -1,14 +1,17 @@
 package org.openstreetmap.atlas.generator.persistence;
 
+import java.util.Optional;
+
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.AtlasGenerator;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
+import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
-import org.openstreetmap.atlas.geography.sharding.converters.SlippyTileConverter;
-import org.openstreetmap.atlas.utilities.collections.StringList;
+import org.openstreetmap.atlas.geography.sharding.converters.StringToShardConverter;
+import org.openstreetmap.atlas.utilities.tuples.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,55 +35,38 @@ public abstract class AbstractMultipleAtlasBasedOutputFormat<T>
     @Override
     protected String generateFileNameForKeyValue(final String key, final T value, final String name)
     {
-        final StringList countrySplit = StringList.split(key, CountryShard.COUNTRY_SHARD_SEPARATOR);
-        final String country = countrySplit.get(0);
-        final String shard = countrySplit.get(1);
-        final String schemeDefinition = countrySplit.size() > 2 ? countrySplit.get(2) : "";
+        final StringToShardConverter converter = new StringToShardConverter();
+        final Tuple<Shard, Optional<String>> shardAndData = converter.convertWithMetadata(key);
+        final Shard shard = shardAndData.getFirst();
+        final Optional<String> schemeMetadata = shardAndData.getSecond();
+
+        if (!(shard instanceof CountryShard))
+        {
+            throw new CoreException("{} must be an instance of {}, found {}", shard,
+                    CountryShard.class.getName(), shard.getClass().getName());
+        }
+
+        final CountryShard countryShard = (CountryShard) shard;
+        final String country = countryShard.getCountry();
+        final Shard actualShard = countryShard.getShard();
 
         // TODO remove debug logs
         logger.info("key: {}", key);
-        logger.info("name: {}", name);
-        logger.info("countrySplit: {}", countrySplit);
         logger.info("country: {}", country);
-        logger.info("shard: {}", shard);
-        logger.info("schemeDefinition: {}", schemeDefinition);
+        logger.info("shard: {}", actualShard);
+        logger.info("schemeMetadata: {}", schemeMetadata);
 
-        final SlippyTilePersistenceScheme scheme = SlippyTilePersistenceScheme
-                .getSchemeInstanceFromString(schemeDefinition);
-        /*
-         * This is a temporary hack to handle geohash sharded tiles. If we catch a "Wrong format"
-         * error from the slippy tile converter, then let's just assume it's a geohash and carry on.
-         * Obviously this is not an ideal solution. A better solution may be to do some JSON
-         * packing/parsing with the key parameter.
-         */
-        SlippyTile slippyTile = null;
-        try
+        SlippyTilePersistenceScheme scheme = null;
+        if (schemeMetadata.isPresent() && actualShard instanceof SlippyTile)
         {
-            slippyTile = new SlippyTileConverter().backwardConvert(shard);
-        }
-        catch (final CoreException exception)
-        {
-            /*
-             * Rethrow the exception if it did not match the allowed message.
-             */
-            if (!exception.getMessage().contains("Wrong format of input string"))
-            {
-                throw exception;
-            }
-            logger.warn(
-                    "Could not parse {} as a SlippyTile, defaulting to GeoHash and ignoring the scheme",
-                    shard);
+            scheme = SlippyTilePersistenceScheme.getSchemeInstanceFromString(schemeMetadata.get());
         }
 
-        if (slippyTile != null)
+        if (scheme != null)
         {
-            return SparkFileHelper.combine(country, scheme.compile(slippyTile),
-                    country + CountryShard.COUNTRY_SHARD_SEPARATOR + shard);
+            return SparkFileHelper.combine(country, scheme.compile((SlippyTile) actualShard),
+                    countryShard.getName());
         }
-        else
-        {
-            return SparkFileHelper.combine(country,
-                    country + CountryShard.COUNTRY_SHARD_SEPARATOR + shard);
-        }
+        return SparkFileHelper.combine(country, countryShard.getName());
     }
 }
