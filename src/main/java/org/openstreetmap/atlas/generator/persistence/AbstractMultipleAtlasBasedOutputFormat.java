@@ -12,8 +12,6 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.geography.sharding.converters.StringToShardConverter;
 import org.openstreetmap.atlas.utilities.tuples.Tuple;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Default {@link MultipleOutputFormat} for the Atlas jobs. This ensures all the output files of the
@@ -28,9 +26,6 @@ public abstract class AbstractMultipleAtlasBasedOutputFormat<T>
 {
     // By default, save all the shards under each country folder
     public static final String DEFAULT_SCHEME = "";
-
-    private static final Logger logger = LoggerFactory
-            .getLogger(AbstractMultipleAtlasBasedOutputFormat.class);
 
     @Override
     protected String generateFileNameForKeyValue(final String key, final T value, final String name)
@@ -49,12 +44,6 @@ public abstract class AbstractMultipleAtlasBasedOutputFormat<T>
         final CountryShard countryShard = (CountryShard) shard;
         final String country = countryShard.getCountry();
         final Shard actualShard = countryShard.getShard();
-
-        // TODO remove debug logs
-        logger.info("key: {}", key);
-        logger.info("country: {}", country);
-        logger.info("shard: {}", actualShard);
-        logger.info("schemeMetadata: {}", schemeMetadata);
 
         SlippyTilePersistenceScheme scheme = null;
         if (schemeMetadata.isPresent() && actualShard instanceof SlippyTile)
