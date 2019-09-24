@@ -45,6 +45,45 @@ import org.slf4j.LoggerFactory;
  */
 public class RawAtlasCreator extends Command
 {
+    /**
+     * Represents the different possible stages (or flavors) in the raw atlas flow.
+     *
+     * @author lcram
+     */
+    private enum RawAtlasFlavor
+    {
+        RAW_ATLAS("raw"),
+        LINE_SLICED_ATLAS("lineSliced"),
+        RELATION_SLICED_ATLAS("relationSliced"),
+        SLICED_ATLAS("sliced"),
+        SECTIONED_ATLAS("sectioned");
+
+        private final String flavorString;
+
+        public static RawAtlasFlavor flavorStringToRawAtlasFlavor(final String string)
+        {
+            for (final RawAtlasFlavor flavor : RawAtlasFlavor.values())
+            {
+                if (flavor.toString().equalsIgnoreCase(string))
+                {
+                    return flavor;
+                }
+            }
+            throw new CoreException("Invalid RawAtlasFlavor {}", string);
+        }
+
+        RawAtlasFlavor(final String flavorString)
+        {
+            this.flavorString = flavorString;
+        }
+
+        @Override
+        public String toString()
+        {
+            return this.flavorString;
+        }
+    }
+
     /*
      * A path to a country boundary map file
      */
@@ -119,7 +158,6 @@ public class RawAtlasCreator extends Command
     private static final String DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_fullySlicedAtlasCache__";
     private static final String DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH = "__RawAtlasCreator_waterRelationSubAtlasCache__";
     private static final String USER_HOME = System.getProperty("user.home");
-
     /*
      * Optionally provided a PBF scheme. This is useful if you have lots of PBFs available and are
      * storing them with an alternate storage scheme.
@@ -420,44 +458,5 @@ public class RawAtlasCreator extends Command
         final File atlasFile = new File(cacheFile.toString());
         atlas.setSaveSerializationFormat(AtlasSerializationFormat.PROTOBUF);
         atlas.save(atlasFile);
-    }
-
-    /**
-     * Represents the different possible stages (or flavors) in the raw atlas flow.
-     *
-     * @author lcram
-     */
-    private enum RawAtlasFlavor
-    {
-        RAW_ATLAS("raw"),
-        LINE_SLICED_ATLAS("lineSliced"),
-        RELATION_SLICED_ATLAS("relationSliced"),
-        SLICED_ATLAS("sliced"),
-        SECTIONED_ATLAS("sectioned");
-
-        private final String flavorString;
-
-        public static RawAtlasFlavor flavorStringToRawAtlasFlavor(final String string)
-        {
-            for (final RawAtlasFlavor flavor : RawAtlasFlavor.values())
-            {
-                if (flavor.toString().equalsIgnoreCase(string))
-                {
-                    return flavor;
-                }
-            }
-            throw new CoreException("Invalid RawAtlasFlavor {}", string);
-        }
-
-        RawAtlasFlavor(final String flavorString)
-        {
-            this.flavorString = flavorString;
-        }
-
-        @Override
-        public String toString()
-        {
-            return this.flavorString;
-        }
     }
 }
