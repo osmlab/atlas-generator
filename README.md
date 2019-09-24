@@ -1,4 +1,4 @@
-# AtlasGenerator
+ # AtlasGenerator
 
 [![Build Status](https://travis-ci.org/osmlab/atlas-generator.svg?branch=master)](https://travis-ci.org/osmlab/atlas-generator)
 [![quality gate](https://sonarcloud.io/api/project_badges/measure?project=org.openstreetmap.atlas%3Aatlas-generator&metric=alert_status)](https://sonarcloud.io/dashboard?id=org.openstreetmap.atlas%3Aatlas-generator)
