@@ -31,7 +31,7 @@ public enum SlippyTilePersistenceSchemeType
                             + SlippyTilePersistenceScheme.Y_INDEX),
             FileSuffix.PBF),
 
-    // zz/xx/yy/zz-xx-yy.pf
+    // zz/xx/yy/zz-xx-yy.pbf
     ZZ_XX_YY_SUBFOLDERS_PBF(
             SparkFileHelper.combine(SlippyTilePersistenceScheme.ZOOM,
                     SlippyTilePersistenceScheme.X_INDEX, SlippyTilePersistenceScheme.Y_INDEX,
@@ -82,9 +82,9 @@ public enum SlippyTilePersistenceSchemeType
 
     EMPTY("", FileSuffix.NONE);
 
-    private String value;
+    private final String value;
 
-    private FileSuffix suffix;
+    private final FileSuffix suffix;
 
     static SlippyTilePersistenceSchemeType enumNameToSchemeType(final String string)
     {
