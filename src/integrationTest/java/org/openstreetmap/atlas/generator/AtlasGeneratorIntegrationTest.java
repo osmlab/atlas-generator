@@ -174,21 +174,17 @@ public class AtlasGeneratorIntegrationTest
         try (ResourceFileSystem resourceFileSystem = new ResourceFileSystem())
         {
             Assert.assertTrue(
-                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/DMA/DMA_9-168-233.atlas")));
+                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/DMA/DMA_ddsq.atlas")));
             Assert.assertTrue(
-                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/DMA/DMA_9-168-234.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(
-                    new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_9-168-233.ldgeojson.gz")));
-            Assert.assertTrue(resourceFileSystem.exists(
-                    new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_9-168-234.ldgeojson.gz")));
-            Assert.assertEquals(402,
-                    Iterables.size(resourceForName(resourceFileSystem,
-                            LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_9-168-234.ldgeojson.gz")
-                                    .lines()));
-            Assert.assertEquals(336,
-                    Iterables.size(resourceForName(resourceFileSystem,
-                            LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_9-168-233.ldgeojson.gz")
-                                    .lines()));
+                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/DMA/DMA_ddsr.atlas")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsq.ldgeojson.gz")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsr.ldgeojson.gz")));
+            Assert.assertEquals(700, Iterables.size(resourceForName(resourceFileSystem,
+                    LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsq.ldgeojson.gz").lines()));
+            Assert.assertEquals(2, Iterables.size(resourceForName(resourceFileSystem,
+                    LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsr.ldgeojson.gz").lines()));
 
             Assert.assertTrue(resourceFileSystem.exists(new Path(
                     SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_FILE))));
@@ -200,9 +196,9 @@ public class AtlasGeneratorIntegrationTest
                     SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
 
             Assert.assertTrue(resourceFileSystem
-                    .exists(new Path("resource://test/configuredOutput/DMA/DMA_9-168-233.atlas")));
+                    .exists(new Path("resource://test/configuredOutput/DMA/DMA_ddsq.atlas")));
             Assert.assertTrue(resourceFileSystem
-                    .exists(new Path("resource://test/configuredOutput/DMA/DMA_9-168-234.atlas")));
+                    .exists(new Path("resource://test/configuredOutput/DMA/DMA_ddsr.atlas")));
         }
         catch (IllegalArgumentException | IOException e)
         {
@@ -215,9 +211,7 @@ public class AtlasGeneratorIntegrationTest
         // This is used for local testing. If a developer adds a local file system path in this
         // environment variable, the result of the job will be entirely copied to the specified
         // path.
-        // TODO swap this back
-        // final String resourceFileSystemDump = System.getenv("RESOURCE_FILE_SYSTEM_DUMP");
-        final String resourceFileSystemDump = "/Users/lucascram/Desktop/atlas-generator";
+        final String resourceFileSystemDump = System.getenv("RESOURCE_FILE_SYSTEM_DUMP");
         if (resourceFileSystemDump != null && !resourceFileSystemDump.isEmpty())
         {
             final File folder = new File(resourceFileSystemDump);
