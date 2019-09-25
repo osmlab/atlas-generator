@@ -122,7 +122,8 @@ public final class AtlasGeneratorHelper implements Serializable
                 }
                 else
                 {
-                    logger.error("No Atlas file found for initial Shard {}!", shard);
+                    logger.error("{}: No Atlas file found for initial Shard {}!",
+                            countryBeingSliced, shard);
                     return Optional.empty();
                 }
             }
@@ -133,8 +134,9 @@ public final class AtlasGeneratorHelper implements Serializable
                 final Optional<Resource> cachedAtlas = lineSlicedSubAtlasCache.get(country, shard);
                 if (cachedAtlas.isPresent())
                 {
-                    logger.debug("Cache hit, loading sliced subAtlas for Shard {} and country {}",
-                            shard, country);
+                    logger.debug(
+                            "{}: Cache hit, loading sliced subAtlas for Shard {} and country {}",
+                            countryBeingSliced, shard, country);
                     atlasResources.add(cachedAtlas.get());
                 }
             });
@@ -165,7 +167,8 @@ public final class AtlasGeneratorHelper implements Serializable
             }
             if (!cachedInitialShardResource.isPresent())
             {
-                logger.error("No Atlas file found for initial Shard {}!", shard);
+                logger.error("{}: No Atlas file found for initial Shard {}!", countryBeingSliced,
+                        shard);
                 return Optional.empty();
             }
             return Optional.ofNullable(ATLAS_LOADER.load(cachedInitialShardResource.get()));
@@ -192,17 +195,17 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             if (!validShards.isEmpty() && !validShards.contains(shard))
             {
-                logger.debug("Ignoring loading request for invalid shard {}", shard);
+                logger.debug("{}: Ignoring loading request for invalid shard {}", country, shard);
                 return Optional.empty();
             }
 
             final Optional<Resource> cachedAtlasResource = atlasCache.get(country, shard);
             if (cachedAtlasResource.isPresent())
             {
-                logger.debug("Cache hit, returning loaded atlas for shard {}", shard);
+                logger.debug("{}: Cache hit, returning loaded atlas for shard {}", country, shard);
                 return Optional.ofNullable(ATLAS_LOADER.load(cachedAtlasResource.get()));
             }
-            logger.debug("No atlas file found for shard {}", shard);
+            logger.debug("{}: No atlas file found for shard {}", country, shard);
             return Optional.empty();
         };
     }
