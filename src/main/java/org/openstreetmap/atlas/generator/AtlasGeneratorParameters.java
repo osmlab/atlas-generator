@@ -6,11 +6,13 @@ import java.util.Map;
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
+import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
+import org.openstreetmap.atlas.streaming.resource.http.GetResource;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
@@ -85,7 +87,7 @@ public final class AtlasGeneratorParameters
     public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
             "shouldIncludeFilteredOutputConfiguration",
             "The path to the configuration file that defines which will be included in filtered output."
-                    + " Filtered output will only be generated if this switch is specificed, and will be"
+                    + " Filtered output will only be generated if this switch is specified, and will be"
                     + " stored in a separate subdirectory.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<Boolean> LINE_DELIMITED_GEOJSON_OUTPUT = new Switch<>(
@@ -101,22 +103,22 @@ public final class AtlasGeneratorParameters
             "Name of the filter to be used for configured output", StringConverter.IDENTITY,
             Optionality.OPTIONAL);
 
-    public static ConfiguredFilter getConfiguredFilterFrom(final String name,
-            final Resource configurationResource)
+    public static ConfiguredFilter getConfiguredFilterFrom(final String name, final String path,
+            final Map<String, String> configurationMap)
     {
-        return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+        return getConfiguredFilterFrom(name, pathToResource(path, configurationMap));
     }
 
-    public static StandardConfiguration getStandardConfigurationFrom(
-            final Resource configurationResource)
+    public static StandardConfiguration getStandardConfigurationFrom(final String path,
+            final Map<String, String> configurationMap)
     {
-        return new StandardConfiguration(configurationResource);
+        return getStandardConfigurationFrom(pathToResource(path, configurationMap));
     }
 
-    public static ConfiguredTaggableFilter getTaggableFilterFrom(
-            final Resource configurationResource)
+    public static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
+            final Map<String, String> configurationMap)
     {
-        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
+        return getTaggableFilterFrom(pathToResource(path, configurationMap));
     }
 
     protected static AtlasLoadingOption buildAtlasLoadingOption(final CountryBoundaryMap boundaries,
@@ -228,6 +230,37 @@ public final class AtlasGeneratorParameters
                 SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
                 CONFIGURED_FILTER_NAME);
+    }
+
+    private static ConfiguredFilter getConfiguredFilterFrom(final String name,
+            final Resource configurationResource)
+    {
+        return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+    }
+
+    private static StandardConfiguration getStandardConfigurationFrom(
+            final Resource configurationResource)
+    {
+        return new StandardConfiguration(configurationResource);
+    }
+
+    private static ConfiguredTaggableFilter getTaggableFilterFrom(
+            final Resource configurationResource)
+    {
+        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
+    }
+
+    private static Resource pathToResource(final String path,
+            final Map<String, String> configurationMap)
+    {
+        if (path.startsWith("http"))
+        {
+            return new GetResource(path);
+        }
+        else
+        {
+            return SparkJob.resource(path, configurationMap);
+        }
     }
 
     private AtlasGeneratorParameters()
