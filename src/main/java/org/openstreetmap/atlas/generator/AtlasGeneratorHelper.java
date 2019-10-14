@@ -17,6 +17,7 @@ import org.apache.spark.broadcast.Broadcast;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.caching.HadoopAtlasFileCache;
+import org.openstreetmap.atlas.generator.tools.json.PersistenceJsonParser;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
@@ -351,7 +352,9 @@ public final class AtlasGeneratorHelper implements Serializable
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
-            return new Tuple2<>(name + Shard.SHARD_DATA_SEPARATOR + atlasScheme.getScheme(), atlas);
+            final String persistenceKey = PersistenceJsonParser.getJsonKey(countryName,
+                    shard.getName(), atlasScheme.getScheme());
+            return new Tuple2<>(persistenceKey, atlas);
         };
     }
 
@@ -405,13 +408,14 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            final String countryShardString = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardString = countryShard.getName();
+
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
                     countryShardString);
             final Time start = Time.now();
-
-            final CountryShard countryShard = CountryShard.forName(countryShardString);
-            final String country = countryShard.getCountry();
             final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                     .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
             // Instantiate the caches
