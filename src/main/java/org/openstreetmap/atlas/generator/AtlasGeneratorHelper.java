@@ -224,7 +224,10 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            final String countryShardName = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardName = countryShard.getName();
             final Atlas current = tuple._2();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
                     countryShardName);
@@ -270,9 +273,12 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            final String shardName = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardName = countryShard.getName();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.SHARD_STATISTICS.getDescription(),
-                    shardName);
+                    countryShardName);
             final Time start = Time.now();
             final Counter counter = new Counter().withSharding(sharding.getValue());
             counter.setCountsDefinition(Counter.POI_COUNTS_DEFINITION.getDefault());
@@ -284,11 +290,12 @@ public final class AtlasGeneratorHelper implements Serializable
             catch (final Exception e)
             {
                 logger.error(ERROR_MESSAGE,
-                        AtlasGeneratorJobGroup.SHARD_STATISTICS.getDescription(), shardName, e);
+                        AtlasGeneratorJobGroup.SHARD_STATISTICS.getDescription(), countryShardName,
+                        e);
             }
             logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.SHARD_STATISTICS.getDescription(),
-                    shardName, start.elapsedSince().asMilliseconds());
-            return new Tuple2<>(shardName, statistics);
+                    countryShardName, start.elapsedSince().asMilliseconds());
+            return new Tuple2<>(tuple._1(), statistics);
         };
     }
 
@@ -411,10 +418,10 @@ public final class AtlasGeneratorHelper implements Serializable
             final String country = PersistenceJsonParser.parseCountry(tuple._1());
             final String shardString = PersistenceJsonParser.parseShard(tuple._1());
             final CountryShard countryShard = new CountryShard(country, shardString);
-            final String countryShardString = countryShard.getName();
+            final String countryShardName = countryShard.getName();
 
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
-                    countryShardString);
+                    countryShardName);
             final Time start = Time.now();
             final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                     .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
@@ -437,15 +444,15 @@ public final class AtlasGeneratorHelper implements Serializable
             catch (final Throwable e) // NOSONAR
             {
                 throw new CoreException(ERROR_MESSAGE,
-                        AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
-                        countryShardString, e);
+                        AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(), countryShardName,
+                        e);
             }
 
             logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
-                    countryShardString, start.elapsedSince().asMilliseconds());
+                    countryShardName, start.elapsedSince().asMilliseconds());
             // Report on memory usage
             logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
-                    countryShardString);
+                    countryShardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
@@ -468,22 +475,23 @@ public final class AtlasGeneratorHelper implements Serializable
         return tuple ->
         {
             // Grab the tuple contents
-            final String shardName = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardName = countryShard.getName();
             final Atlas rawAtlas = tuple._2();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
-                    shardName);
+                    countryShardName);
 
             final Time start = Time.now();
 
             final Atlas slicedAtlas;
             try
             {
-                // Extract the country code
-                final String countryName = CountryShard.forName(shardName).getCountry();
                 // Set the country code that is being processed!
                 final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                         .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
-                atlasLoadingOption.setAdditionalCountryCodes(countryName);
+                atlasLoadingOption.setAdditionalCountryCodes(country);
                 logger.error("Country codes during line slicing was: {}",
                         atlasLoadingOption.getCountryCodes());
                 // Slice the Atlas
@@ -492,15 +500,15 @@ public final class AtlasGeneratorHelper implements Serializable
             catch (final Throwable e) // NOSONAR
             {
                 throw new CoreException(ERROR_MESSAGE,
-                        AtlasGeneratorJobGroup.LINE_SLICED.getDescription(), shardName, e);
+                        AtlasGeneratorJobGroup.LINE_SLICED.getDescription(), countryShardName, e);
             }
 
             logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
-                    shardName, start.elapsedSince().asMilliseconds());
+                    countryShardName, start.elapsedSince().asMilliseconds());
 
             // Report on memory usage
             logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
-                    shardName);
+                    countryShardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
@@ -517,19 +525,18 @@ public final class AtlasGeneratorHelper implements Serializable
         return tuple ->
         {
             // Grab the tuple contents
-            final String shardName = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardName = countryShard.getName();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
-                    shardName);
+                    countryShardName);
             final Time start = Time.now();
 
             final Atlas slicedAtlas;
             try
             {
                 // Calculate the shard, country name and possible shards
-                final String countryShardString = tuple._1();
-                final CountryShard countryShard = CountryShard.forName(countryShardString);
-                final String country = countryShard.getCountry();
-
                 final HadoopAtlasFileCache lineSlicedSubAtlasCache = new HadoopAtlasFileCache(
                         lineSlicedSubAtlasPath, LINE_SLICED_SUBATLAS_NAMESPACE, atlasScheme,
                         sparkContext);
@@ -553,15 +560,15 @@ public final class AtlasGeneratorHelper implements Serializable
             catch (final Throwable e) // NOSONAR
             {
                 throw new CoreException(ERROR_MESSAGE,
-                        AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(), shardName, e);
+                        AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(), countryShardName, e);
             }
 
             logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
-                    shardName, start.elapsedSince().asMilliseconds());
+                    countryShardName, start.elapsedSince().asMilliseconds());
 
             // Report on memory usage
             logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
-                    shardName);
+                    countryShardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
@@ -576,7 +583,10 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             final Atlas subAtlas;
             // Grab the tuple contents
-            final String shardName = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardName = countryShard.getName();
             final Atlas originalAtlas = tuple._2();
             logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
             final Time start = Time.now();
@@ -592,16 +602,16 @@ public final class AtlasGeneratorHelper implements Serializable
                 else
                 {
                     subAtlas = null;
-                    logger.error("Unable to extract valid subAtlas code for {}", shardName);
+                    logger.error("Unable to extract valid subAtlas code for {}", countryShardName);
                 }
             }
             catch (final Exception e) // NOSONAR
             {
-                throw new CoreException("Sub Atlas failed for {}", shardName, e);
+                throw new CoreException("Sub Atlas failed for {}", countryShardName, e);
             }
-            logger.info("Finished sub Atlas for {} in {}", shardName, start.elapsedSince());
+            logger.info("Finished sub Atlas for {} in {}", countryShardName, start.elapsedSince());
             // Report on memory usage
-            logger.info("Printing memory after loading sub Atlas for {}", shardName);
+            logger.info("Printing memory after loading sub Atlas for {}", countryShardName);
             Memory.printCurrentMemory();
             // Output the Name/Atlas couple
             return new Tuple2<>(tuple._1(), subAtlas);
@@ -616,7 +626,10 @@ public final class AtlasGeneratorHelper implements Serializable
             final Atlas subAtlas;
 
             // Grab the tuple contents
-            final String shardName = tuple._1();
+            final String country = PersistenceJsonParser.parseCountry(tuple._1());
+            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
+            final CountryShard countryShard = new CountryShard(country, shardString);
+            final String countryShardName = countryShard.getName();
             final Atlas originalAtlas = tuple._2();
             logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
             final Time start = Time.now();
@@ -633,20 +646,20 @@ public final class AtlasGeneratorHelper implements Serializable
                 else
                 {
                     subAtlas = null;
-                    logger.error("Unable to extract valid subAtlas code for {}", shardName);
+                    logger.error("Unable to extract valid subAtlas code for {}", countryShardName);
                 }
 
             }
 
             catch (final Exception e) // NOSONAR
             {
-                throw new CoreException("Sub Atlas failed for {}", shardName, e);
+                throw new CoreException("Sub Atlas failed for {}", countryShardName, e);
             }
 
-            logger.info("Finished sub Atlas for {} in {}", shardName, start.elapsedSince());
+            logger.info("Finished sub Atlas for {} in {}", countryShardName, start.elapsedSince());
 
             // Report on memory usage
-            logger.info("Printing memory after loading sub Atlas for {}", shardName);
+            logger.info("Printing memory after loading sub Atlas for {}", countryShardName);
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
