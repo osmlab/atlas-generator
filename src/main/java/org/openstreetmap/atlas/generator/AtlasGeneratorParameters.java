@@ -109,16 +109,34 @@ public final class AtlasGeneratorParameters
         return getConfiguredFilterFrom(name, pathToResource(path, configurationMap));
     }
 
+    public static ConfiguredFilter getConfiguredFilterFrom(final String name,
+            final Resource configurationResource)
+    {
+        return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+    }
+
     public static StandardConfiguration getStandardConfigurationFrom(final String path,
             final Map<String, String> configurationMap)
     {
         return getStandardConfigurationFrom(pathToResource(path, configurationMap));
     }
 
+    public static StandardConfiguration getStandardConfigurationFrom(
+            final Resource configurationResource)
+    {
+        return new StandardConfiguration(configurationResource);
+    }
+
     public static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
             final Map<String, String> configurationMap)
     {
         return getTaggableFilterFrom(pathToResource(path, configurationMap));
+    }
+
+    public static ConfiguredTaggableFilter getTaggableFilterFrom(
+            final Resource configurationResource)
+    {
+        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
     }
 
     protected static AtlasLoadingOption buildAtlasLoadingOption(final CountryBoundaryMap boundaries,
@@ -230,24 +248,6 @@ public final class AtlasGeneratorParameters
                 SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
                 CONFIGURED_FILTER_NAME);
-    }
-
-    private static ConfiguredFilter getConfiguredFilterFrom(final String name,
-            final Resource configurationResource)
-    {
-        return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
-    }
-
-    private static StandardConfiguration getStandardConfigurationFrom(
-            final Resource configurationResource)
-    {
-        return new StandardConfiguration(configurationResource);
-    }
-
-    private static ConfiguredTaggableFilter getTaggableFilterFrom(
-            final Resource configurationResource)
-    {
-        return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
     }
 
     private static Resource pathToResource(final String path,
