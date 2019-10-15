@@ -224,10 +224,7 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
-            final String countryShardName = countryShard.getName();
+            final String countryShardName = getCountryShard(tuple._1()).getName();
             final Atlas current = tuple._2();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
                     countryShardName);
@@ -273,10 +270,7 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
-            final String countryShardName = countryShard.getName();
+            final String countryShardName = getCountryShard(tuple._1()).getName();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.SHARD_STATISTICS.getDescription(),
                     countryShardName);
             final Time start = Time.now();
@@ -415,9 +409,7 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return tuple ->
         {
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
+            final CountryShard countryShard = getCountryShard(tuple._1());
             final String countryShardName = countryShard.getName();
 
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
@@ -432,7 +424,8 @@ public final class AtlasGeneratorHelper implements Serializable
                     atlasScheme, sparkContext);
             // Create the fetcher
             final Function<Shard, Optional<Atlas>> slicedRawAtlasFetcher = AtlasGeneratorHelper
-                    .atlasFetcher(edgeSubCache, atlasCache, country, countryShard.getShard());
+                    .atlasFetcher(edgeSubCache, atlasCache, countryShard.getCountry(),
+                            countryShard.getShard());
 
             final Atlas atlas;
             try
@@ -475,9 +468,7 @@ public final class AtlasGeneratorHelper implements Serializable
         return tuple ->
         {
             // Grab the tuple contents
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
+            final CountryShard countryShard = getCountryShard(tuple._1());
             final String countryShardName = countryShard.getName();
             final Atlas rawAtlas = tuple._2();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
@@ -491,7 +482,7 @@ public final class AtlasGeneratorHelper implements Serializable
                 // Set the country code that is being processed!
                 final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                         .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
-                atlasLoadingOption.setAdditionalCountryCodes(country);
+                atlasLoadingOption.setAdditionalCountryCodes(countryShard.getCountry());
                 logger.error("Country codes during line slicing was: {}",
                         atlasLoadingOption.getCountryCodes());
                 // Slice the Atlas
@@ -525,9 +516,7 @@ public final class AtlasGeneratorHelper implements Serializable
         return tuple ->
         {
             // Grab the tuple contents
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
+            final CountryShard countryShard = getCountryShard(tuple._1());
             final String countryShardName = countryShard.getName();
             logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
                     countryShardName);
@@ -547,12 +536,13 @@ public final class AtlasGeneratorHelper implements Serializable
 
                 final Function<Shard, Optional<Atlas>> atlasFetcher = AtlasGeneratorHelper
                         .atlasFetcher(lineSlicedSubAtlasCache, lineSlicedAtlasCache,
-                                boundaries.getValue(), country, countryShard.getShard());
+                                boundaries.getValue(), countryShard.getCountry(),
+                                countryShard.getShard());
 
                 // Set the country code that is being processed!
                 final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                         .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
-                atlasLoadingOption.setAdditionalCountryCodes(country);
+                atlasLoadingOption.setAdditionalCountryCodes(countryShard.getCountry());
                 slicedAtlas = new RawAtlasCountrySlicer(atlasLoadingOption, sharding.getValue(),
                         atlasFetcher).sliceRelations(countryShard.getShard());
             }
@@ -583,10 +573,7 @@ public final class AtlasGeneratorHelper implements Serializable
         {
             final Atlas subAtlas;
             // Grab the tuple contents
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
-            final String countryShardName = countryShard.getName();
+            final String countryShardName = getCountryShard(tuple._1()).getName();
             final Atlas originalAtlas = tuple._2();
             logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
             final Time start = Time.now();
@@ -626,10 +613,7 @@ public final class AtlasGeneratorHelper implements Serializable
             final Atlas subAtlas;
 
             // Grab the tuple contents
-            final String country = PersistenceJsonParser.parseCountry(tuple._1());
-            final String shardString = PersistenceJsonParser.parseShard(tuple._1());
-            final CountryShard countryShard = new CountryShard(country, shardString);
-            final String countryShardName = countryShard.getName();
+            final String countryShardName = getCountryShard(tuple._1()).getName();
             final Atlas originalAtlas = tuple._2();
             logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
             final Time start = Time.now();
@@ -665,6 +649,12 @@ public final class AtlasGeneratorHelper implements Serializable
             // Output the Name/Atlas couple
             return new Tuple2<>(tuple._1(), subAtlas);
         };
+    }
+
+    private static CountryShard getCountryShard(final String jsonKey)
+    {
+        return new CountryShard(PersistenceJsonParser.parseCountry(jsonKey),
+                PersistenceJsonParser.parseShard(jsonKey));
     }
 
     /**
