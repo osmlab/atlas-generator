@@ -41,6 +41,16 @@ public class AtlasGeneratorIntegrationTest
     public static final String FILTER_NAME = "nothingFilter";
     public static final String CONFIGURATION = "resource://test/configuration";
     public static final String EDGE_CONFIGURATION = CONFIGURATION + "/atlas-edge.json";
+    public static final String WAY_SECTIONING_CONFIGURATION = CONFIGURATION
+            + "/atlas-way-section.json";
+    public static final String PBF_NODE_CONFIGURATION = CONFIGURATION + "/osm-pbf-node.json";
+    public static final String PBF_WAY_CONFIGURATION = CONFIGURATION + "/osm-pbf-way.json";
+    public static final String PBF_RELATION_CONFIGURATION = CONFIGURATION
+            + "/osm-pbf-relation.json";
+    public static final String SHOULD_ALWAYS_SLICE_CONFIGURATION = CONFIGURATION
+            + "/osm-pbf-relation.json";
+    public static final String SLICING_CONFIGURATION = CONFIGURATION
+            + "/atlas-relation-slicing.json";
 
     static
     {
@@ -52,6 +62,16 @@ public class AtlasGeneratorIntegrationTest
         addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
         addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
         addResource(EDGE_CONFIGURATION, "atlas-edge.json", false, AtlasLoadingOption.class);
+        addResource(WAY_SECTIONING_CONFIGURATION, "atlas-way-section.json", false,
+                AtlasLoadingOption.class);
+        addResource(PBF_NODE_CONFIGURATION, "osm-pbf-node.json", false, AtlasLoadingOption.class);
+        addResource(PBF_WAY_CONFIGURATION, "osm-pbf-way.json", false, AtlasLoadingOption.class);
+        addResource(PBF_RELATION_CONFIGURATION, "osm-pbf-relation.json", false,
+                AtlasLoadingOption.class);
+        addResource(SHOULD_ALWAYS_SLICE_CONFIGURATION, "osm-pbf-relation.json", false,
+                AtlasLoadingOption.class);
+        addResource(SLICING_CONFIGURATION, "atlas-relation-slicing.json", false,
+                AtlasLoadingOption.class);
     }
 
     public static void addResource(final String path, final String name, final boolean gzipIt)
@@ -98,7 +118,20 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-copyShardingAndBoundaries=true");
         arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
         arguments.add("-configuredFilterName=" + FILTER_NAME);
-        arguments.add("-edgeConfiguration=" + EDGE_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.EDGE_CONFIGURATION.getName() + "="
+                + EDGE_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.WAY_SECTIONING_CONFIGURATION.getName() + "="
+                + WAY_SECTIONING_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.PBF_NODE_CONFIGURATION.getName() + "="
+                + PBF_NODE_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.PBF_WAY_CONFIGURATION.getName() + "="
+                + PBF_WAY_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.PBF_RELATION_CONFIGURATION.getName() + "="
+                + PBF_RELATION_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION.getName()
+                + "=" + SHOULD_ALWAYS_SLICE_CONFIGURATION);
+        arguments.add("-" + AtlasGeneratorParameters.SLICING_CONFIGURATION.getName() + "="
+                + SLICING_CONFIGURATION);
         arguments.add(
                 "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
 
