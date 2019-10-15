@@ -9,6 +9,7 @@ import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
+import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
@@ -38,6 +39,8 @@ public class AtlasGeneratorIntegrationTest
             + AtlasGenerator.LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER + "/DMA";
     public static final String CONFIGURED_OUTPUT_FILTER = "resource://test/filter/nothingFilter.json";
     public static final String FILTER_NAME = "nothingFilter";
+    public static final String CONFIGURATION = "resource://test/configuration";
+    public static final String EDGE_CONFIGURATION = CONFIGURATION + "/atlas-edge.json";
 
     static
     {
@@ -48,12 +51,18 @@ public class AtlasGeneratorIntegrationTest
         addResource(CONFIGURED_OUTPUT_FILTER, "nothingFilter.json");
         addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
         addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
+        addResource(EDGE_CONFIGURATION, "atlas-edge.json", false, AtlasLoadingOption.class);
     }
 
     public static void addResource(final String path, final String name, final boolean gzipIt)
     {
-        Resource input = new InputStreamResource(
-                () -> AtlasGeneratorIntegrationTest.class.getResourceAsStream(name));
+        addResource(path, name, gzipIt, AtlasGeneratorIntegrationTest.class);
+    }
+
+    public static void addResource(final String path, final String name, final boolean gzipIt,
+            final Class<?> clazz)
+    {
+        Resource input = new InputStreamResource(() -> clazz.getResourceAsStream(name));
         if (gzipIt)
         {
             final ByteArrayResource newInput = new ByteArrayResource();
@@ -89,6 +98,7 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-copyShardingAndBoundaries=true");
         arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
         arguments.add("-configuredFilterName=" + FILTER_NAME);
+        arguments.add("-edgeConfiguration=" + EDGE_CONFIGURATION);
         arguments.add(
                 "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
 
