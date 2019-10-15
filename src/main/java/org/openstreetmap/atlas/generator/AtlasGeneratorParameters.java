@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
-import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -210,30 +209,30 @@ public final class AtlasGeneratorParameters
 
         final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
         propertyMap.put(EDGE_CONFIGURATION.getName(), edgeConfiguration == null ? null
-                : FileSystemHelper.resource(edgeConfiguration, sparkContext).all());
+                : pathToResource(edgeConfiguration, sparkContext).all());
 
         final String waySectioningConfiguration = (String) command
                 .get(WAY_SECTIONING_CONFIGURATION);
-        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), waySectioningConfiguration == null
-                ? null
-                : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
+        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(),
+                waySectioningConfiguration == null ? null
+                        : pathToResource(waySectioningConfiguration, sparkContext).all());
 
         final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
         propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
-                : FileSystemHelper.resource(pbfNodeConfiguration, sparkContext).all());
+                : pathToResource(pbfNodeConfiguration, sparkContext).all());
 
         final String pbfWayConfiguration = (String) command.get(PBF_WAY_CONFIGURATION);
         propertyMap.put(PBF_WAY_CONFIGURATION.getName(), pbfWayConfiguration == null ? null
-                : FileSystemHelper.resource(pbfWayConfiguration, sparkContext).all());
+                : pathToResource(pbfWayConfiguration, sparkContext).all());
 
         final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
         propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
                 pbfRelationConfiguration == null ? null
-                        : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
+                        : pathToResource(pbfRelationConfiguration, sparkContext).all());
 
         final String slicingConfiguration = (String) command.get(SLICING_CONFIGURATION);
         propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ? null
-                : FileSystemHelper.resource(slicingConfiguration, sparkContext).all());
+                : pathToResource(slicingConfiguration, sparkContext).all());
 
         return propertyMap;
     }
