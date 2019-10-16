@@ -353,7 +353,7 @@ public final class AtlasGeneratorHelper implements Serializable
             Memory.printCurrentMemory();
 
             // Output the Name/Atlas couple
-            final String persistenceKey = PersistenceJsonParser.getJsonKey(countryName,
+            final String persistenceKey = PersistenceJsonParser.createJsonKey(countryName,
                     shard.getName(), atlasScheme.getScheme());
             return new Tuple2<>(persistenceKey, atlas);
         };

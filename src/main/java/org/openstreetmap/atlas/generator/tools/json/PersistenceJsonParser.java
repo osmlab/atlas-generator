@@ -2,7 +2,9 @@ package org.openstreetmap.atlas.generator.tools.json;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 
@@ -35,8 +37,8 @@ public final class PersistenceJsonParser
     private static final String SCHEME_KEY = "scheme";
 
     /**
-     * Get a JSON key with a given country and shard. Automatically populate a metadata object with
-     * some given scheme information.
+     * Create a JSON key with a given country and shard. Automatically populate a metadata object
+     * with some given scheme information.
      * 
      * @param country
      *            the country, usually the ISO3 country code as well as possible creative additions
@@ -46,12 +48,26 @@ public final class PersistenceJsonParser
      *            the scheme string, e.g. zz/
      * @return a JSON key with the given elements
      */
-    public static String getJsonKey(final String country, final String shard, final String scheme)
+    public static String createJsonKey(final String country, final String shard,
+            final String scheme)
     {
-        return PersistenceJsonParser.getJsonKey(country, shard, Maps.hashMap(SCHEME_KEY, scheme));
+        return PersistenceJsonParser.createJsonKey(country, shard,
+                Maps.hashMap(SCHEME_KEY, scheme));
     }
 
-    public static String getJsonKey(final String country, final String shard,
+    /**
+     * Create a JSON key with a given country and shard. Also, provide a string to string
+     * {@link Map} containing the desired metadata.
+     *
+     * @param country
+     *            the country, usually the ISO3 country code as well as possible creative additions
+     * @param shard
+     *            the shard name, i.e. the result of {@link Shard#getName}
+     * @param metadata
+     *            a string to string {@link Map} containing the metadata
+     * @return a JSON key with the given elements
+     */
+    public static String createJsonKey(final String country, final String shard,
             final Map<String, String> metadata)
     {
         final JsonObject jsonKey = new JsonObject();
@@ -68,11 +84,26 @@ public final class PersistenceJsonParser
         return jsonKey.toString();
     }
 
+    /**
+     * Given a valid JSON key, parse and return the value of the "country" property.
+     *
+     * @param json
+     *            the JSON key
+     * @return the value of the country property
+     */
     public static String parseCountry(final String json)
     {
         return parseStringProperty(json, COUNTRY_KEY);
     }
 
+    /**
+     * Given a valid JSON key, parse and return the "metadata" property as a string to string
+     * {@link Map}.
+     *
+     * @param json
+     *            the JSON key
+     * @return the value of the metadata property
+     */
     public static Map<String, String> parseMetadata(final String json)
     {
         final JsonParser parser = new JsonParser();
@@ -89,14 +120,33 @@ public final class PersistenceJsonParser
         return map;
     }
 
-    public static String parseScheme(final String json)
+    /**
+     * Given a valid JSON key, parse and return the value of the "scheme" property within the
+     * "metadata" object, if present. Otherwise, return an empty {@link Optional}.
+     *
+     * @param json
+     *            the JSON key
+     * @return the value of the scheme property if present, otherwise an empty {@link Optional}
+     */
+    public static Optional<String> parseScheme(final String json)
     {
         final JsonParser parser = new JsonParser();
         final JsonObject parsedObject = parser.parse(json).getAsJsonObject();
         final JsonObject metadataObject = parsedObject.get(METADATA_KEY).getAsJsonObject();
-        return metadataObject.get(SCHEME_KEY).getAsString();
+        if (metadataObject.get(SCHEME_KEY) == null)
+        {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(metadataObject.get(SCHEME_KEY).getAsString());
     }
 
+    /**
+     * Given a valid JSON key, parse and return the value of the "shard" property.
+     *
+     * @param json
+     *            the JSON key
+     * @return the value of the shard property
+     */
     public static String parseShard(final String json)
     {
         return parseStringProperty(json, SHARD_KEY);
@@ -106,6 +156,10 @@ public final class PersistenceJsonParser
     {
         final JsonParser parser = new JsonParser();
         final JsonObject parsedObject = parser.parse(json).getAsJsonObject();
+        if (parsedObject.get(property) == null)
+        {
+            throw new CoreException("Property \"{}\" not found in JSON object {}", property, json);
+        }
         return parsedObject.get(property).getAsString();
     }
 

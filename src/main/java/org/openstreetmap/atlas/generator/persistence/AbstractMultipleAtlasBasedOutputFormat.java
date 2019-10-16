@@ -1,5 +1,7 @@
 package org.openstreetmap.atlas.generator.persistence;
 
+import java.util.Optional;
+
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.openstreetmap.atlas.generator.AtlasGenerator;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
@@ -29,16 +31,17 @@ public abstract class AbstractMultipleAtlasBasedOutputFormat<T>
     {
         final String countryString = PersistenceJsonParser.parseCountry(key);
         final String shardString = PersistenceJsonParser.parseShard(key);
-        final String schemeString = PersistenceJsonParser.parseScheme(key);
+        final Optional<String> schemeString = PersistenceJsonParser.parseScheme(key);
 
         final StringToShardConverter converter = new StringToShardConverter();
         final Shard shard = converter.convert(shardString);
 
         SlippyTilePersistenceScheme scheme = null;
         // We only support alternate schemes for SlippyTile shards
-        if (!schemeString.isEmpty() && shard instanceof SlippyTile)
+        if (schemeString.isPresent() && !schemeString.get().isEmpty()
+                && shard instanceof SlippyTile)
         {
-            scheme = SlippyTilePersistenceScheme.getSchemeInstanceFromString(schemeString);
+            scheme = SlippyTilePersistenceScheme.getSchemeInstanceFromString(schemeString.get());
         }
 
         final CountryShard countryShard = new CountryShard(countryString, shard);
