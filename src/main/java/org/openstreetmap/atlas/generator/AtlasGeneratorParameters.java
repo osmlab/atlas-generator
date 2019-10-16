@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
-import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
+import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -85,7 +85,7 @@ public final class AtlasGeneratorParameters
     public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
             "shouldIncludeFilteredOutputConfiguration",
             "The path to the configuration file that defines which will be included in filtered output."
-                    + " Filtered output will only be generated if this switch is specificed, and will be"
+                    + " Filtered output will only be generated if this switch is specified, and will be"
                     + " stored in a separate subdirectory.",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<Boolean> LINE_DELIMITED_GEOJSON_OUTPUT = new Switch<>(
@@ -101,16 +101,34 @@ public final class AtlasGeneratorParameters
             "Name of the filter to be used for configured output", StringConverter.IDENTITY,
             Optionality.OPTIONAL);
 
+    public static ConfiguredFilter getConfiguredFilterFrom(final String name, final String path,
+            final Map<String, String> configurationMap)
+    {
+        return getConfiguredFilterFrom(name, SparkJob.resource(path, configurationMap));
+    }
+
     public static ConfiguredFilter getConfiguredFilterFrom(final String name,
             final Resource configurationResource)
     {
         return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
     }
 
+    public static StandardConfiguration getStandardConfigurationFrom(final String path,
+            final Map<String, String> configurationMap)
+    {
+        return getStandardConfigurationFrom(SparkJob.resource(path, configurationMap));
+    }
+
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
     {
         return new StandardConfiguration(configurationResource);
+    }
+
+    public static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
+            final Map<String, String> configurationMap)
+    {
+        return getTaggableFilterFrom(SparkJob.resource(path, configurationMap));
     }
 
     public static ConfiguredTaggableFilter getTaggableFilterFrom(
@@ -190,30 +208,30 @@ public final class AtlasGeneratorParameters
 
         final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
         propertyMap.put(EDGE_CONFIGURATION.getName(), edgeConfiguration == null ? null
-                : FileSystemHelper.resource(edgeConfiguration, sparkContext).all());
+                : SparkJob.resource(edgeConfiguration, sparkContext).all());
 
         final String waySectioningConfiguration = (String) command
                 .get(WAY_SECTIONING_CONFIGURATION);
-        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), waySectioningConfiguration == null
-                ? null
-                : FileSystemHelper.resource(waySectioningConfiguration, sparkContext).all());
+        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(),
+                waySectioningConfiguration == null ? null
+                        : SparkJob.resource(waySectioningConfiguration, sparkContext).all());
 
         final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
         propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
-                : FileSystemHelper.resource(pbfNodeConfiguration, sparkContext).all());
+                : SparkJob.resource(pbfNodeConfiguration, sparkContext).all());
 
         final String pbfWayConfiguration = (String) command.get(PBF_WAY_CONFIGURATION);
         propertyMap.put(PBF_WAY_CONFIGURATION.getName(), pbfWayConfiguration == null ? null
-                : FileSystemHelper.resource(pbfWayConfiguration, sparkContext).all());
+                : SparkJob.resource(pbfWayConfiguration, sparkContext).all());
 
         final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
         propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
                 pbfRelationConfiguration == null ? null
-                        : FileSystemHelper.resource(pbfRelationConfiguration, sparkContext).all());
+                        : SparkJob.resource(pbfRelationConfiguration, sparkContext).all());
 
         final String slicingConfiguration = (String) command.get(SLICING_CONFIGURATION);
         propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ? null
-                : FileSystemHelper.resource(slicingConfiguration, sparkContext).all());
+                : SparkJob.resource(slicingConfiguration, sparkContext).all());
 
         return propertyMap;
     }
