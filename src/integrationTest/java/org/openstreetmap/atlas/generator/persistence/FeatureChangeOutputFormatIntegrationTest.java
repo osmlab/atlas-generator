@@ -27,6 +27,9 @@ import scala.Tuple2;
  */
 public class FeatureChangeOutputFormatIntegrationTest
 {
+    /**
+     * @author matthieun
+     */
     private static class TestSparkJob extends SparkJob
     {
         private static final long serialVersionUID = -4875961726986591317L;
