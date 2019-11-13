@@ -22,9 +22,12 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.apache.spark.SparkConf;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.File;
+import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.slf4j.Logger;
@@ -43,13 +46,48 @@ public class ResourceFileSystem extends FileSystem
     private static final Map<String, Resource> STORE = new ConcurrentHashMap<>();
     public static final String SCHEME = "resource";
     public static final String RESOURCE_FILE_SYSTEM_CONFIGURATION = "fs." + SCHEME + ".impl";
-    private static final Statistics STATISTICS = new Statistics(SCHEME);
+    private static final Statistics STATISTICS_INTERNAL = new Statistics(SCHEME);
+    private static Class<?> clazz = null;
+
     private URI uri;
     private Path workingDirectory;
+
+    public static void addResource(final String path, final String name, final boolean gzipIt,
+            final Class<?> clazz)
+    {
+        Resource input = new InputStreamResource(() -> clazz.getResourceAsStream(name));
+        if (gzipIt)
+        {
+            final ByteArrayResource newInput = new ByteArrayResource();
+            newInput.setCompressor(Compressor.GZIP);
+            input.copyTo(newInput);
+            input = newInput;
+        }
+        addResource(path, input);
+    }
+
+    public static void addResource(final String path, final String name, final boolean gzipIt)
+    {
+        if (clazz == null)
+        {
+            throw new CoreException("Need to register a class to find the resource!");
+        }
+        addResource(path, name, gzipIt, clazz);
+    }
 
     public static void addResource(final String name, final Resource resource)
     {
         STORE.put(name, resource);
+    }
+
+    public static void addResource(final String path, final String name)
+    {
+        addResource(path, name, false);
+    }
+
+    public static void addResourceContents(final String path, final String contents)
+    {
+        addResource(path, new StringResource(contents));
     }
 
     public static void clear()
@@ -93,6 +131,11 @@ public class ResourceFileSystem extends FileSystem
         files().forEach(file -> logger.info("{}", file));
     }
 
+    public static synchronized void registerResourceExtractionClass(final Class<?> clazz)
+    {
+        ResourceFileSystem.clazz = clazz;
+    }
+
     public static Map<String, String> simpleconfiguration()
     {
         final Map<String, String> result = new HashMap<>();
@@ -124,7 +167,7 @@ public class ResourceFileSystem extends FileSystem
         final String name = hadoopPath.toString();
         final WritableResource resource = new ByteArrayResource().withName(name);
         STORE.put(name, resource);
-        return new FSDataOutputStream(resource.write(), STATISTICS);
+        return new FSDataOutputStream(resource.write(), STATISTICS_INTERNAL);
     }
 
     @Override
