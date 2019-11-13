@@ -8,6 +8,7 @@ import org.apache.hadoop.mapred.RecordWriter;
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.apache.hadoop.mapred.lib.MultipleTextOutputFormat;
 import org.apache.hadoop.util.Progressable;
+import org.openstreetmap.atlas.generator.tools.json.PersistenceJsonParser;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 
 /**
@@ -25,7 +26,7 @@ public class MultipleAtlasCountryStatisticsOutputFormat
     protected String generateFileNameForKeyValue(final String key, final AtlasStatistics value,
             final String name)
     {
-        return key;
+        return PersistenceJsonParser.parseCountry(key);
     }
 
     @Override
