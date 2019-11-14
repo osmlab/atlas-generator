@@ -10,14 +10,11 @@ import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTool
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
-import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
-import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
-import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 
@@ -54,53 +51,28 @@ public class AtlasGeneratorIntegrationTest
 
     static
     {
-        addResource(PBF_233, "DMA_cutout.osm.pbf");
-        addResource(PBF_234, "DMA_cutout.osm.pbf");
-        addResource(INPUT_SHARDING, "tree-6-14-100000.txt");
-        addResource(INPUT_BOUNDARIES, "DMA.txt", true);
-        addResource(CONFIGURED_OUTPUT_FILTER, "nothingFilter.json");
-        addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
-        addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
-        addResource(EDGE_CONFIGURATION, "atlas-edge.json", false, AtlasLoadingOption.class);
-        addResource(WAY_SECTIONING_CONFIGURATION, "atlas-way-section.json", false,
+        ResourceFileSystem.registerResourceExtractionClass(AtlasGeneratorIntegrationTest.class);
+        ResourceFileSystem.addResource(PBF_233, "DMA_cutout.osm.pbf");
+        ResourceFileSystem.addResource(PBF_234, "DMA_cutout.osm.pbf");
+        ResourceFileSystem.addResource(INPUT_SHARDING, "tree-6-14-100000.txt");
+        ResourceFileSystem.addResource(INPUT_BOUNDARIES, "DMA.txt", true);
+        ResourceFileSystem.addResource(CONFIGURED_OUTPUT_FILTER, "nothingFilter.json");
+        ResourceFileSystem.addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
+        ResourceFileSystem.addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
+        ResourceFileSystem.addResource(EDGE_CONFIGURATION, "atlas-edge.json", false,
                 AtlasLoadingOption.class);
-        addResource(PBF_NODE_CONFIGURATION, "osm-pbf-node.json", false, AtlasLoadingOption.class);
-        addResource(PBF_WAY_CONFIGURATION, "osm-pbf-way.json", false, AtlasLoadingOption.class);
-        addResource(PBF_RELATION_CONFIGURATION, "osm-pbf-relation.json", false,
+        ResourceFileSystem.addResource(WAY_SECTIONING_CONFIGURATION, "atlas-way-section.json",
+                false, AtlasLoadingOption.class);
+        ResourceFileSystem.addResource(PBF_NODE_CONFIGURATION, "osm-pbf-node.json", false,
                 AtlasLoadingOption.class);
-        addResource(SHOULD_ALWAYS_SLICE_CONFIGURATION, "osm-pbf-relation.json", false,
+        ResourceFileSystem.addResource(PBF_WAY_CONFIGURATION, "osm-pbf-way.json", false,
                 AtlasLoadingOption.class);
-        addResource(SLICING_CONFIGURATION, "atlas-relation-slicing.json", false,
+        ResourceFileSystem.addResource(PBF_RELATION_CONFIGURATION, "osm-pbf-relation.json", false,
                 AtlasLoadingOption.class);
-    }
-
-    public static void addResource(final String path, final String name, final boolean gzipIt)
-    {
-        addResource(path, name, gzipIt, AtlasGeneratorIntegrationTest.class);
-    }
-
-    public static void addResource(final String path, final String name, final boolean gzipIt,
-            final Class<?> clazz)
-    {
-        Resource input = new InputStreamResource(() -> clazz.getResourceAsStream(name));
-        if (gzipIt)
-        {
-            final ByteArrayResource newInput = new ByteArrayResource();
-            newInput.setCompressor(Compressor.GZIP);
-            input.copyTo(newInput);
-            input = newInput;
-        }
-        ResourceFileSystem.addResource(path, input);
-    }
-
-    private static void addResource(final String path, final String name)
-    {
-        addResource(path, name, false);
-    }
-
-    private static void addResourceContents(final String path, final String contents)
-    {
-        ResourceFileSystem.addResource(path, new StringResource(contents));
+        ResourceFileSystem.addResource(SHOULD_ALWAYS_SLICE_CONFIGURATION, "osm-pbf-relation.json",
+                false, AtlasLoadingOption.class);
+        ResourceFileSystem.addResource(SLICING_CONFIGURATION, "atlas-relation-slicing.json", false,
+                AtlasLoadingOption.class);
     }
 
     @Test
