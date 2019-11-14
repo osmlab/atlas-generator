@@ -6,6 +6,7 @@ import java.util.List;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
 import org.openstreetmap.atlas.streaming.resource.AbstractWritableResource;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 
 /**
  * @author matthieun
@@ -15,7 +16,7 @@ public class FeatureChangeOutputFormat extends AbstractFileOutputFormat<List<Fea
     @Override
     protected String fileExtension()
     {
-        return ".geojson";
+        return FileSuffix.GEO_JSON.toString();
     }
 
     @Override
