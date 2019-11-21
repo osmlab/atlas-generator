@@ -41,11 +41,32 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
             private final Path path = new Path(this.outputPath, this.resourceName);
             private final FileSystem fileSystem = this.path.getFileSystem(job);
             private FSDataOutputStream dataOutputStream;
+            private String lastKey;
+            private T lastValue;
 
             @Override
             public void close(final Reporter reporter) throws IOException
             {
-                Streams.close(this.dataOutputStream);
+                retry().run(() -> Streams.close(this.dataOutputStream), () ->
+                {
+                    // Below is the "runBeforeRetry" which re-attempts the upload if a "close"
+                    // above fails.
+                    if (this.lastKey != null && this.lastValue != null)
+                    {
+                        try
+                        {
+                            write(this.lastKey, this.lastValue);
+                        }
+                        catch (final IOException e)
+                        {
+                            throw new CoreException(
+                                    "Unable to re-save {} after the initial stream close failed.",
+                                    this.lastKey, e);
+                        }
+                    }
+                });
+                this.lastKey = null;
+                this.lastValue = null;
             }
 
             @Override
@@ -72,6 +93,8 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
                                 this.path.toString(), e);
                     }
                 });
+                this.lastKey = key;
+                this.lastValue = value;
             }
         };
     }
