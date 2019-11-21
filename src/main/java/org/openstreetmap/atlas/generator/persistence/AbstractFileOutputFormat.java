@@ -45,7 +45,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
             private T lastValue;
 
             @Override
-            public void close(final Reporter reporter) throws IOException
+            public void close(final Reporter reporter)
             {
                 retry().run(() -> Streams.close(this.dataOutputStream), () ->
                 {
@@ -53,16 +53,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
                     // above fails.
                     if (this.lastKey != null && this.lastValue != null)
                     {
-                        try
-                        {
-                            write(this.lastKey, this.lastValue);
-                        }
-                        catch (final IOException e)
-                        {
-                            throw new CoreException(
-                                    "Unable to re-save {} after the initial stream close failed.",
-                                    this.lastKey, e);
-                        }
+                        write(this.lastKey, this.lastValue);
                     }
                 });
                 this.lastKey = null;
@@ -70,7 +61,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
             }
 
             @Override
-            public void write(final String key, final T value) throws IOException
+            public void write(final String key, final T value)
             {
                 // In case the stream gets corrupted somehow, re-try the upload.
                 retry().run(() ->
