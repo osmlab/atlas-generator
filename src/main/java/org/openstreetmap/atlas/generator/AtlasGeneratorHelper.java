@@ -499,7 +499,8 @@ public final class AtlasGeneratorHelper implements Serializable
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> sliceRelations(
             final Broadcast<CountryBoundaryMap> boundaries,
             final Broadcast<Map<String, String>> loadingOptions, final Broadcast<Sharding> sharding,
-            final String lineSlicedSubAtlasPath, final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> sparkContext)
+            final String lineSlicedSubAtlasPath, final SlippyTilePersistenceScheme atlasScheme,
+            final Map<String, String> sparkContext)
     {
         return tuple ->
         {
