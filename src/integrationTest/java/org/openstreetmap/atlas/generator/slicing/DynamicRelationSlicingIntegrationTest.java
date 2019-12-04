@@ -12,6 +12,7 @@ import org.openstreetmap.atlas.generator.tools.caching.HadoopAtlasFileCache;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.Polygon;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
+import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.geography.atlas.builder.text.TextAtlasBuilder;
 import org.openstreetmap.atlas.geography.atlas.items.Line;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
@@ -86,13 +87,17 @@ public class DynamicRelationSlicingIntegrationTest
 
         final CountryShard initialShardABC = CountryShard.forName("ABC_1-0-0");
         final CountryShard initialShardDEF = CountryShard.forName("DEF_1-1-1");
+        final AtlasResourceLoader loader = new AtlasResourceLoader();
+
+        final Atlas rawAtlasABC = loader.load(lineSlicedAtlasCache
+                .get(initialShardABC.getCountry(), initialShardABC.getShard()).get());
+        final Atlas rawAtlasDEF = loader.load(lineSlicedAtlasCache
+                .get(initialShardDEF.getCountry(), initialShardDEF.getShard()).get());
 
         final Function<Shard, Optional<Atlas>> atlasFetcherABC = AtlasGeneratorHelper.atlasFetcher(
-                lineSlicedAtlasCache, lineSlicedAtlasCache, boundaryMap, "ABC",
-                initialShardDEF.getShard());
+                lineSlicedAtlasCache, rawAtlasABC, boundaryMap, "ABC", initialShardDEF.getShard());
         final Function<Shard, Optional<Atlas>> atlasFetcherDEF = AtlasGeneratorHelper.atlasFetcher(
-                lineSlicedAtlasCache, lineSlicedAtlasCache, boundaryMap, "DEF",
-                initialShardDEF.getShard());
+                lineSlicedAtlasCache, rawAtlasDEF, boundaryMap, "DEF", initialShardDEF.getShard());
 
         // the operation we are testing
 
