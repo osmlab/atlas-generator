@@ -218,8 +218,6 @@ public class AtlasGenerator extends SparkJob
                         broadcastLoadingOptions, broadcastSharding,
                         getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.LINE_SLICED_SUB.getCacheFolder()),
-                        getAlternateSubFolderOutput(output,
-                                AtlasGeneratorJobGroup.LINE_SLICED.getCacheFolder()),
                         atlasScheme, sparkContext))
                 .filter(tuple -> tuple._2() != null);
         fullySlicedRawAtlasShardsRDD.cache();
