@@ -20,7 +20,7 @@ import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
-import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
+import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.sub.AtlasCutType;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -250,7 +250,7 @@ public class AtlasGenerator extends SparkJob
                                 AtlasGeneratorJobGroup.EDGE_SUB.getCacheFolder()),
                         getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.FULLY_SLICED.getCacheFolder()),
-                        atlasScheme, tasks));
+                        atlasScheme));
         countryAtlasShardsRDD.cache();
         saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF, output);
         this.copyToOutput(command, pbfPath, getAlternateSubFolderOutput(output,
@@ -321,9 +321,11 @@ public class AtlasGenerator extends SparkJob
         // Compute the deltas, if needed
         if (!previousOutputForDelta.isEmpty())
         {
-            final JavaPairRDD<String, AtlasDelta> deltasRDD = countryAtlasShardsRDD.flatMapToPair(
-                    AtlasGeneratorHelper.computeAtlasDelta(sparkContext, previousOutputForDelta));
-            saveAsHadoop(deltasRDD, AtlasGeneratorJobGroup.DELTAS, output);
+            final JavaPairRDD<String, List<FeatureChange>> diffsRDD = countryAtlasShardsRDD
+                    .mapToPair(AtlasGeneratorHelper.computeAtlasDiff(sparkContext,
+                            previousOutputForDelta))
+                    .filter(tuple -> tuple._2() != null);
+            saveAsHadoop(diffsRDD, AtlasGeneratorJobGroup.DIFFS, output);
         }
 
         if (shouldIncludeFilteredOutputConfiguration != null)
@@ -348,7 +350,7 @@ public class AtlasGenerator extends SparkJob
         }
         catch (final Exception exception)
         {
-            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.DIFFS.getDescription(),
                     exception);
         }
     }
