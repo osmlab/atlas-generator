@@ -9,7 +9,7 @@ import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 
 /**
  * {@link FileOutputFormat} that writes an {@link Atlas} in protocol buffer format.
- * 
+ *
  * @author lcram
  */
 public class AtlasProtoOutputFormat extends AbstractFileOutputFormat<Atlas>

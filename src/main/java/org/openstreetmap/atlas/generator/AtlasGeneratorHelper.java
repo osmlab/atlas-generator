@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
@@ -21,7 +23,11 @@ import org.openstreetmap.atlas.generator.tools.json.PersistenceJsonParser;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
-import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
+import org.openstreetmap.atlas.geography.atlas.change.Change;
+import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
+import org.openstreetmap.atlas.geography.atlas.change.description.ChangeDescriptorType;
+import org.openstreetmap.atlas.geography.atlas.change.diff.AtlasDiff;
+import org.openstreetmap.atlas.geography.atlas.items.ItemType;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
@@ -166,85 +172,70 @@ public final class AtlasGeneratorHelper implements Serializable
     }
 
     /**
-     * @param atlasCache
-     *            The cache object for the Atlas files
-     * @param country
-     *            The country to look for
-     * @param validShards
-     *            All available shards for given country, to avoid fetching shards that do not exist
-     * @return A function that returns an {@link Atlas} given a {@link Shard}
-     */
-    @SuppressWarnings("unchecked")
-    protected static Function<Shard, Optional<Atlas>> atlasFetcher(
-            final HadoopAtlasFileCache atlasCache, final String country,
-            final Set<Shard> validShards)
-    {
-        // & Serializable is very important as that function will be passed around by Spark, and
-        // functions are not serializable by default.
-        return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
-        {
-            if (!validShards.isEmpty() && !validShards.contains(shard))
-            {
-                logger.debug("{}: Ignoring loading request for invalid shard {}", country, shard);
-                return Optional.empty();
-            }
-
-            final Optional<Resource> cachedAtlasResource = atlasCache.get(country, shard);
-            if (cachedAtlasResource.isPresent())
-            {
-                logger.debug("{}: Cache hit, returning loaded atlas for shard {}", country, shard);
-                return Optional.ofNullable(ATLAS_LOADER.load(cachedAtlasResource.get()));
-            }
-            logger.debug("{}: No atlas file found for shard {}", country, shard);
-            return Optional.empty();
-        };
-    }
-
-    /**
      * @param sparkContext
      *            Spark context (or configuration) as a key-value map
      * @param previousOutputForDelta
      *            Previous Atlas generation delta output location
      * @return A Spark {@link PairFlatMapFunction} that takes a tuple of a country shard name and
-     *         atlas file and returns all the {@link AtlasDelta} for the country
+     *         atlas file and returns all the {@link AtlasDiff} for the country
      */
-    protected static PairFlatMapFunction<Tuple2<String, Atlas>, String, AtlasDelta> computeAtlasDelta(
+
+    protected static PairFunction<Tuple2<String, Atlas>, String, List<FeatureChange>> computeAtlasDiff(
             final Map<String, String> sparkContext, final String previousOutputForDelta)
     {
         return tuple ->
         {
             final String countryShardName = getCountryShard(tuple._1()).getName();
             final Atlas current = tuple._2();
-            logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
+            logger.info(STARTED_MESSAGE, AtlasGeneratorJobGroup.DIFFS.getDescription(),
                     countryShardName);
             final Time start = Time.now();
-            final List<Tuple2<String, AtlasDelta>> result = new ArrayList<>();
-            try
+            final Optional<Atlas> alter = new AtlasLocator(
+                    sparkContext)
+                            .atlasForShard(
+                                    SparkFileHelper.combine(previousOutputForDelta,
+                                            StringList.split(countryShardName,
+                                                    Shard.SHARD_DATA_SEPARATOR).get(0)),
+                                    countryShardName);
+            if (!alter.isPresent())
             {
-                final Optional<Atlas> alter = new AtlasLocator(sparkContext)
-                        .atlasForShard(
-                                SparkFileHelper
-                                        .combine(previousOutputForDelta,
-                                                StringList.split(countryShardName,
-                                                        Shard.SHARD_DATA_SEPARATOR).get(0)),
-                                countryShardName);
-                if (alter.isPresent())
+                throw new CoreException("No atlas found for {}!", countryShardName);
+            }
+
+            final Optional<Change> diffChange = new AtlasDiff(alter.get(), current)
+                    .generateChange();
+            final List<FeatureChange> diffsList = new ArrayList<>();
+            if (diffChange.isPresent())
+            {
+                diffsList.addAll(diffChange.get().changes().collect(Collectors.toList()));
+                final Map<ItemType, Map<ChangeDescriptorType, Map<String, AtomicLong>>> tagMap = diffChange
+                        .get().tagCountMap();
+                for (final ItemType itemType : ItemType.values())
                 {
-                    logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
-                            countryShardName);
-                    Memory.printCurrentMemory();
-                    final AtlasDelta delta = new AtlasDelta(current, alter.get()).generate();
-                    result.add(new Tuple2<>(countryShardName, delta));
+                    for (final ChangeDescriptorType changeDescriptorType : ChangeDescriptorType
+                            .values())
+                    {
+                        tagMap.get(itemType).get(changeDescriptorType).entrySet()
+                                .forEach(entry -> logger.info(
+                                        "AtlasDiff Tag Summary: {} {} tag {} for {} {}",
+                                        countryShardName, changeDescriptorType, entry.getKey(),
+                                        entry.getValue(), itemType));
+                        final long count = diffsList.stream()
+                                .filter(diff -> diff.getItemType().equals(itemType)
+                                        && diff.explain().getChangeDescriptorType()
+                                                .equals(changeDescriptorType))
+                                .count();
+                        logger.info("AtlasDiff Change Summary: {} {} {} {}", countryShardName,
+                                changeDescriptorType, count, itemType);
+                    }
                 }
             }
-            catch (final Exception e)
-            {
-                logger.error(ERROR_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
-                        countryShardName, e);
-            }
-            logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.DELTAS.getDescription(),
+            logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.DIFFS.getDescription(),
                     countryShardName, start.elapsedSince().asMilliseconds());
-            return result.iterator();
+            logger.info(MEMORY_MESSAGE, AtlasGeneratorJobGroup.DIFFS.getDescription(),
+                    countryShardName);
+            Memory.printCurrentMemory();
+            return new Tuple2<>(tuple._1(), diffsList);
         };
     }
 
@@ -382,9 +373,6 @@ public final class AtlasGeneratorHelper implements Serializable
      *            The path where the sliced raw atlas files were saved
      * @param atlasScheme
      *            The folder structure of the output atlas
-     * @param tasks
-     *            The list of {@link AtlasGenerationTask}s used to grab all possible {@link Shard}s
-     *            for a country
      * @return a Spark {@link PairFunction} that processes a tuple of shard-name and sliced raw
      *         atlas, sections the sliced raw atlas and returns the final sectioned (and sliced) raw
      *         atlas for that shard name.
@@ -393,8 +381,7 @@ public final class AtlasGeneratorHelper implements Serializable
             final Broadcast<CountryBoundaryMap> boundaries, final Broadcast<Sharding> sharding,
             final Map<String, String> sparkContext,
             final Broadcast<Map<String, String>> loadingOptions, final String edgeSubAtlasPath,
-            final String slicedAtlasPath, final SlippyTilePersistenceScheme atlasScheme,
-            final List<AtlasGenerationTask> tasks)
+            final String slicedAtlasPath, final SlippyTilePersistenceScheme atlasScheme)
     {
         return tuple ->
         {
