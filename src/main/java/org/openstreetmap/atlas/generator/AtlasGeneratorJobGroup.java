@@ -1,13 +1,14 @@
 package org.openstreetmap.atlas.generator;
 
+import java.util.List;
+
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
+import org.openstreetmap.atlas.generator.persistence.MultipleAtlasFeatureChangeOutput;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasProtoOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
-import org.openstreetmap.atlas.generator.persistence.delta.RemovedMultipleAtlasDeltaOutputFormat;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
-import org.openstreetmap.atlas.geography.atlas.delta.AtlasDelta;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 
 /**
@@ -58,12 +59,7 @@ public enum AtlasGeneratorJobGroup
             "countryStats",
             AtlasStatistics.class,
             MultipleAtlasCountryStatisticsOutputFormat.class),
-    DELTAS(
-            8,
-            "Atlas Deltas Creation",
-            "deltas",
-            AtlasDelta.class,
-            RemovedMultipleAtlasDeltaOutputFormat.class),
+    DIFFS(8, "Atlas Diff Creation", "diffs", List.class, MultipleAtlasFeatureChangeOutput.class),
     TAGGABLE_FILTERED_OUTPUT(
             9,
             "Taggable Filtered SubAtlas Creation",
