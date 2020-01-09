@@ -7,9 +7,14 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceSchemeType;
+import org.openstreetmap.atlas.geography.Location;
+import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
+import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlasBuilder;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.StringResource;
+import org.openstreetmap.atlas.utilities.collections.Maps;
 
 /**
  * @author lcram
@@ -29,24 +34,36 @@ public class HadoopAtlasFileCacheTest
         parentAtlasCountry.mkdirs();
         try
         {
-            final File atlas1 = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlas1.writeAndClose("1");
-            final File atlas2 = parentAtlasCountry.child("2/AAA_2-2-2.atlas");
-            atlas2.writeAndClose("2");
+            final PackedAtlasBuilder builder1 = new PackedAtlasBuilder();
+            builder1.addPoint(1L, Location.CENTER, Maps.hashMap());
+            final PackedAtlas atlas1 = (PackedAtlas) builder1.get();
+            final StringResource string1 = new StringResource();
+            atlas1.save(string1);
+
+            final PackedAtlasBuilder builder2 = new PackedAtlasBuilder();
+            builder2.addPoint(2L, Location.CENTER, Maps.hashMap());
+            final PackedAtlas atlas2 = (PackedAtlas) builder2.get();
+            final StringResource string2 = new StringResource();
+            atlas2.save(string2);
+
+            final File atlasFile1 = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
+            atlas1.save(atlasFile1);
+            final File atlasFile2 = parentAtlasCountry.child("2/AAA_2-2-2.atlas");
+            atlas2.save(atlasFile2);
 
             // cache miss, this will create the cached copy
             final Resource resource1 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource2 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
-            Assert.assertEquals("1", resource1.firstLine());
-            Assert.assertEquals("2", resource2.firstLine());
+            Assert.assertEquals(string1.all(), resource1.all());
+            Assert.assertEquals(string2.all(), resource2.all());
 
             // cache hit, using cached copy
             final Resource resource3 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource4 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
-            Assert.assertEquals("1", resource3.firstLine());
-            Assert.assertEquals("2", resource4.firstLine());
+            Assert.assertEquals(string1.all(), resource3.all());
+            Assert.assertEquals(string2.all(), resource4.all());
         }
         finally
         {
@@ -73,9 +90,17 @@ public class HadoopAtlasFileCacheTest
         parentAtlasCountry.mkdirs();
         try
         {
+            final PackedAtlasBuilder builder1 = new PackedAtlasBuilder();
+            builder1.addPoint(1L, Location.CENTER, Maps.hashMap());
+            final PackedAtlas atlas1 = (PackedAtlas) builder1.get();
+
+            final PackedAtlasBuilder builder2 = new PackedAtlasBuilder();
+            builder2.addPoint(2L, Location.CENTER, Maps.hashMap());
+            final PackedAtlas atlas2 = (PackedAtlas) builder2.get();
+
             // set up file for cache1
             File atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlasFile.writeAndClose("version1");
+            atlas1.save(atlasFile);
 
             // cache file in cache1 under namespace "namespace1"
             final Resource resource1 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();
@@ -83,7 +108,7 @@ public class HadoopAtlasFileCacheTest
             // delete and recreate the same file (with same URI) but with new contents for cache2
             atlasFile.delete();
             atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlasFile.writeAndClose("version2");
+            atlas2.save(atlasFile);
 
             // cache the file in cache2 under namespace "namespace2"
             final Resource resource2 = cache2.get("AAA", new SlippyTile(1, 1, 1)).get();
@@ -104,7 +129,7 @@ public class HadoopAtlasFileCacheTest
             // recreate version 2 of the file
             atlasFile.delete();
             atlasFile = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
-            atlasFile.writeAndClose("version2");
+            atlas2.save(atlasFile);
 
             // get version 2 of the file into cache1
             final Resource resource5 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();

@@ -24,7 +24,6 @@ import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasCountrySlicer;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
-import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
@@ -85,26 +84,17 @@ public class RawAtlasCreator extends Command
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(RawAtlasCreator.class);
-    private static final String DEFAULT_RAW_ATLAS_CACHE_NAME = "__RawAtlasCreator_rawAtlasCache__";
-    private static final String DEFAULT_LINE_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_lineSlicedAtlasCache__";
-    private static final String DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_fullySlicedAtlasCache__";
-    private static final String DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH = "__RawAtlasCreator_waterRelationSubAtlasCache__";
-
-    private static final String USER_HOME = System.getProperty("user.home");
     /*
      * A path to a country boundary map file
      */
     public static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
             "The boundary map to use", value -> CountryBoundaryMap.fromPlainText(new File(value)),
             Optionality.REQUIRED);
-
     /*
      * The ISO-3 country code of the country's shard to build
      */
     public static final Switch<String> COUNTRY = new Switch<>("country", "The country code",
             StringConverter.IDENTITY, Optionality.REQUIRED);
-
     /*
      * The path to where the final output will be saved
      */
@@ -115,44 +105,12 @@ public class RawAtlasCreator extends Command
                 result.mkdirs();
                 return result;
             }, Optionality.REQUIRED);
-
     /*
      * The path to the necessary OSM PBF files for this build.
      */
     public static final Switch<String> PBF_PATH = new Switch<>("pbfs",
             "The path to PBF shards needed to build the desired atlas", StringConverter.IDENTITY,
             Optionality.REQUIRED);
-
-    /*
-     * The path to the cache of line sliced Atlases. Relation slicing expects a cache of two types
-     * of Atlas, one for line sliced Atlases and another for line sliced Atlases containing
-     * exclusively lines for water relations.
-     */
-    public static final Switch<String> LINE_SLICED_ATLAS_CACHE_PATH = new Switch<>(
-            "lineSlicedAtlasCache", "The path to the line sliced atlas cache for DynamicAtlas",
-            StringConverter.IDENTITY, Optionality.OPTIONAL,
-            SparkFileHelper.combine(USER_HOME, DEFAULT_LINE_SLICED_ATLAS_CACHE_NAME));
-
-    public static final Switch<String> WATER_RELATION_SUB_ATLAS_CACHE_PATH = new Switch<>(
-            "waterRelationSubAtlasCache",
-            "The path to the line-sliced water relation subatlas cache for DynamicAtlas",
-            StringConverter.IDENTITY, Optionality.OPTIONAL,
-            SparkFileHelper.combine(USER_HOME, DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH));
-
-    /*
-     * The path to the cache of fully sliced atlases. This class uses DynamicAtlas to do way
-     * sectioning, and it will create fully sliced atlas for shards it needs on the fly. It will
-     * then save them to this location for later use.
-     */
-    public static final Switch<String> FULLY_SLICED_ATLAS_CACHE_PATH = new Switch<>(
-            "fullySlicedAtlasCache", "The path to the fully sliced atlas cache for DynamicAtlas",
-            StringConverter.IDENTITY, Optionality.OPTIONAL,
-            SparkFileHelper.combine(USER_HOME, DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME));
-
-    public static final Switch<String> RAW_ATLAS_CACHE_PATH = new Switch<>("rawAtlasCache",
-            "The path to the sliced atlas cache for DynamicAtlas", StringConverter.IDENTITY,
-            Optionality.OPTIONAL, SparkFileHelper.combine(USER_HOME, DEFAULT_RAW_ATLAS_CACHE_NAME));
-
     /*
      * If we attempt to populate the sliced atlas cache and still miss, we can optionally fail fast.
      * This type of cache miss will occur if the necessary PBF was not provided to the command.
@@ -162,7 +120,44 @@ public class RawAtlasCreator extends Command
     public static final Switch<Boolean> FAIL_FAST_CACHE_MISS = new Switch<>(
             "failFastOnSlicedCacheMiss", "Fail fast on a sliced cache miss", Boolean::parseBoolean,
             Optionality.OPTIONAL, "true");
-
+    /*
+     * Option to provide if your PBF sharding does not match your atlas sharding. If in doubt,
+     * ignore this parameter.
+     */
+    public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
+            "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
+    /*
+     * Your atlas sharding.
+     */
+    public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
+            "The sharding definition.", StringConverter.IDENTITY, Optionality.REQUIRED);
+    /*
+     * The shard you are trying to build, in string format (eg. 10-234-125)
+     */
+    public static final Switch<Shard> TILE = new Switch<>("tile", "The SlippyTile name to use",
+            SlippyTile::forName, Optionality.REQUIRED);
+    /*
+     * The flavor of raw atlas you would like as output (ie. raw, sliced, sectioned)
+     */
+    public static final Switch<RawAtlasFlavor> ATLAS_FLAVOR = new Switch<>("rawAtlasFlavor",
+            "Which flavor of raw atlas - " + RawAtlasFlavor.RAW_ATLAS.toString() + ", "
+                    + RawAtlasFlavor.SLICED_ATLAS.toString() + ", or "
+                    + RawAtlasFlavor.SECTIONED_ATLAS.toString(),
+            RawAtlasFlavor::flavorStringToRawAtlasFlavor, Optionality.OPTIONAL,
+            RawAtlasFlavor.SECTIONED_ATLAS.toString());
+    /*
+     * Change the serialization to legacy Java format if desired.
+     */
+    public static final Switch<Boolean> USE_JAVA_ATLAS = new Switch<>("useJavaAtlas",
+            "Use the Java serialization format.", Boolean::parseBoolean, Optionality.OPTIONAL,
+            "false");
+    private static final Logger logger = LoggerFactory.getLogger(RawAtlasCreator.class);
+    private static final String DEFAULT_RAW_ATLAS_CACHE_NAME = "__RawAtlasCreator_rawAtlasCache__";
+    private static final String DEFAULT_LINE_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_lineSlicedAtlasCache__";
+    private static final String DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME = "__RawAtlasCreator_fullySlicedAtlasCache__";
+    private static final String DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH = "__RawAtlasCreator_waterRelationSubAtlasCache__";
+    private static final String USER_HOME = System.getProperty("user.home");
     /*
      * Optionally provided a PBF scheme. This is useful if you have lots of PBFs available and are
      * storing them with an alternate storage scheme.
@@ -174,43 +169,32 @@ public class RawAtlasCreator extends Command
      * Switch<>("pbfScheme", "The folder structure of the PBF", SlippyTilePersistenceScheme::new,
      * Optionality.OPTIONAL, PbfLocator.DEFAULT_SCHEME);
      */
-
     /*
-     * Option to provide if your PBF sharding does not match your atlas sharding. If in doubt,
-     * ignore this parameter.
+     * The path to the cache of line sliced Atlases. Relation slicing expects a cache of two types
+     * of Atlas, one for line sliced Atlases and another for line sliced Atlases containing
+     * exclusively lines for water relations.
      */
-    public static final Switch<String> PBF_SHARDING = new Switch<>("pbfSharding",
-            "The sharding tree of the pbf files. If not specified, this will default to the general Atlas sharding.",
-            StringConverter.IDENTITY, Optionality.OPTIONAL);
-
+    public static final Switch<String> LINE_SLICED_ATLAS_CACHE_PATH = new Switch<>(
+            "lineSlicedAtlasCache", "The path to the line sliced atlas cache for DynamicAtlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL,
+            SparkFileHelper.combine(USER_HOME, DEFAULT_LINE_SLICED_ATLAS_CACHE_NAME));
+    public static final Switch<String> WATER_RELATION_SUB_ATLAS_CACHE_PATH = new Switch<>(
+            "waterRelationSubAtlasCache",
+            "The path to the line-sliced water relation subatlas cache for DynamicAtlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL,
+            SparkFileHelper.combine(USER_HOME, DEFAULT_WATER_RELATION_SUB_ATLAS_CACHE_PATH));
     /*
-     * Your atlas sharding.
+     * The path to the cache of fully sliced atlases. This class uses DynamicAtlas to do way
+     * sectioning, and it will create fully sliced atlas for shards it needs on the fly. It will
+     * then save them to this location for later use.
      */
-    public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
-            "The sharding definition.", StringConverter.IDENTITY, Optionality.REQUIRED);
-
-    /*
-     * The shard you are trying to build, in string format (eg. 10-234-125)
-     */
-    public static final Switch<Shard> TILE = new Switch<>("tile", "The SlippyTile name to use",
-            SlippyTile::forName, Optionality.REQUIRED);
-
-    /*
-     * The flavor of raw atlas you would like as output (ie. raw, sliced, sectioned)
-     */
-    public static final Switch<RawAtlasFlavor> ATLAS_FLAVOR = new Switch<>("rawAtlasFlavor",
-            "Which flavor of raw atlas - " + RawAtlasFlavor.RAW_ATLAS.toString() + ", "
-                    + RawAtlasFlavor.SLICED_ATLAS.toString() + ", or "
-                    + RawAtlasFlavor.SECTIONED_ATLAS.toString(),
-            RawAtlasFlavor::flavorStringToRawAtlasFlavor, Optionality.OPTIONAL,
-            RawAtlasFlavor.SECTIONED_ATLAS.toString());
-
-    /*
-     * Change the serialization to legacy Java format if desired.
-     */
-    public static final Switch<Boolean> USE_JAVA_ATLAS = new Switch<>("useJavaAtlas",
-            "Use the Java serialization format.", Boolean::parseBoolean, Optionality.OPTIONAL,
-            "false");
+    public static final Switch<String> FULLY_SLICED_ATLAS_CACHE_PATH = new Switch<>(
+            "fullySlicedAtlasCache", "The path to the fully sliced atlas cache for DynamicAtlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL,
+            SparkFileHelper.combine(USER_HOME, DEFAULT_FULLY_SLICED_ATLAS_CACHE_NAME));
+    public static final Switch<String> RAW_ATLAS_CACHE_PATH = new Switch<>("rawAtlasCache",
+            "The path to the sliced atlas cache for DynamicAtlas", StringConverter.IDENTITY,
+            Optionality.OPTIONAL, SparkFileHelper.combine(USER_HOME, DEFAULT_RAW_ATLAS_CACHE_NAME));
 
     public static void main(final String[] args)
     {
@@ -255,8 +239,8 @@ public class RawAtlasCreator extends Command
         {
             atlas.setSaveSerializationFormat(AtlasSerializationFormat.PROTOBUF);
         }
-        atlas.save(output.child(countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                + shardToBuild.getName() + FileSuffix.ATLAS));
+        atlas.save(output.child(countryName + Shard.SHARD_DATA_SEPARATOR + shardToBuild.getName()
+                + FileSuffix.ATLAS));
         atlas.saveAsGeoJson(
                 output.child(countryName + "_" + shardToBuild.getName() + FileSuffix.GEO_JSON));
 
@@ -302,8 +286,8 @@ public class RawAtlasCreator extends Command
         {
             // Check the fully sliced Atlas cache to see if we have a copy of the fully sliced Atlas
             // on the filesystem
-            final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                    + shard.getName() + FileSuffix.ATLAS;
+            final String filename = countryName + Shard.SHARD_DATA_SEPARATOR + shard.getName()
+                    + FileSuffix.ATLAS;
             final Optional<Atlas> fetchedAtlas = fetchCachedAtlas(shard, countryName, cachePath);
             if (fetchedAtlas.isPresent())
             {
@@ -377,8 +361,8 @@ public class RawAtlasCreator extends Command
         {
             // Check the line sliced Atlas cache to see if we have a copy of the line sliced Atlas
             // on the filesystem
-            final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                    + shard.getName() + FileSuffix.ATLAS;
+            final String filename = countryName + Shard.SHARD_DATA_SEPARATOR + shard.getName()
+                    + FileSuffix.ATLAS;
             final Optional<Atlas> fetchedAtlas = fetchCachedAtlas(shard, countryName,
                     lineSlicedCachePath);
             if (fetchedAtlas.isPresent())
@@ -406,8 +390,8 @@ public class RawAtlasCreator extends Command
     {
         return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
         {
-            final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                    + shard.getName() + FileSuffix.ATLAS;
+            final String filename = countryName + Shard.SHARD_DATA_SEPARATOR + shard.getName()
+                    + FileSuffix.ATLAS;
             final Optional<Atlas> fetchedAtlas = fetchCachedAtlas(shard, countryName, cachePath);
             if (fetchedAtlas.isPresent())
             {
@@ -431,8 +415,8 @@ public class RawAtlasCreator extends Command
             final Sharding pbfSharding, final Sharding sharding, final String countryName)
     {
         logger.info("Using raw atlas flavor {}", atlasFlavor);
-        final String filename = countryName + CountryShard.COUNTRY_SHARD_SEPARATOR
-                + shardToBuild.getName() + FileSuffix.ATLAS;
+        final String filename = countryName + Shard.SHARD_DATA_SEPARATOR + shardToBuild.getName()
+                + FileSuffix.ATLAS;
         if (atlasFlavor == RawAtlasFlavor.RAW_ATLAS)
         {
             final Atlas rawAtlas = generateRawAtlas(pbfPath, shardToBuild);

@@ -33,6 +33,7 @@ import org.openstreetmap.atlas.streaming.resource.AbstractResource;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.http.GetResource;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
@@ -82,6 +83,10 @@ public abstract class SparkJob extends Command implements Serializable
     {
         try
         {
+            if (path.startsWith("http"))
+            {
+                return new GetResource(path);
+            }
             final FileSystem fileSystem = new FileSystemCreator().get(path, configurationMap);
             if (!fileSystem.exists(new Path(path)))
             {

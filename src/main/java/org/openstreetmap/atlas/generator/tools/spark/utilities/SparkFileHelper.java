@@ -51,7 +51,8 @@ public class SparkFileHelper implements Serializable
     private static final Duration MAX_DURATION_FOR_IO = Duration.hours(3);
     private static final int IO_RETRY_COUNT = 5;
     private static final Duration WAIT_DURATION_BEFORE_IO_RETRY = Duration.seconds(5);
-    private static Retry IO_RETRY = new Retry(IO_RETRY_COUNT, WAIT_DURATION_BEFORE_IO_RETRY);
+    private static final Retry IO_RETRY = new Retry(IO_RETRY_COUNT, WAIT_DURATION_BEFORE_IO_RETRY);
+    private static final String NULL_PATH_MESSAGE = "Null path. Returning empty path.";
 
     // Spark context useful for read/write from/to different file systems
     private final Map<String, String> sparkContext;
@@ -104,7 +105,7 @@ public class SparkFileHelper implements Serializable
     {
         if (path == null)
         {
-            logger.warn("Null path. Returning empty path.");
+            logger.warn(NULL_PATH_MESSAGE);
             return EMPTY_STRING;
         }
 
@@ -151,13 +152,13 @@ public class SparkFileHelper implements Serializable
     {
         if (path == null)
         {
-            logger.warn("Null path. Returning empty path.");
+            logger.warn(NULL_PATH_MESSAGE);
             return EMPTY_STRING;
         }
 
         if (separator == null)
         {
-            logger.warn("Null separator. Returning empty path.");
+            logger.warn(NULL_PATH_MESSAGE);
             return EMPTY_STRING;
         }
 
@@ -291,7 +292,7 @@ public class SparkFileHelper implements Serializable
             {
                 logger.info("Downloading {}", uri);
                 resource = new InputStreamResource(
-                        new BufferedInputStream(new GetResource(uri).read())).withName(uri);
+                        () -> new BufferedInputStream(new GetResource(uri).read())).withName(uri);
             }
             if (resource == null)
             {
@@ -329,7 +330,7 @@ public class SparkFileHelper implements Serializable
     }
 
     /**
-     * Renames the {@link SparkFilePath#temporaryPath} to the {@link SparkFilePath#targetPath},
+     * Renames the {@link SparkFilePath} temporaryPath to the {@link SparkFilePath} targetPath,
      * taking care to avoid producing nested directories.
      *
      * @param path
@@ -370,7 +371,7 @@ public class SparkFileHelper implements Serializable
     }
 
     /**
-     * Copies the {@link SparkFilePath#temporaryPath} to the {@link SparkFilePath#targetPath},
+     * Copies the {@link SparkFilePath} temporaryPath to the {@link SparkFilePath} targetPath,
      * taking care to avoid producing nested directories.
      *
      * @param path
