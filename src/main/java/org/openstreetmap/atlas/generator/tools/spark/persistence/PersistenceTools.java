@@ -12,6 +12,7 @@ import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.converters.ConfigurationConverter;
+import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.utilities.runtime.Command.Optionality;
@@ -42,8 +43,8 @@ public class PersistenceTools
 
     public CountryBoundaryMap boundaries(final String input)
     {
-        return CountryBoundaryMap.fromPlainText(SparkJob.resource(
-                appendDirectorySeparator(input) + BOUNDARIES_FILE, this.configurationMap));
+        return CountryBoundaryMap.fromPlainText(SparkJob
+                .resource(SparkFileHelper.combine(input, BOUNDARIES_FILE), this.configurationMap));
     }
 
     public void copyShardingAndBoundariesToOutput(final String input, final String output)
@@ -57,29 +58,15 @@ public class PersistenceTools
     public Sharding sharding(final String input)
     {
         final Configuration hadoopConfiguration = hadoopConfiguration();
-        final Path inputPath = new Path(appendDirectorySeparator(input) + SHARDING_FILE);
+        final Path inputPath = new Path(SparkFileHelper.combine(input, SHARDING_FILE));
         return AtlasSharding.forString("dynamic@" + inputPath.toUri().toString(),
                 hadoopConfiguration);
     }
 
-    private String appendDirectorySeparator(final String input)
-    {
-        final String inputString;
-        if (input.endsWith("/"))
-        {
-            inputString = input;
-        }
-        else
-        {
-            inputString = input + "/";
-        }
-        return inputString;
-    }
-
     private void copyToOutput(final String input, final String output, final String name)
     {
-        final Path inputPath = new Path(appendDirectorySeparator(input) + name);
-        final Path outputPath = new Path(appendDirectorySeparator(output) + name);
+        final Path inputPath = new Path(SparkFileHelper.combine(input, name));
+        final Path outputPath = new Path(SparkFileHelper.combine(output, name));
         final Configuration configuration = hadoopConfiguration();
         try (InputStream inputStream = inputPath.getFileSystem(configuration).open(inputPath);
                 OutputStream outputStream = outputPath.getFileSystem(configuration)

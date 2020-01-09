@@ -41,15 +41,27 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
             private final Path path = new Path(this.outputPath, this.resourceName);
             private final FileSystem fileSystem = this.path.getFileSystem(job);
             private FSDataOutputStream dataOutputStream;
+            private String lastKey;
+            private T lastValue;
 
             @Override
-            public void close(final Reporter reporter) throws IOException
+            public void close(final Reporter reporter)
             {
-                Streams.close(this.dataOutputStream);
+                retry().run(() -> Streams.close(this.dataOutputStream), () ->
+                {
+                    // Below is the "runBeforeRetry" which re-attempts the upload if a "close"
+                    // above fails.
+                    if (this.lastKey != null && this.lastValue != null)
+                    {
+                        write(this.lastKey, this.lastValue);
+                    }
+                });
+                this.lastKey = null;
+                this.lastValue = null;
             }
 
             @Override
-            public void write(final String key, final T value) throws IOException
+            public void write(final String key, final T value)
             {
                 // In case the stream gets corrupted somehow, re-try the upload.
                 retry().run(() ->
@@ -72,6 +84,8 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
                                 this.path.toString(), e);
                     }
                 });
+                this.lastKey = key;
+                this.lastValue = value;
             }
         };
     }

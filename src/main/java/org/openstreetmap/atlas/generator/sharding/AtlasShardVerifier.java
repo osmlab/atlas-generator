@@ -44,7 +44,7 @@ public class AtlasShardVerifier extends Command
         expectedShards.removeAll(existingShards);
         try (SafeBufferedWriter writer = output.writer())
         {
-            expectedShards.stream().map(CountryShard::toString).forEach(writer::writeLine);
+            expectedShards.stream().map(CountryShard::getName).forEach(writer::writeLine);
         }
         catch (final Exception e)
         {

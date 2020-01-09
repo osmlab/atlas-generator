@@ -10,8 +10,10 @@ import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
+import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
+import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
@@ -133,7 +135,15 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath, final String namespace,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
-        super(new NamespaceCachingStrategy(namespace), uri ->
+        super(new NamespaceCachingStrategy(namespace)
+        {
+            @Override
+            protected void validateLocalFile(final File localFile)
+            {
+                // Make sure that the file is not corrupt by loading it.
+                PackedAtlas.load(localFile);
+            }
+        }, uri ->
         {
             final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND);
             final boolean exists = retry

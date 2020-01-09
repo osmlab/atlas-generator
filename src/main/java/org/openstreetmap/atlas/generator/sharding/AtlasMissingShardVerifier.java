@@ -10,6 +10,7 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Rectangle;
@@ -22,8 +23,10 @@ import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.writers.SafeBufferedWriter;
 import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.tags.filters.ConfiguredTaggableFilter;
+import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
+import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.time.Time;
@@ -41,7 +44,7 @@ public class AtlasMissingShardVerifier extends Command
     private static final String FILTER_CONFIG = "/org/openstreetmap/atlas/geography/atlas/pbf/osm-pbf-way.json";
 
     private static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
-            "The country boundaries.", value -> initializeCountryBoundaryMap(value),
+            "The country boundaries.", AtlasMissingShardVerifier::initializeCountryBoundaryMap,
             Optionality.REQUIRED);
     private static final Switch<File> OUTPUT = new Switch<>("output", "The output file", File::new,
             Optionality.REQUIRED);
@@ -52,9 +55,9 @@ public class AtlasMissingShardVerifier extends Command
     private static final Switch<StringList> PROXY_SETTINGS = new Switch<>("proxySettings",
             "Proxy host and port number, split by comma", value -> StringList.split(value, ","),
             Optionality.OPTIONAL);
-    private static final Switch<File> WAY_FILTER = new Switch<>("wayFilter",
-            "The json resource that defines what ways are ingested to atlas", File::new,
-            Optionality.OPTIONAL);
+    private static final Switch<String> WAY_FILTER = new Switch<>("wayFilter",
+            "The json resource that defines what ways are ingested to atlas",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
 
     public static void main(final String[] args)
     {
@@ -76,11 +79,11 @@ public class AtlasMissingShardVerifier extends Command
         return masterQuery.toString();
     }
 
-    private static HttpHost createProxy(final StringList proxySettings) throws NumberFormatException
+    private static HttpHost createProxy(final StringList proxySettings)
     {
         final String proxyHost = proxySettings.get(0);
         final int proxyPort = Integer.parseInt(proxySettings.get(1));
-        logger.info("Proxy Host: " + proxyHost + " Port: " + proxyPort);
+        logger.info("Proxy Host: {} Port: {}", proxyHost, proxyPort);
         return new HttpHost(proxyHost, proxyPort);
     }
 
@@ -96,12 +99,10 @@ public class AtlasMissingShardVerifier extends Command
     private static STRtree initializeNodeTree(final List<OverpassOsmNode> nodes)
     {
         final STRtree nodeTree = new STRtree();
-        nodes.forEach(node ->
-        {
-            nodeTree.insert(new Envelope(new Coordinate(Double.parseDouble(node.getLongitude()),
-                    Double.parseDouble(node.getLatitude()))), node);
-        });
-        logger.info("Imported " + nodeTree.size() + " nodes to tree");
+        nodes.forEach(node -> nodeTree
+                .insert(new Envelope(new Coordinate(Double.parseDouble(node.getLongitude()),
+                        Double.parseDouble(node.getLatitude()))), node));
+        logger.info("Imported {} nodes to tree", nodeTree.size());
         return nodeTree;
     }
 
@@ -113,16 +114,10 @@ public class AtlasMissingShardVerifier extends Command
         nodes.forEach(node -> nodeIds.put(node.getIdentifier(), node));
         ways.forEach(way ->
         {
-            Envelope startPoint = new Envelope();
+            final Envelope startPoint = new Envelope();
             for (final String nodeId : way.getNodeIdentifiers())
             {
-                if (startPoint == null && nodeIds.containsKey(nodeId))
-                {
-                    startPoint = new Envelope(
-                            new Coordinate(Double.parseDouble(nodeIds.get(nodeId).getLongitude()),
-                                    Double.parseDouble(nodeIds.get(nodeId).getLatitude())));
-                }
-                else if (nodeIds.containsKey(nodeId))
+                if (nodeIds.containsKey(nodeId))
                 {
                     final Coordinate nextPoint = new Coordinate(
                             Double.parseDouble(nodeIds.get(nodeId).getLongitude()),
@@ -132,7 +127,7 @@ public class AtlasMissingShardVerifier extends Command
             }
             wayTree.insert(startPoint, way);
         });
-        logger.info("Imported " + wayTree.size() + " ways to tree");
+        logger.info("Imported {} ways to tree", wayTree.size());
         return wayTree;
     }
 
@@ -170,7 +165,9 @@ public class AtlasMissingShardVerifier extends Command
             if (client.hasTooMuchResponseData())
             {
                 throw new CoreException(
-                        "The overpass query returned too much data. This means that there are large amounts of data missing! Check the missing shard list for outliers.");
+                        "The overpass query returned too much data. This means that there are "
+                                + "large amounts of data missing! Check the missing shard "
+                                + "list for outliers.");
             }
             if (client.hasUnknownError())
             {
@@ -188,11 +185,8 @@ public class AtlasMissingShardVerifier extends Command
                 final List<OverpassOsmNode> nodeList = nodeTree.query(clipBounds.asEnvelope());
                 // Prune extra nodes returned by STRtree that might not actually be contained within
                 // clipBounds
-                nodeList.removeIf(node ->
-                {
-                    return !clipBounds.fullyGeometricallyEncloses(
-                            Location.forString(node.getLatitude() + "," + node.getLongitude()));
-                });
+                nodeList.removeIf(node -> !clipBounds.fullyGeometricallyEncloses(
+                        Location.forString(node.getLatitude() + "," + node.getLongitude())));
                 @SuppressWarnings("unchecked")
                 final List<OverpassOsmWay> wayList = wayTree.query(clipBounds.asEnvelope());
                 // Filter out ways that aren't ingested into atlas
@@ -219,7 +213,7 @@ public class AtlasMissingShardVerifier extends Command
                         writer.writeLine("Id of node that should have been imported: "
                                 + node.getIdentifier());
                         writer.writeLine("Node Location: " + nodeLocation.toString() + "\n");
-                        logger.info(countryShard.toString() + " is missing!");
+                        logger.info("{} is missing!", countryShard);
                         break;
                     }
                 }
@@ -250,17 +244,18 @@ public class AtlasMissingShardVerifier extends Command
         }
         final Set<CountryShard> missingCountryShards = missingShardFile.linesList().stream()
                 .map(CountryShard::forName).collect(Collectors.toSet());
-        final File wayFilterFile = (File) command.get(WAY_FILTER);
+        final String wayFilterPath = (String) command.get(WAY_FILTER);
         final ConfiguredTaggableFilter wayFilter;
-        if (wayFilterFile != null)
+        if (wayFilterPath != null)
         {
-            wayFilter = new ConfiguredTaggableFilter(new StandardConfiguration(wayFilterFile));
+            wayFilter = AtlasGeneratorParameters.getTaggableFilterFrom(wayFilterPath,
+                    Maps.hashMap());
         }
         else
         {
-            wayFilter = new ConfiguredTaggableFilter(
-                    new StandardConfiguration(new InputStreamResource(
-                            AtlasMissingShardVerifier.class.getResourceAsStream(FILTER_CONFIG))));
+            wayFilter = new ConfiguredTaggableFilter(new StandardConfiguration(
+                    new InputStreamResource(() -> AtlasMissingShardVerifier.class
+                            .getResourceAsStream(FILTER_CONFIG))));
         }
         final String server = (String) command.get(OVERPASS_SERVER);
         final StringList proxySettings = (StringList) command.get(PROXY_SETTINGS);
@@ -288,7 +283,7 @@ public class AtlasMissingShardVerifier extends Command
         {
             return -1;
         }
-        logger.info("Verification ran in: " + fullStart.elapsedSince());
+        logger.info("Verification ran in: {}", fullStart.elapsedSince());
         return returnCode;
     }
 
