@@ -13,7 +13,6 @@ import org.apache.hadoop.mapred.JobConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.broadcast.Broadcast;
 import org.openstreetmap.atlas.exception.CoreException;
-import org.openstreetmap.atlas.generator.AtlasGeneratorHelper.NamedAtlasStatistics;
 import org.openstreetmap.atlas.generator.persistence.MultipleLineDelimitedGeojsonOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
@@ -294,15 +293,8 @@ public class AtlasGenerator extends SparkJob
 
         // Aggregate the metrics
         final JavaPairRDD<String, AtlasStatistics> reducedStatisticsRDD = statisticsRDD
-                .mapToPair(tuple ->
-                {
-                    final String countryShardName = tuple._1();
-                    final String countryName = StringList.split(countryShardName, "_").get(0);
-                    return new Tuple2<>(countryName,
-                            // Here using NamedAtlasStatistics so the reduceByKey function below can
-                            // name what statistic merging failed, if any.
-                            new NamedAtlasStatistics(countryName, tuple._2()));
-                }).reduceByKey(AtlasGeneratorHelper.reduceAtlasStatistics())
+                .mapToPair(AtlasGeneratorHelper.groupAtlasStatisticsByCountry())
+                .reduceByKey(AtlasGeneratorHelper.reduceAtlasStatistics())
                 .mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._2().getAtlasStatistics()));
 
         // Save aggregated metrics

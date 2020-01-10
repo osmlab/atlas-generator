@@ -34,6 +34,8 @@ public class AtlasGeneratorIntegrationTest
     public static final String ATLAS_OUTPUT = "resource://test/atlas";
     public static final String LINE_DELIMITED_GEOJSON_OUTPUT = "resource://test/"
             + AtlasGenerator.LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER + "/DMA";
+    public static final String COUNTRY_STATS = "resource://test/countryStats";
+    public static final String SHARD_STATS = "resource://test/shardStats";
     public static final String CONFIGURED_OUTPUT_FILTER = "resource://test/filter/nothingFilter.json";
     public static final String FILTER_NAME = "nothingFilter";
     public static final String CONFIGURATION = "resource://test/configuration";
@@ -150,6 +152,15 @@ public class AtlasGeneratorIntegrationTest
                     new Path("resource://test/configuredOutput/DMA/9/DMA_9-168-233.atlas")));
             Assert.assertTrue(resourceFileSystem.exists(
                     new Path("resource://test/configuredOutput/DMA/9/DMA_9-168-234.atlas")));
+
+            final String countryStats = resourceForName(resourceFileSystem,
+                    COUNTRY_STATS + "/DMA.csv.gz").all();
+            final String shard933Stats = resourceForName(resourceFileSystem,
+                    SHARD_STATS + "/DMA/9/DMA_9-168-233.csv.gz").all();
+            final String shard934Stats = resourceForName(resourceFileSystem,
+                    SHARD_STATS + "/DMA/9/DMA_9-168-234.csv.gz").all();
+            Assert.assertNotEquals(countryStats, shard933Stats);
+            Assert.assertNotEquals(countryStats, shard934Stats);
         }
         catch (IllegalArgumentException | IOException e)
         {
