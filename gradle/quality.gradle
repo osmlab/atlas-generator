@@ -70,4 +70,6 @@ jacocoTestReport {
         csv.enabled true
         html.destination file("${buildDir}/reports/jacoco")
     }
+    sourceSets sourceSets.main
+    executionData fileTree(project.rootDir.absolutePath).include("**/jacoco/*.exec")
 }
