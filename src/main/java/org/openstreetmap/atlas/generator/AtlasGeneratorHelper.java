@@ -41,6 +41,7 @@ import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.tags.Taggable;
+import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.runtime.system.memory.Memory;
@@ -336,6 +337,21 @@ public final class AtlasGeneratorHelper implements Serializable
             final String persistenceKey = PersistenceJsonParser.createJsonKey(countryName,
                     shard.getName(), atlasScheme.getScheme());
             return new Tuple2<>(persistenceKey, atlas);
+        };
+    }
+
+    protected static PairFunction<Tuple2<String, AtlasStatistics>, String, NamedAtlasStatistics> groupAtlasStatisticsByCountry()
+    {
+        return tuple ->
+        {
+            final CountryShard countryShardName = getCountryShard(tuple._1());
+            final String countryName = countryShardName.getCountry();
+            return new Tuple2<>(
+                    // Create the same key for all shards in the same country
+                    PersistenceJsonParser.createJsonKey(countryName, "N/A", Maps.hashMap()),
+                    // Here using NamedAtlasStatistics so the reduceByKey function below can
+                    // name what statistic merging failed, if any.
+                    new NamedAtlasStatistics(countryName, tuple._2()));
         };
     }
 
