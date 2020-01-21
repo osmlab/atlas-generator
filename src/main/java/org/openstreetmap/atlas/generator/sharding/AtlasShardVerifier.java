@@ -38,7 +38,7 @@ public class AtlasShardVerifier extends Command
         @SuppressWarnings("unchecked")
         final Set<CountryShard> expectedShards = (Set<CountryShard>) command.get(EXPECTED_SHARDS);
         final Set<CountryShard> existingShards = atlasFolder.listFilesRecursively().stream()
-                .filter(AtlasResourceLoader.IS_ATLAS).map(File::getName)
+                .filter(AtlasResourceLoader.HAS_ATLAS_EXTENSION).map(File::getName)
                 .map(name -> StringList.split(name, ".").get(0)).map(CountryShard::forName)
                 .collect(Collectors.toSet());
         expectedShards.removeAll(existingShards);
