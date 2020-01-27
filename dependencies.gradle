@@ -1,8 +1,8 @@
 project.ext.versions = [
     checkstyle: '8.18',
     jacoco: '0.8.3',
-    atlas: '5.9.1',
-    spark: '2.4.0-cdh6.2.0',
+    atlas: '6.0.0',
+    spark: '2.4.4',
     snappy: '1.1.1.6',
     atlas_checkstyle: '5.6.9',
 ]

@@ -18,8 +18,8 @@ apply from: 'gradle/execution.gradle'
 
 description = "Atlas Generator Library"
 
-sourceCompatibility=1.8
-targetCompatibility=1.8
+sourceCompatibility=11
+targetCompatibility=11
 
 repositories
 {
@@ -37,6 +37,12 @@ repositories
 
 configurations
 {
+    all {
+        resolutionStrategy {
+            // Force jackson 2.6.7 for Spark
+            force 'com.fasterxml.jackson.core:jackson-core:2.6.7', 'com.fasterxml.jackson.core:jackson-databind:2.6.7', 'com.fasterxml.jackson.core:jackson-annotations:2.6.7'
+        }
+    }
     compile
     {
         resolutionStrategy
@@ -142,6 +148,6 @@ gradle.startParameter.excludedTaskNames += skippedTaskNames
 
 idea {
     project {
-        languageLevel = '1.8'
+        languageLevel = '11'
     }
 }

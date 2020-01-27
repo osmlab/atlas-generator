@@ -9,7 +9,7 @@ AtlasGenerator is a Spark Job that generates [Atlas](https://github.com/osmlab/a
 
 ## Getting started
 
-This project has been implemented and tested with Oracle JDK 1.8.
+This project has been implemented and tested with OpenJDK 11
 
 ### Build
 
