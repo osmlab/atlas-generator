@@ -200,7 +200,8 @@ public final class AtlasGeneratorHelper implements Serializable
                                     countryShardName);
             if (!alter.isPresent())
             {
-                throw new CoreException("No atlas found for {}!", countryShardName);
+                logger.error("No atlas found for {}!", countryShardName);
+                return new Tuple2<>(tuple._1(), null);
             }
 
             final Optional<Change> diffChange = new AtlasDiff(alter.get(), current)
