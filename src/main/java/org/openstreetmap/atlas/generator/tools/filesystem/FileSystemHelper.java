@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.tools.filesystem;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -34,6 +35,8 @@ import org.slf4j.LoggerFactory;
  */
 public final class FileSystemHelper
 {
+    public static final String FILE_NOT_FOUND = "File not found";
+
     private static final Map<String, String> DEFAULT = Maps.hashMap("fs.file.impl",
             RawLocalFileSystem.class.getCanonicalName());
     private static final Logger logger = LoggerFactory.getLogger(FileSystemHelper.class);
@@ -221,6 +224,11 @@ public final class FileSystemHelper
                 try
                 {
                     return fileSystem.open(hadoopPath);
+                }
+                catch (final FileNotFoundException fileNotFoundException)
+                {
+                    throw new CoreException("Unable to open {}. {}", hadoopPath, FILE_NOT_FOUND,
+                            fileNotFoundException);
                 }
                 catch (final Exception e)
                 {
