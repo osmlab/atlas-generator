@@ -146,7 +146,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             }
         }, uri ->
         {
-            final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND);
+            final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND).withQuadratic(true);
             final boolean exists = retry.run(() ->
             {
                 try (InputStream input = FileSystemHelper.resource(uri.toString(), configuration)
