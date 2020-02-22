@@ -243,7 +243,7 @@ public class ResourceFileSystem extends FileSystem
         final Resource resource = STORE.get(name);
         if (resource == null)
         {
-            return null;
+            throw new FileNotFoundException("Path does not exist or is a directory: " + hadoopPath);
         }
         return new FSDataInputStream(new SeekableResourceStream(resource));
     }
