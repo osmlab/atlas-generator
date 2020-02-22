@@ -156,7 +156,14 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
                 }
                 catch (final Exception e)
                 {
-                    return !e.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND);
+                    if (e.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        throw new CoreException("Unable to test existence of {}", uri, e);
+                    }
                 }
             });
             if (!exists)
