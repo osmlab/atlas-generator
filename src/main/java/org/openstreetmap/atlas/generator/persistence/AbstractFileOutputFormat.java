@@ -96,7 +96,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
 
     protected Retry retry()
     {
-        return new Retry(RETRY_NUMBER, Duration.seconds(2));
+        return new Retry(RETRY_NUMBER, Duration.seconds(2)).withQuadratic(true);
     }
 
     protected abstract void save(T value, AbstractWritableResource out);
