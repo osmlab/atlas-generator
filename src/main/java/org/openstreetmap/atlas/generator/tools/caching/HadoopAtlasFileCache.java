@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.tools.caching;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -145,9 +146,26 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             }
         }, uri ->
         {
-            final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND);
-            final boolean exists = retry
-                    .run(() -> FileSystemHelper.exists(uri.toString(), configuration));
+            final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND).withQuadratic(true);
+            final boolean exists = retry.run(() ->
+            {
+                try (InputStream input = FileSystemHelper.resource(uri.toString(), configuration)
+                        .read())
+                {
+                    return true;
+                }
+                catch (final Exception e)
+                {
+                    if (e.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        throw new CoreException("Unable to test existence of {}", uri, e);
+                    }
+                }
+            });
             if (!exists)
             {
                 logger.warn("Fetcher: resource {} does not exist!", uri);

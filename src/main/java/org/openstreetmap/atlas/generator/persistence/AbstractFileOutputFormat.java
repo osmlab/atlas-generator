@@ -47,7 +47,18 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
             @Override
             public void close(final Reporter reporter)
             {
-                retry().run(() -> Streams.close(this.dataOutputStream), () ->
+                retry().run(() ->
+                {
+                    try
+                    {
+                        Streams.close(this.dataOutputStream);
+                    }
+                    catch (final Exception e)
+                    {
+                        throw new CoreException("Unable to close stream for last key {}",
+                                this.lastKey, e);
+                    }
+                }, () ->
                 {
                     // Below is the "runBeforeRetry" which re-attempts the upload if a "close"
                     // above fails.
@@ -96,7 +107,7 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
 
     protected Retry retry()
     {
-        return new Retry(RETRY_NUMBER, Duration.seconds(2));
+        return new Retry(RETRY_NUMBER, Duration.seconds(2)).withQuadratic(true);
     }
 
     protected abstract void save(T value, AbstractWritableResource out);
