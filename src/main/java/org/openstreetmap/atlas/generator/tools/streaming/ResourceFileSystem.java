@@ -117,6 +117,7 @@ public class ResourceFileSystem extends FileSystem
         {
             final String subPath = file.substring(String.valueOf(SCHEME + "://").length());
             final File output = folder.child(subPath);
+            output.withCompressor(Compressor.NONE);
             STORE.get(file).copyTo(output);
         });
     }
