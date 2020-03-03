@@ -2,6 +2,7 @@ package org.openstreetmap.atlas.generator.sharding;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.sharding.GeoHashSharding;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
@@ -11,6 +12,13 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
  */
 public class AtlasShardingTest
 {
+    @Test(expected = CoreException.class)
+    public void testDynamicSharding()
+    {
+        AtlasSharding.forString("dynamic@resource://some/file/that/does/not/exist",
+                ResourceFileSystem.simpleconfiguration());
+    }
+
     @Test
     public void testGeoHashSharding()
     {
