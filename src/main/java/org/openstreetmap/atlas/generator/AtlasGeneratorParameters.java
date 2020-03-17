@@ -100,6 +100,9 @@ public final class AtlasGeneratorParameters
     public static final Switch<String> CONFIGURED_FILTER_NAME = new Switch<>("configuredFilterName",
             "Name of the filter to be used for configured output", StringConverter.IDENTITY,
             Optionality.OPTIONAL);
+    public static final Switch<Boolean> STATISTICS = new Switch<>("statistics",
+            "Whether to run the shard statistics and country statistics", Boolean::parseBoolean,
+            Optionality.OPTIONAL, "false");
 
     public static ConfiguredFilter getConfiguredFilterFrom(final String name, final String path,
             final Map<String, String> configurationMap)
@@ -135,6 +138,11 @@ public final class AtlasGeneratorParameters
             final Resource configurationResource)
     {
         return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
+    }
+
+    public static boolean runStatistics(final CommandMap command)
+    {
+        return (boolean) command.get(STATISTICS);
     }
 
     protected static AtlasLoadingOption buildAtlasLoadingOption(final CountryBoundaryMap boundaries,
@@ -245,7 +253,7 @@ public final class AtlasGeneratorParameters
                 ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, LINE_DELIMITED_GEOJSON_OUTPUT,
                 SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
-                CONFIGURED_FILTER_NAME);
+                CONFIGURED_FILTER_NAME, STATISTICS);
     }
 
     private AtlasGeneratorParameters()

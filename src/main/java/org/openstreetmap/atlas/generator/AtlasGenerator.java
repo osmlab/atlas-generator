@@ -285,29 +285,33 @@ public class AtlasGenerator extends SparkJob
             logger.warn(EXCEPTION_MESSAGE,
                     AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(), exception);
         }
-        // Create the metrics
-        final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
-                .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(broadcastSharding));
-        statisticsRDD.cache();
-        saveAsHadoop(statisticsRDD, AtlasGeneratorJobGroup.SHARD_STATISTICS, output);
 
-        // Aggregate the metrics
-        final JavaPairRDD<String, AtlasStatistics> reducedStatisticsRDD = statisticsRDD
-                .mapToPair(AtlasGeneratorHelper.groupAtlasStatisticsByCountry())
-                .reduceByKey(AtlasGeneratorHelper.reduceAtlasStatistics())
-                .mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._2().getAtlasStatistics()));
-
-        // Save aggregated metrics
-        saveAsHadoop(reducedStatisticsRDD, AtlasGeneratorJobGroup.COUNTRY_STATISTICS, output);
-
-        try
+        if (AtlasGeneratorParameters.runStatistics(command))
         {
-            statisticsRDD.unpersist();
-        }
-        catch (final Exception exception)
-        {
-            logger.warn(EXCEPTION_MESSAGE,
-                    AtlasGeneratorJobGroup.COUNTRY_STATISTICS.getDescription(), exception);
+            // Create the metrics
+            final JavaPairRDD<String, AtlasStatistics> statisticsRDD = countryAtlasShardsRDD
+                    .mapToPair(AtlasGeneratorHelper.generateAtlasStatistics(broadcastSharding));
+            statisticsRDD.cache();
+            saveAsHadoop(statisticsRDD, AtlasGeneratorJobGroup.SHARD_STATISTICS, output);
+
+            // Aggregate the metrics
+            final JavaPairRDD<String, AtlasStatistics> reducedStatisticsRDD = statisticsRDD
+                    .mapToPair(AtlasGeneratorHelper.groupAtlasStatisticsByCountry())
+                    .reduceByKey(AtlasGeneratorHelper.reduceAtlasStatistics())
+                    .mapToPair(tuple -> new Tuple2<>(tuple._1(), tuple._2().getAtlasStatistics()));
+
+            // Save aggregated metrics
+            saveAsHadoop(reducedStatisticsRDD, AtlasGeneratorJobGroup.COUNTRY_STATISTICS, output);
+
+            try
+            {
+                statisticsRDD.unpersist();
+            }
+            catch (final Exception exception)
+            {
+                logger.warn(EXCEPTION_MESSAGE,
+                        AtlasGeneratorJobGroup.COUNTRY_STATISTICS.getDescription(), exception);
+            }
         }
 
         // Compute the deltas, if needed
