@@ -90,6 +90,7 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-atlasScheme=zz/");
         arguments.add("-lineDelimitedGeojsonOutput=true");
         arguments.add("-copyShardingAndBoundaries=true");
+        arguments.add("-statistics=true");
         arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
         arguments.add("-configuredFilterName=" + FILTER_NAME);
         arguments.add("-" + AtlasGeneratorParameters.EDGE_CONFIGURATION.getName() + "="
