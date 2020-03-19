@@ -22,7 +22,14 @@ import org.openstreetmap.atlas.utilities.collections.Maps;
 public class HadoopAtlasFileCacheTest
 {
     @Test
-    public void testCache()
+    public void testSequentially()
+    {
+        testCache();
+        testCachesWithDifferentNamespaces();
+        testNonexistentResource();
+    }
+
+    private void testCache()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
@@ -72,8 +79,7 @@ public class HadoopAtlasFileCacheTest
         }
     }
 
-    @Test
-    public void testCachesWithDifferentNamespaces()
+    private void testCachesWithDifferentNamespaces()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
@@ -145,8 +151,7 @@ public class HadoopAtlasFileCacheTest
         }
     }
 
-    @Test
-    public void testNonexistentResource()
+    private void testNonexistentResource()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
