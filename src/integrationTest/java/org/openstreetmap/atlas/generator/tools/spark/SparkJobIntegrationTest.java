@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.apache.hadoop.fs.Path;
 import org.junit.Assert;
 import org.junit.Test;
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
@@ -39,6 +40,37 @@ public class SparkJobIntegrationTest
         try (ResourceFileSystem resourceFileSystem = new ResourceFileSystem())
         {
             Assert.assertTrue(resourceFileSystem.exists(new Path("resource://blah/_SUCCESS")));
+        }
+    }
+
+    @Test
+    public void testFailure() throws IOException
+    {
+        final SparkJob sparkJob = new SparkJob()
+        {
+            private static final long serialVersionUID = -6657905234445292742L;
+
+            @Override
+            public String getName()
+            {
+                return "SparkJobIntegrationTest";
+            }
+
+            @Override
+            public void start(final CommandMap command)
+            {
+                throw new CoreException("Some Job-Specific Failure");
+            }
+        };
+
+        try
+        {
+            sparkJob.runWithoutQuitting(getArguments());
+        }
+        catch (final Exception e)
+        {
+            Assert.assertTrue(
+                    e.getCause().getCause().getMessage().contains("Some Job-Specific Failure"));
         }
     }
 
