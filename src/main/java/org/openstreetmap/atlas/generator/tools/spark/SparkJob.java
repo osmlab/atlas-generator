@@ -361,7 +361,7 @@ public abstract class SparkJob extends Command implements Serializable
         }
         catch (final Exception e)
         {
-            throw new CoreException("Could not write file {}/{}", path, name, e);
+            logger.error("Could not write file {}/{}", path, name, e);
         }
     }
 }
