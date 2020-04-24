@@ -74,7 +74,6 @@ public abstract class AbstractFileOutputFormat<T> extends FileOutputFormat<Strin
             @Override
             public void write(final String key, final T value)
             {
-
                 this.lastKey = key;
                 this.lastValue = value;
                 // In case the stream gets corrupted somehow, re-try the upload.
