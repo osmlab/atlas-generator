@@ -99,7 +99,6 @@ public class PbfLoader implements Serializable
                     this.countryShards.stream().map(countryShard -> countryName
                             + Shard.SHARD_DATA_SEPARATOR + countryShard.getName())
                             .collect(Collectors.joining(",")));
-            metaDataTags.put(shard.getName() + "_boundary", loadingArea.toString());
 
             // For each PBF, create an atlas
             pbfPool.forEach(locatedPbf ->
