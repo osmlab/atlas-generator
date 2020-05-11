@@ -17,22 +17,11 @@ import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 public enum AtlasGeneratorJobGroup
 {
     RAW(0, "Raw Atlas Creation", "rawAtlas", Atlas.class, MultipleAtlasOutputFormat.class),
-    LINE_SLICED(
-            1,
-            "Line Sliced Atlas Creation",
-            "lineSlicedAtlas",
-            Atlas.class,
-            MultipleAtlasOutputFormat.class),
-    LINE_SLICED_SUB(
+    SLICED(1, "Sliced Atlas Creation", "slicedAtlas", Atlas.class, MultipleAtlasOutputFormat.class),
+    SLICED_SUB(
             2,
-            "Line Sliced Sub Atlas Creation",
-            "lineSlicedSubAtlas",
-            Atlas.class,
-            MultipleAtlasOutputFormat.class),
-    FULLY_SLICED(
-            3,
-            "Fully Sliced Atlas Creation",
-            "fullySlicedAtlas",
+            "Multipolygon Relation Sub Atlas Creation",
+            "multipolygonRelationSubAtlas",
             Atlas.class,
             MultipleAtlasOutputFormat.class),
     EDGE_SUB(

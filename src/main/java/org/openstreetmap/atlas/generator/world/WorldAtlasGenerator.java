@@ -3,7 +3,6 @@ package org.openstreetmap.atlas.generator.world;
 import java.util.Map;
 
 import org.apache.hadoop.fs.LocalFileSystem;
-import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.Rectangle;
@@ -12,7 +11,7 @@ import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
-import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasCountrySlicer;
+import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasSlicer;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.statistics.Counter;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -123,20 +122,12 @@ public class WorldAtlasGenerator extends Command
         final String codeVersion = (String) command.get(CODE_VERSION);
         final String dataVersion = (String) command.get(DATA_VERSION);
         final Shard world = SlippyTile.ROOT;
-        final String forceSlicingConfiguration = (String) command
-                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION);
-
         final Time start = Time.now();
 
         // Prepare
         final AtlasLoadingOption loadingOptions = AtlasLoadingOption
                 .createOptionWithAllEnabled(countryBoundaryMap)
                 .setAdditionalCountryCodes(countryBoundaryMap.allCountryNames());
-        if (forceSlicingConfiguration != null)
-        {
-            loadingOptions.setForceSlicingFilter(AtlasGeneratorParameters
-                    .getTaggableFilterFrom(new File(forceSlicingConfiguration)));
-        }
 
         if (edgeConfiguration != null)
         {
@@ -184,7 +175,7 @@ public class WorldAtlasGenerator extends Command
                 .withMetaData(metaData).build();
         if (loadingOptions.isCountrySlicing())
         {
-            atlas = new RawAtlasCountrySlicer(loadingOptions).slice(atlas);
+            atlas = new RawAtlasSlicer(loadingOptions, atlas).slice();
         }
         if (loadingOptions.isWaySectioning())
         {

@@ -182,73 +182,54 @@ public class AtlasGenerator extends SparkJob
         // Persist the RDD and save the intermediary state
         saveAsHadoop(countryRawAtlasRDD, AtlasGeneratorJobGroup.RAW, output);
 
-        // Slice the raw Atlas and filter any null atlases
-        final JavaPairRDD<String, Atlas> lineSlicedAtlasRDD = countryRawAtlasRDD.mapToPair(
-                AtlasGeneratorHelper.sliceLines(broadcastBoundaries, broadcastLoadingOptions))
+        // Subatlas the raw shard Atlas files based on water relations
+        final Predicate<Taggable> slicingFilter = AtlasGeneratorParameters
+                .buildAtlasLoadingOption(broadcastBoundaries.getValue(),
+                        broadcastLoadingOptions.getValue())
+                .getRelationSlicingFilter();
+        final JavaPairRDD<String, Atlas> relationSubAtlasRDD = countryRawAtlasRDD
+                .mapToPair(AtlasGeneratorHelper.subatlas(slicingFilter, AtlasCutType.SILK_CUT))
                 .filter(tuple -> tuple._2() != null);
-        lineSlicedAtlasRDD.cache();
-        saveAsHadoop(lineSlicedAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED, output);
+        relationSubAtlasRDD.cache();
+        saveAsHadoop(relationSubAtlasRDD, AtlasGeneratorJobGroup.SLICED_SUB, output);
 
-        // Remove the raw atlas RDD from cache since we've cached the sliced RDD
+        // Relation slice the line sliced Atlas and filter any null atlases
+        final JavaPairRDD<String, Atlas> slicedAtlasShardsRDD = countryRawAtlasRDD
+                .mapToPair(AtlasGeneratorHelper.sliceAtlas(broadcastBoundaries,
+                        broadcastLoadingOptions, broadcastSharding,
+                        getAlternateSubFolderOutput(output,
+                                AtlasGeneratorJobGroup.SLICED_SUB.getCacheFolder()),
+                        atlasScheme, sparkContext))
+                .filter(tuple -> tuple._2() != null);
+        slicedAtlasShardsRDD.cache();
+        saveAsHadoop(slicedAtlasShardsRDD, AtlasGeneratorJobGroup.SLICED, output);
+
+        // Remove the line sliced atlas RDD from cache since we've cached the fully sliced RDD
         try
         {
             countryRawAtlasRDD.unpersist();
         }
         catch (final Exception exception)
         {
-            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.LINE_SLICED.getDescription(),
-                    exception);
-        }
-
-        // Subatlas the raw shard Atlas files based on water relations
-        final Predicate<Taggable> slicingFilter = AtlasGeneratorParameters
-                .buildAtlasLoadingOption(broadcastBoundaries.getValue(),
-                        broadcastLoadingOptions.getValue())
-                .getRelationSlicingFilter();
-        final JavaPairRDD<String, Atlas> lineSlicedSubAtlasRDD = lineSlicedAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.subatlas(slicingFilter, AtlasCutType.SILK_CUT))
-                .filter(tuple -> tuple._2() != null);
-        lineSlicedSubAtlasRDD.cache();
-        saveAsHadoop(lineSlicedSubAtlasRDD, AtlasGeneratorJobGroup.LINE_SLICED_SUB, output);
-
-        // Relation slice the line sliced Atlas and filter any null atlases
-        final JavaPairRDD<String, Atlas> fullySlicedRawAtlasShardsRDD = lineSlicedAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.sliceRelations(broadcastBoundaries,
-                        broadcastLoadingOptions, broadcastSharding,
-                        getAlternateSubFolderOutput(output,
-                                AtlasGeneratorJobGroup.LINE_SLICED_SUB.getCacheFolder()),
-                        atlasScheme, sparkContext))
-                .filter(tuple -> tuple._2() != null);
-        fullySlicedRawAtlasShardsRDD.cache();
-        saveAsHadoop(fullySlicedRawAtlasShardsRDD, AtlasGeneratorJobGroup.FULLY_SLICED, output);
-
-        // Remove the line sliced atlas RDD from cache since we've cached the fully sliced RDD
-        try
-        {
-            lineSlicedAtlasRDD.unpersist();
-            lineSlicedSubAtlasRDD.unpersist();
-        }
-        catch (final Exception exception)
-        {
-            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.FULLY_SLICED.getDescription(),
+            logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.SLICED.getDescription(),
                     exception);
         }
         final Predicate<Taggable> edgeFilter = AtlasGeneratorParameters.buildAtlasLoadingOption(
                 broadcastBoundaries.getValue(), broadcastLoadingOptions.getValue()).getEdgeFilter();
-        final JavaPairRDD<String, Atlas> edgeOnlySubAtlasRDD = fullySlicedRawAtlasShardsRDD
+        final JavaPairRDD<String, Atlas> edgeOnlySubAtlasRDD = slicedAtlasShardsRDD
                 .mapToPair(AtlasGeneratorHelper.subatlas(edgeFilter, AtlasCutType.SILK_CUT))
                 .filter(tuple -> tuple._2() != null);
         edgeOnlySubAtlasRDD.cache();
         saveAsHadoop(edgeOnlySubAtlasRDD, AtlasGeneratorJobGroup.EDGE_SUB, output);
 
         // Section the sliced Atlas
-        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = fullySlicedRawAtlasShardsRDD
+        final JavaPairRDD<String, Atlas> countryAtlasShardsRDD = slicedAtlasShardsRDD
                 .mapToPair(AtlasGeneratorHelper.sectionAtlas(broadcastBoundaries, broadcastSharding,
                         sparkContext, broadcastLoadingOptions,
                         getAlternateSubFolderOutput(output,
                                 AtlasGeneratorJobGroup.EDGE_SUB.getCacheFolder()),
                         getAlternateSubFolderOutput(output,
-                                AtlasGeneratorJobGroup.FULLY_SLICED.getCacheFolder()),
+                                AtlasGeneratorJobGroup.SLICED.getCacheFolder()),
                         atlasScheme));
         countryAtlasShardsRDD.cache();
         saveAsHadoop(countryAtlasShardsRDD, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF, output);
@@ -278,7 +259,7 @@ public class AtlasGenerator extends SparkJob
         // Remove the sliced atlas RDD from cache since we've cached the final RDD
         try
         {
-            fullySlicedRawAtlasShardsRDD.unpersist();
+            slicedAtlasShardsRDD.unpersist();
         }
         catch (final Exception exception)
         {
