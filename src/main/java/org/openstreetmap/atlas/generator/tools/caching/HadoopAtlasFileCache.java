@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
@@ -18,6 +19,7 @@ import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.caching.ConcurrentResourceCache;
+import org.openstreetmap.atlas.utilities.caching.strategies.CachingStrategy;
 import org.openstreetmap.atlas.utilities.caching.strategies.NamespaceCachingStrategy;
 import org.openstreetmap.atlas.utilities.runtime.Retry;
 import org.openstreetmap.atlas.utilities.scalars.Duration;
@@ -37,21 +39,19 @@ import org.slf4j.LoggerFactory;
  * ResourceCache cache1 = new HadoopAtlasFileCache(parentPath, "namespace1", config);<br>
  * ResourceCache cache2 = new HadoopAtlasFileCache(parentPath, "namespace2", config);<br>
  * <br>
- * // We will be fetching resource behind URI "parentPath/AAA/AAA_1-1-1.atlas"<br>
- * Resource r1 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br>
- * // Assume some event changes the contents behind the URI between get() calls<br>
- * Resource r2 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br>
+ * // We will be fetching resource behind URI "parentPath/AAA/AAA_1-1-1.atlas"<br> Resource r1 =
+ * cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br> // Assume some event changes the contents
+ * behind the URI between get() calls<br> Resource r2 = cache1.get("AAA", new SlippyTile(1, 1,
+ * 1)).get();<br>
  * <br>
  * // This fails since the caches have different namespaces and the resource contents changed<br>
  * Assert.assertEquals(r1.all(), r2.all());<br>
  * <br>
- * // Now we invalidate cache1's copy of the resource<br>
- * cache1.invalidate(getURIForResource(r1));<br>
- * // This call to cache1.get() will re-fetch since we invalidated<br>
- * r1 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();<br>
+ * // Now we invalidate cache1's copy of the resource<br> cache1.invalidate(getURIForResource(r1));<br>
+ * // This call to cache1.get() will re-fetch since we invalidated<br> r1 = cache1.get("AAA", new
+ * SlippyTile(1, 1, 1)).get();<br>
  * <br>
- * // Now this passes since cache1 was refreshed<br>
- * Assert.assertEquals(r1.all(), r2.all());<br>
+ * // Now this passes since cache1 was refreshed<br> Assert.assertEquals(r1.all(), r2.all());<br>
  * </code>
  * <p>
  * The key takeaway here is that <code>r1</code> and <code>r2</code> are not guaranteed to have the
@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  *
  * @author lcram
+ * @author sbhalekar
  */
 public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
@@ -86,6 +87,38 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     {
         this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
                 AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), configuration);
+    }
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param fetcher
+     *            Function to fetch an atlas resource in case of cache miss
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath,
+            final Function<URI, Optional<Resource>> fetcher)
+    {
+        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
+                AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), fetcher);
+    }
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param cachingStrategy
+     *            Strategy to cache an atlas resource
+     * @param fetcher
+     *            Function to fetch an atlas resource in case of cache miss
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath, final CachingStrategy cachingStrategy,
+            final Function<URI, Optional<Resource>> fetcher)
+    {
+        this(parentAtlasPath, AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), cachingStrategy,
+                fetcher);
     }
 
     /**
@@ -136,7 +169,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath, final String namespace,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
-        super(new NamespaceCachingStrategy(namespace)
+        this(parentAtlasPath, atlasScheme, new NamespaceCachingStrategy(namespace)
         {
             @Override
             protected void validateLocalFile(final File localFile)
@@ -173,6 +206,52 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             }
             return Optional.ofNullable(FileSystemHelper.resource(uri.toString(), configuration));
         });
+    }
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param namespace
+     *            The namespace for this cache's resoures
+     * @param atlasScheme
+     *            The scheme used to locate atlas files based on slippy tiles
+     * @param fetcher
+     *            Function to fetch an atlas resource in case of cache miss
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath, final String namespace,
+            final SlippyTilePersistenceScheme atlasScheme,
+            final Function<URI, Optional<Resource>> fetcher)
+    {
+        this(parentAtlasPath, atlasScheme, new NamespaceCachingStrategy(namespace)
+        {
+            @Override
+            protected void validateLocalFile(final File localFile)
+            {
+                // Make sure that the file is not corrupt by loading it.
+                PackedAtlas.load(localFile);
+            }
+        }, fetcher);
+    }
+
+    /**
+     * Create a new cache.
+     *
+     * @param parentAtlasPath
+     *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
+     * @param atlasScheme
+     *            The scheme used to locate atlas files based on slippy tiles
+     * @param cachingStrategy
+     *            Strategy to cache an atlas resource
+     * @param fetcher
+     *            Function to fetch an atlas resource in case of cache miss
+     */
+    public HadoopAtlasFileCache(final String parentAtlasPath,
+            final SlippyTilePersistenceScheme atlasScheme, final CachingStrategy cachingStrategy,
+            final Function<URI, Optional<Resource>> fetcher)
+    {
+        super(cachingStrategy, fetcher);
         this.parentAtlasPath = parentAtlasPath;
         this.atlasScheme = atlasScheme;
     }
