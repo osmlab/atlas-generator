@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceSchemeType;
+import org.openstreetmap.atlas.generator.tools.filesystem.FileSystemHelper;
 import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlasBuilder;
@@ -25,6 +26,7 @@ public class HadoopAtlasFileCacheTest
     public void testSequentially()
     {
         testCache();
+        testCacheWithFetcher();
         testCachesWithDifferentNamespaces();
         testNonexistentResource();
     }
@@ -39,6 +41,59 @@ public class HadoopAtlasFileCacheTest
                 new SlippyTilePersistenceScheme(SlippyTilePersistenceSchemeType.ZZ_SUBFOLDER),
                 new HashMap<>());
         parentAtlasCountry.mkdirs();
+        try
+        {
+            final PackedAtlasBuilder builder1 = new PackedAtlasBuilder();
+            builder1.addPoint(1L, Location.CENTER, Maps.hashMap());
+            final PackedAtlas atlas1 = (PackedAtlas) builder1.get();
+            final StringResource string1 = new StringResource();
+            atlas1.save(string1);
+
+            final PackedAtlasBuilder builder2 = new PackedAtlasBuilder();
+            builder2.addPoint(2L, Location.CENTER, Maps.hashMap());
+            final PackedAtlas atlas2 = (PackedAtlas) builder2.get();
+            final StringResource string2 = new StringResource();
+            atlas2.save(string2);
+
+            final File atlasFile1 = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
+            atlas1.save(atlasFile1);
+            final File atlasFile2 = parentAtlasCountry.child("2/AAA_2-2-2.atlas");
+            atlas2.save(atlasFile2);
+
+            // cache miss, this will create the cached copy
+            final Resource resource1 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
+            final Resource resource2 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
+
+            Assert.assertEquals(string1.all(), resource1.all());
+            Assert.assertEquals(string2.all(), resource2.all());
+
+            // cache hit, using cached copy
+            final Resource resource3 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
+            final Resource resource4 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
+
+            Assert.assertEquals(string1.all(), resource3.all());
+            Assert.assertEquals(string2.all(), resource4.all());
+        }
+        finally
+        {
+            cache.invalidate();
+            parent.deleteRecursively();
+        }
+    }
+
+    private void testCacheWithFetcher()
+    {
+        final File parent = File.temporaryFolder();
+        final File parentAtlas = new File(parent + "/atlas");
+        final File parentAtlasCountry = new File(parentAtlas + "/AAA");
+        final String fullParentPathURI = "file://" + parentAtlas.toString();
+
+        final HadoopAtlasFileCache cache = new HadoopAtlasFileCache(fullParentPathURI, "namespace",
+                new SlippyTilePersistenceScheme(SlippyTilePersistenceSchemeType.ZZ_SUBFOLDER),
+                uri -> Optional
+                        .ofNullable(FileSystemHelper.resource(uri.toString(), new HashMap<>())));
+        parentAtlasCountry.mkdirs();
+
         try
         {
             final PackedAtlasBuilder builder1 = new PackedAtlasBuilder();
