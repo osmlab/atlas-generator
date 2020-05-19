@@ -306,7 +306,7 @@ public final class AtlasGeneratorHelper implements Serializable
             // Set the country code that is being processed!
             final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                     .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
-            atlasLoadingOption.setAdditionalCountryCodes(countryName);
+            atlasLoadingOption.setCountryCode(countryName);
 
             // Build the PbfLoader
             final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries.getValue(),
@@ -477,7 +477,7 @@ public final class AtlasGeneratorHelper implements Serializable
                 // Set the country code that is being processed!
                 final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                         .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
-                atlasLoadingOption.setAdditionalCountryCodes(countryShard.getCountry());
+                atlasLoadingOption.setCountryCode(countryShard.getCountry());
                 slicedAtlas = new RawAtlasSlicer(atlasLoadingOption, countryShard.getShard(),
                         sharding.getValue(), atlasFetcher).slice();
             }
