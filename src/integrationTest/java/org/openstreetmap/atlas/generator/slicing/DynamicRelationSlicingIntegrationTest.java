@@ -104,12 +104,10 @@ public class DynamicRelationSlicingIntegrationTest
         // the operation we are testing
 
         final Atlas relationSlicedAtlasDEF = new RawAtlasSlicer(
-                AtlasLoadingOption.createOptionWithAllEnabled(boundaryMap)
-                        .setAdditionalCountryCodes("DEF"),
+                AtlasLoadingOption.createOptionWithAllEnabled(boundaryMap).setCountryCode("DEF"),
                 initialShardDEF.getShard(), sharding, atlasFetcherDEF).slice();
         final Atlas relationSlicedAtlasABC = new RawAtlasSlicer(
-                AtlasLoadingOption.createOptionWithAllEnabled(boundaryMap)
-                        .setAdditionalCountryCodes("ABC"),
+                AtlasLoadingOption.createOptionWithAllEnabled(boundaryMap).setCountryCode("ABC"),
                 initialShardABC.getShard(), sharding, atlasFetcherABC).slice();
 
         // Sum the areas and check it is the size expected

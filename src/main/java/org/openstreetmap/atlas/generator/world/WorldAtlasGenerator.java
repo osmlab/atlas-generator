@@ -126,8 +126,7 @@ public class WorldAtlasGenerator extends Command
 
         // Prepare
         final AtlasLoadingOption loadingOptions = AtlasLoadingOption
-                .createOptionWithAllEnabled(countryBoundaryMap)
-                .setAdditionalCountryCodes(countryBoundaryMap.allCountryNames());
+                .createOptionWithAllEnabled(countryBoundaryMap);
 
         if (edgeConfiguration != null)
         {
