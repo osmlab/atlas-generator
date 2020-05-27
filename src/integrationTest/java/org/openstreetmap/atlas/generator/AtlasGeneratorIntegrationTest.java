@@ -3,9 +3,12 @@ package org.openstreetmap.atlas.generator;
 import java.io.IOException;
 
 import org.apache.hadoop.fs.Path;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
@@ -51,7 +54,14 @@ public class AtlasGeneratorIntegrationTest
     public static final String SLICING_CONFIGURATION = CONFIGURATION
             + "/atlas-relation-slicing.json";
 
-    static
+    @After
+    public void clean()
+    {
+        ResourceFileSystem.clear();
+    }
+
+    @Before
+    public void setup()
     {
         ResourceFileSystem.registerResourceExtractionClass(AtlasGeneratorIntegrationTest.class);
         ResourceFileSystem.addResource(PBF_233, "DMA_cutout.osm.pbf");
@@ -80,6 +90,10 @@ public class AtlasGeneratorIntegrationTest
     @Test
     public void testAtlasGeneration()
     {
+        final StringList sparkConfiguration = new StringList();
+        ResourceFileSystem.simpleconfiguration().entrySet()
+                .forEach(entry -> sparkConfiguration.add(entry.getKey() + "=" + entry.getValue()));
+
         final StringList arguments = new StringList();
         arguments.add("-master=local");
         arguments.add("-output=" + OUTPUT);
@@ -107,8 +121,7 @@ public class AtlasGeneratorIntegrationTest
                 + "=" + SHOULD_ALWAYS_SLICE_CONFIGURATION);
         arguments.add("-" + AtlasGeneratorParameters.SLICING_CONFIGURATION.getName() + "="
                 + SLICING_CONFIGURATION);
-        arguments.add(
-                "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
+        arguments.add("-" + SparkJob.SPARK_OPTIONS.getName() + "=" + sparkConfiguration.join(","));
 
         final String[] args = new String[arguments.size()];
         for (int i = 0; i < arguments.size(); i++)
@@ -172,6 +185,10 @@ public class AtlasGeneratorIntegrationTest
     @Test
     public void testGeoHashingAtlasGeneration()
     {
+        final StringList sparkConfiguration = new StringList();
+        ResourceFileSystem.simpleconfiguration().entrySet()
+                .forEach(entry -> sparkConfiguration.add(entry.getKey() + "=" + entry.getValue()));
+
         final StringList arguments = new StringList();
         arguments.add("-master=local");
         arguments.add("-output=" + OUTPUT);
@@ -184,8 +201,7 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-copyShardingAndBoundaries=true");
         arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
         arguments.add("-configuredFilterName=" + FILTER_NAME);
-        arguments.add(
-                "-sparkOptions=fs.resource.impl=" + ResourceFileSystem.class.getCanonicalName());
+        arguments.add("-" + SparkJob.SPARK_OPTIONS.getName() + "=" + sparkConfiguration.join(","));
 
         final String[] args = new String[arguments.size()];
         for (int i = 0; i < arguments.size(); i++)
