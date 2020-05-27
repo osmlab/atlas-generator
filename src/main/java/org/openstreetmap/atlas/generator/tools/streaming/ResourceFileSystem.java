@@ -184,6 +184,13 @@ public class ResourceFileSystem extends FileSystem
         final Resource resource = STORE.get(hadoopPath.toString());
         if (resource == null)
         {
+            for (final String filePath : STORE.keySet())
+            {
+                if (filePath.startsWith(hadoopPath.toString()))
+                {
+                    return new FileStatus(0, true, 0, 0, 0, hadoopPath);
+                }
+            }
             throw new FileNotFoundException();
         }
         return new FileStatus(resource.length(), false, 1, Long.MAX_VALUE, 0, hadoopPath);
