@@ -38,6 +38,7 @@ public class AtlasShardVerifierTest
         final List<String> arguments = new ArrayList<>();
         arguments.add("-" + AtlasShardVerifier.ATLAS_FOLDER.getName() + "=" + INPUT);
         arguments.add("-" + AtlasShardVerifier.OUTPUT.getName() + "=" + OUTPUT);
+        arguments.add("-" + AtlasShardVerifier.COUNTRIES.getName() + "=ABC");
         arguments.add("-" + AtlasShardVerifier.EXPECTED_SHARDS.getName() + "=" + CHECK);
         arguments.add("-" + AtlasShardVerifier.SPARK_OPTIONS.getName() + "="
                 + sparkConfiguration.join(","));
@@ -86,6 +87,26 @@ public class AtlasShardVerifierTest
         new AtlasShardVerifier().runWithoutQuitting(getArguments());
 
         Assert.assertEquals("ABC_10-11-15",
+                FileSystemHelper.resource(OUTPUT, ResourceFileSystem.simpleconfiguration()).all());
+    }
+
+    @Test
+    public void testCountryFiltering()
+    {
+        final WritableResource atlas = new StringResource("blah");
+
+        ResourceFileSystem.addResource(CHECK + "/ABC/ABC_10-11-12.atlas", atlas);
+        ResourceFileSystem.addResource(CHECK + "/ABC/ABC_10-11-13.atlas", atlas);
+        ResourceFileSystem.addResource(CHECK + "/DEF/DEF_10-11-14.atlas", atlas);
+        ResourceFileSystem.addResource(CHECK + "/DEF/DEF_10-11-15.atlas", atlas);
+
+        ResourceFileSystem.addResource(INPUT + "/ABC/ABC_10-11-12.atlas", atlas);
+        ResourceFileSystem.addResource(INPUT + "/XYZ/XYZ_10-11-13.atlas", atlas);
+        ResourceFileSystem.addResource(INPUT + "/DEF/DEF_10-11-14.atlas", atlas);
+
+        new AtlasShardVerifier().runWithoutQuitting(getArguments());
+
+        Assert.assertEquals("ABC_10-11-13",
                 FileSystemHelper.resource(OUTPUT, ResourceFileSystem.simpleconfiguration()).all());
     }
 }

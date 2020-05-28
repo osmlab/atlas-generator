@@ -13,6 +13,7 @@ import org.openstreetmap.atlas.generator.tools.spark.converters.SparkOptionsStri
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
 import org.openstreetmap.atlas.streaming.writers.SafeBufferedWriter;
+import org.openstreetmap.atlas.utilities.collections.Sets;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command;
@@ -42,6 +43,11 @@ public class AtlasShardVerifier extends Command
             "Depth to list recursive folders", Integer::valueOf, Optionality.OPTIONAL, "2");
     public static final Switch<Pattern> PATH_FILTER_REGEX = new Switch<>("pathFilterRegex",
             "Regex to filter paths to list", Pattern::compile, Optionality.OPTIONAL, ".*\\.atlas");
+    public static final Switch<Set<String>> COUNTRIES = new Switch<>("countries",
+            "Comma separated list of countries to be checked for",
+            value -> "".equals(value) ? Sets.hashSet()
+                    : StringList.split(value, ",").stream().collect(Collectors.toSet()),
+            Optionality.OPTIONAL, "");
 
     private static final Logger logger = LoggerFactory.getLogger(AtlasShardVerifier.class);
 
@@ -56,6 +62,8 @@ public class AtlasShardVerifier extends Command
         final String atlasFolder = (String) command.get(ATLAS_FOLDER);
         final int depth = (int) command.get(LIST_DEPTH);
         final Pattern pattern = (Pattern) command.get(PATH_FILTER_REGEX);
+        @SuppressWarnings("unchecked")
+        final Set<String> countries = (Set<String>) command.get(COUNTRIES);
         logger.debug("Using regex filter \"{}\"", pattern);
         final PathFilter filter = path -> pattern.matcher(path.toString()).matches();
         @SuppressWarnings("unchecked")
@@ -65,7 +73,7 @@ public class AtlasShardVerifier extends Command
                 .writableResource((String) command.get(OUTPUT), sparkConfiguration);
 
         final String expectedShardsPath = (String) command.get(EXPECTED_SHARDS);
-        final Set<CountryShard> expectedShards;
+        Set<CountryShard> expectedShards;
         if (FileSystemHelper.isFile(expectedShardsPath, sparkConfiguration))
         {
             logger.trace("isFile: {}", expectedShardsPath);
@@ -82,8 +90,16 @@ public class AtlasShardVerifier extends Command
         {
             throw new CoreException("{} does not exist.", expectedShardsPath);
         }
+        expectedShards = expectedShards.stream()
+                .filter(countryShard -> countries.isEmpty()
+                        || countries.contains(countryShard.getCountry()))
+                .collect(Collectors.toSet());
         final Set<CountryShard> existingShards = shardsFromFolder(atlasFolder, sparkConfiguration,
-                depth, filter);
+                depth, filter)
+                        .stream()
+                        .filter(countryShard -> countries.isEmpty()
+                                || countries.contains(countryShard.getCountry()))
+                        .collect(Collectors.toSet());
         expectedShards.removeAll(existingShards);
         try (SafeBufferedWriter writer = output.writer())
         {
@@ -100,7 +116,7 @@ public class AtlasShardVerifier extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(ATLAS_FOLDER, EXPECTED_SHARDS, OUTPUT, SPARK_OPTIONS,
-                LIST_DEPTH, PATH_FILTER_REGEX);
+                LIST_DEPTH, PATH_FILTER_REGEX, COUNTRIES);
     }
 
     private Set<CountryShard> shardsFromFolder(final String expectedShardsPath,
