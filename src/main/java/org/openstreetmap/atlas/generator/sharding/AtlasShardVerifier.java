@@ -110,11 +110,8 @@ public class AtlasShardVerifier extends Command
         final Time start = Time.now();
         final Set<CountryShard> result = FileSystemHelper
                 .streamPathsRecursively(expectedShardsPath, sparkConfiguration, filter, depth)
-                .map(Path::getName)
-                .map(name -> StringList.split(name, "/").last()
-                        .orElseThrow(() -> new CoreException("Path {} not recognized!", name)))
-                .map(name -> StringList.split(name, ".").get(0)).map(CountryShard::forName)
-                .collect(Collectors.toSet());
+                .map(Path::getName).map(name -> StringList.split(name, ".").get(0))
+                .map(CountryShard::forName).collect(Collectors.toSet());
         logger.debug("Took {} to find {} countryShards in {}", start.elapsedSince(), result.size(),
                 expectedShardsPath);
         return result;
