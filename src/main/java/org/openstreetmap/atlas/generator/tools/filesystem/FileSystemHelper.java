@@ -100,6 +100,31 @@ public final class FileSystemHelper
         }
     }
 
+    public static boolean isDirectory(final String path, final Map<String, String> configuration)
+    {
+        try
+        {
+            return new FileSystemCreator().get(path, configuration).isDirectory(new Path(path));
+        }
+        catch (final IOException exception)
+        {
+            throw new CoreException("Failed to determine existence of directory {}", path,
+                    exception);
+        }
+    }
+
+    public static boolean isFile(final String path, final Map<String, String> configuration)
+    {
+        try
+        {
+            return new FileSystemCreator().get(path, configuration).isFile(new Path(path));
+        }
+        catch (final IOException exception)
+        {
+            throw new CoreException("Failed to determine existence of file {}", path, exception);
+        }
+    }
+
     /**
      * @param directory
      *            The directory from which to recursively load files
@@ -335,10 +360,27 @@ public final class FileSystemHelper
     public static Stream<Path> streamPathsRecursively(final String directory,
             final Map<String, String> configuration, final PathFilter filter)
     {
+        return streamPathsRecursively(directory, configuration, filter, HDFSWalker.WALK_ALL);
+    }
+
+    /**
+     * @param directory
+     *            The directory from which to recursively stream paths
+     * @param configuration
+     *            The configuration (containing the filesystem definition)
+     * @param filter
+     *            The path filter. If null, all the paths will be returned.
+     * @param maxDepth
+     *            The maximum depth to look for
+     * @return a stream of {@link Path}s
+     */
+    public static Stream<Path> streamPathsRecursively(final String directory,
+            final Map<String, String> configuration, final PathFilter filter, final int maxDepth)
+    {
         final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
-        return new HDFSWalker().usingConfiguration(fileSystem.getConf()).walk(new Path(directory))
-                .map(HDFSWalker.debug(path -> logger.info("{}", path))).map(FileStatus::getPath)
-                .filter(path -> filter == null || filter.accept(path));
+        return new HDFSWalker(maxDepth).usingConfiguration(fileSystem.getConf())
+                .walk(new Path(directory)).map(HDFSWalker.debug(path -> logger.trace("{}", path)))
+                .map(FileStatus::getPath).filter(path -> filter == null || filter.accept(path));
     }
 
     /**
