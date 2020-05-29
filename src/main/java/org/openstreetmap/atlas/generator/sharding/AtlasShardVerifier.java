@@ -56,6 +56,13 @@ public class AtlasShardVerifier extends Command
         new AtlasShardVerifier().run(args);
     }
 
+    public Map<String, String> sparkOptions(final CommandMap command)
+    {
+        @SuppressWarnings("unchecked")
+        final Map<String, String> result = (Map<String, String>) command.get(SPARK_OPTIONS);
+        return result;
+    }
+
     @Override
     protected int onRun(final CommandMap command)
     {
@@ -66,9 +73,7 @@ public class AtlasShardVerifier extends Command
         final Set<String> countries = (Set<String>) command.get(COUNTRIES);
         logger.debug("Using regex filter \"{}\"", pattern);
         final PathFilter filter = path -> pattern.matcher(path.toString()).matches();
-        @SuppressWarnings("unchecked")
-        final Map<String, String> sparkConfiguration = (Map<String, String>) command
-                .get(SPARK_OPTIONS);
+        final Map<String, String> sparkConfiguration = sparkOptions(command);
         final WritableResource output = FileSystemHelper
                 .writableResource((String) command.get(OUTPUT), sparkConfiguration);
 
