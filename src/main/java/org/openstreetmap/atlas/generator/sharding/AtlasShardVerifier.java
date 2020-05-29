@@ -2,6 +2,7 @@ package org.openstreetmap.atlas.generator.sharding;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -118,6 +119,17 @@ public class AtlasShardVerifier extends Command
         catch (final Exception e)
         {
             throw new CoreException("Verification failed", e);
+        }
+        if (!expectedShards.isEmpty())
+        {
+            if (logger.isErrorEnabled())
+            {
+                logger.error("Missing shards:\n{}",
+                        new StringList(new TreeSet<>(expectedShards.stream()
+                                .map(CountryShard::getName).collect(Collectors.toSet())))
+                                        .join(System.lineSeparator()));
+            }
+            return 1;
         }
         return 0;
     }
