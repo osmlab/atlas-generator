@@ -56,6 +56,11 @@ public class AtlasShardVerifier extends Command
         new AtlasShardVerifier().run(args);
     }
 
+    public String getPathFor(final CommandMap command, final Switch<?> zwitch)
+    {
+        return (String) command.get(zwitch);
+    }
+
     public Map<String, String> sparkOptions(final CommandMap command)
     {
         @SuppressWarnings("unchecked")
@@ -66,7 +71,7 @@ public class AtlasShardVerifier extends Command
     @Override
     protected int onRun(final CommandMap command)
     {
-        final String atlasFolder = (String) command.get(ATLAS_FOLDER);
+        final String atlasFolder = getPathFor(command, ATLAS_FOLDER);
         final int depth = (int) command.get(LIST_DEPTH);
         final Pattern pattern = (Pattern) command.get(PATH_FILTER_REGEX);
         @SuppressWarnings("unchecked")
@@ -75,9 +80,9 @@ public class AtlasShardVerifier extends Command
         final PathFilter filter = path -> pattern.matcher(path.toString()).matches();
         final Map<String, String> sparkConfiguration = sparkOptions(command);
         final WritableResource output = FileSystemHelper
-                .writableResource((String) command.get(OUTPUT), sparkConfiguration);
+                .writableResource(getPathFor(command, OUTPUT), sparkConfiguration);
 
-        final String expectedShardsPath = (String) command.get(EXPECTED_SHARDS);
+        final String expectedShardsPath = getPathFor(command, EXPECTED_SHARDS);
         Set<CountryShard> expectedShards;
         if (FileSystemHelper.isFile(expectedShardsPath, sparkConfiguration))
         {
