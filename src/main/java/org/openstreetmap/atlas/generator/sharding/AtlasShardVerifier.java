@@ -2,6 +2,7 @@ package org.openstreetmap.atlas.generator.sharding;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -56,23 +57,33 @@ public class AtlasShardVerifier extends Command
         new AtlasShardVerifier().run(args);
     }
 
+    public String getPathFor(final CommandMap command, final Switch<?> zwitch)
+    {
+        return (String) command.get(zwitch);
+    }
+
+    public Map<String, String> sparkOptions(final CommandMap command)
+    {
+        @SuppressWarnings("unchecked")
+        final Map<String, String> result = (Map<String, String>) command.get(SPARK_OPTIONS);
+        return result;
+    }
+
     @Override
     protected int onRun(final CommandMap command)
     {
-        final String atlasFolder = (String) command.get(ATLAS_FOLDER);
+        final String atlasFolder = getPathFor(command, ATLAS_FOLDER);
         final int depth = (int) command.get(LIST_DEPTH);
         final Pattern pattern = (Pattern) command.get(PATH_FILTER_REGEX);
         @SuppressWarnings("unchecked")
         final Set<String> countries = (Set<String>) command.get(COUNTRIES);
         logger.debug("Using regex filter \"{}\"", pattern);
         final PathFilter filter = path -> pattern.matcher(path.toString()).matches();
-        @SuppressWarnings("unchecked")
-        final Map<String, String> sparkConfiguration = (Map<String, String>) command
-                .get(SPARK_OPTIONS);
+        final Map<String, String> sparkConfiguration = sparkOptions(command);
         final WritableResource output = FileSystemHelper
-                .writableResource((String) command.get(OUTPUT), sparkConfiguration);
+                .writableResource(getPathFor(command, OUTPUT), sparkConfiguration);
 
-        final String expectedShardsPath = (String) command.get(EXPECTED_SHARDS);
+        final String expectedShardsPath = getPathFor(command, EXPECTED_SHARDS);
         Set<CountryShard> expectedShards;
         if (FileSystemHelper.isFile(expectedShardsPath, sparkConfiguration))
         {
@@ -108,6 +119,17 @@ public class AtlasShardVerifier extends Command
         catch (final Exception e)
         {
             throw new CoreException("Verification failed", e);
+        }
+        if (!expectedShards.isEmpty())
+        {
+            if (logger.isErrorEnabled())
+            {
+                logger.error("Missing shards:\n{}",
+                        new StringList(new TreeSet<>(expectedShards.stream()
+                                .map(CountryShard::getName).collect(Collectors.toSet())))
+                                        .join(System.lineSeparator()));
+            }
+            return 1;
         }
         return 0;
     }
