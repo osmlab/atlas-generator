@@ -27,7 +27,7 @@ public class HDFSWalkerTest
     {
         final List<FileStatus> fileStatusList = new ArrayList<>();
         final List<String> debugStrings = new ArrayList<>();
-        new HDFSWalker(depth).walk(new Path(directory.getPath()))
+        new HDFSWalker(depth).walk(new Path(directory.getPathString()))
                 .map(HDFSWalker.debug(debugStrings::add)).forEach(status ->
                 {
                     fileStatusList.add(status);
@@ -77,7 +77,7 @@ public class HDFSWalkerTest
         Assert.assertFalse(results.getSecond().isEmpty());
         Assert.assertEquals(1, results.getSecond().size());
         Assert.assertEquals(
-                String.format("[F] file:%s/%s", directory.getAbsolutePath(), "test.tmp"),
+                String.format("[F] file:%s/%s", directory.getAbsolutePathString(), "test.tmp"),
                 results.getSecond().get(0));
 
         // Clean up
@@ -90,7 +90,6 @@ public class HDFSWalkerTest
         final File directory = File.temporaryFolder();
         directory.child("test.tmp").writeAndClose("test file");
         final File childDirectory = directory.child("child-directory");
-        Assert.assertTrue(childDirectory.mkdirs());
         childDirectory.child("file-in-child-directory.tmp").writeAndClose("test child file");
 
         // Verify file statuses
@@ -101,12 +100,12 @@ public class HDFSWalkerTest
         // Verify debug strings
         Assert.assertFalse(results.getSecond().isEmpty());
         Assert.assertEquals(3, results.getSecond().size());
-        Assert.assertTrue(results.getSecond().contains(
-                String.format("[D] file:%s/%s", directory.getAbsolutePath(), "child-directory")));
+        Assert.assertTrue(results.getSecond().contains(String.format("[D] file:%s/%s",
+                directory.getAbsolutePathString(), "child-directory")));
         Assert.assertTrue(results.getSecond().contains(String.format("[F] file:%s/%s",
-                childDirectory.getAbsolutePath(), "file-in-child-directory.tmp")));
+                childDirectory.getAbsolutePathString(), "file-in-child-directory.tmp")));
         Assert.assertTrue(results.getSecond().contains(
-                String.format("[F] file:%s/%s", directory.getAbsolutePath(), "test.tmp")));
+                String.format("[F] file:%s/%s", directory.getAbsolutePathString(), "test.tmp")));
 
         // Clean up
         directory.deleteRecursively();
