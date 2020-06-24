@@ -82,14 +82,12 @@ public final class AtlasGeneratorParameters
             "shouldAlwaysSliceConfiguration",
             "The path to the configuration file that defines which entities on which country slicing will"
                     + " always be attempted regardless of the number of countries it intersects according to the"
-                    + " country boundary map's grid index.", StringConverter.IDENTITY,
-            Optionality.OPTIONAL);
+                    + " country boundary map's grid index.", StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
             "shouldIncludeFilteredOutputConfiguration",
             "The path to the configuration file that defines which will be included in filtered output."
                     + " Filtered output will only be generated if this switch is specified, and will be"
-                    + " stored in a separate subdirectory.", StringConverter.IDENTITY,
-            Optionality.OPTIONAL);
+                    + " stored in a separate subdirectory.", StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<Boolean> LINE_DELIMITED_GEOJSON_OUTPUT = new Switch<>(
             "lineDelimitedGeojsonOutput",
             "Output each shard as a line delimited geojson output file in the ldgeojson folder.",
@@ -105,19 +103,19 @@ public final class AtlasGeneratorParameters
     public static final Switch<Boolean> STATISTICS = new Switch<>("statistics",
             "Whether to run the shard statistics and country statistics", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
-    
+
     public static ConfiguredFilter getConfiguredFilterFrom(final String name, final String path,
             final Map<String, String> configurationMap)
     {
         return getConfiguredFilterFrom(name, SparkJob.resource(path, configurationMap));
     }
-    
+
     public static ConfiguredFilter getConfiguredFilterFrom(final String name,
             final Resource configurationResource)
     {
         return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
     }
-    
+
     public static List<ConfiguredFilter> getConfiguredFilterListFrom(final StringList name,
             final Resource configurationResource)
     {
@@ -126,7 +124,7 @@ public final class AtlasGeneratorParameters
                 ConfiguredFilter.from(n, getStandardConfigurationFrom(configurationResource))));
         return filters;
     }
-    
+
     public static List<ConfiguredFilter> getConfiguredFilterListFrom(final StringList names,
             final StringList paths, final Map<String, String> configurationMap)
     {
@@ -149,52 +147,52 @@ public final class AtlasGeneratorParameters
         
         return filters;
     }
-    
+
     public static StandardConfiguration getStandardConfigurationFrom(final String path,
             final Map<String, String> configurationMap)
     {
         return getStandardConfigurationFrom(SparkJob.resource(path, configurationMap));
     }
-    
+
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
     {
         return new StandardConfiguration(configurationResource);
     }
-    
+
     public static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
             final Map<String, String> configurationMap)
     {
         return getTaggableFilterFrom(SparkJob.resource(path, configurationMap));
     }
-    
+
     public static ConfiguredTaggableFilter getTaggableFilterFrom(
             final Resource configurationResource)
     {
         return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
     }
-    
+
     public static boolean runStatistics(final CommandMap command)
     {
         return (boolean) command.get(STATISTICS);
     }
-    
+
     protected static AtlasLoadingOption buildAtlasLoadingOption(final CountryBoundaryMap boundaries,
             final Map<String, String> properties)
     {
-        final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption.createOptionWithAllEnabled(
-                boundaries);
+        final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
+                .createOptionWithAllEnabled(boundaries);
         
         // Apply all configurations
         final String edgeConfiguration = properties.get(EDGE_CONFIGURATION.getName());
         if (edgeConfiguration != null)
         {
-            atlasLoadingOption.setEdgeFilter(
-                    getTaggableFilterFrom(new StringResource(edgeConfiguration)));
+            atlasLoadingOption
+                .setEdgeFilter(getTaggableFilterFrom(new StringResource(edgeConfiguration)));
         }
         
-        final String waySectioningConfiguration = properties.get(
-                WAY_SECTIONING_CONFIGURATION.getName());
+        final String waySectioningConfiguration = properties
+                .get(WAY_SECTIONING_CONFIGURATION.getName());
         if (waySectioningConfiguration != null)
         {
             atlasLoadingOption.setWaySectionFilter(
@@ -215,16 +213,16 @@ public final class AtlasGeneratorParameters
                     getTaggableFilterFrom(new StringResource(pbfWayConfiguration)));
         }
         
-        final String pbfRelationConfiguration = properties.get(
-                PBF_RELATION_CONFIGURATION.getName());
+        final String pbfRelationConfiguration = properties
+                .get(PBF_RELATION_CONFIGURATION.getName());
         if (pbfRelationConfiguration != null)
         {
             atlasLoadingOption.setOsmPbfRelationFilter(
                     getTaggableFilterFrom(new StringResource(pbfRelationConfiguration)));
         }
         
-        final String forceSlicingConfiguration = properties.get(
-                SHOULD_ALWAYS_SLICE_CONFIGURATION.getName());
+        final String forceSlicingConfiguration = properties
+                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION.getName());
         if (forceSlicingConfiguration != null)
         {
             atlasLoadingOption.setRelationSlicingFilter(
@@ -240,7 +238,7 @@ public final class AtlasGeneratorParameters
         
         return atlasLoadingOption;
     }
-    
+
     protected static Map<String, String> extractAtlasLoadingProperties(final CommandMap command,
             final Map<String, String> sparkContext)
     {
@@ -249,39 +247,35 @@ public final class AtlasGeneratorParameters
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
         
         final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
-        propertyMap.put(EDGE_CONFIGURATION.getName(), edgeConfiguration == null ?
-                null :
-                SparkJob.resource(edgeConfiguration, sparkContext).all());
-        
-        final String waySectioningConfiguration = (String) command.get(
-                WAY_SECTIONING_CONFIGURATION);
-        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(), waySectioningConfiguration == null ?
-                null :
-                SparkJob.resource(waySectioningConfiguration, sparkContext).all());
+        propertyMap.put(EDGE_CONFIGURATION.getName(), edgeConfiguration == null ? null
+                : SparkJob.resource(edgeConfiguration, sparkContext).all());
+
+        final String waySectioningConfiguration = (String) command
+                .get(WAY_SECTIONING_CONFIGURATION);
+        propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(),
+                waySectioningConfiguration == null ? null
+                        : SparkJob.resource(waySectioningConfiguration, sparkContext).all());
         
         final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
-        propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ?
-                null :
-                SparkJob.resource(pbfNodeConfiguration, sparkContext).all());
+        propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
+                : SparkJob.resource(pbfNodeConfiguration, sparkContext).all());
         
         final String pbfWayConfiguration = (String) command.get(PBF_WAY_CONFIGURATION);
-        propertyMap.put(PBF_WAY_CONFIGURATION.getName(), pbfWayConfiguration == null ?
-                null :
-                SparkJob.resource(pbfWayConfiguration, sparkContext).all());
+        propertyMap.put(PBF_WAY_CONFIGURATION.getName(), pbfWayConfiguration == null ? null
+                : SparkJob.resource(pbfWayConfiguration, sparkContext).all());
         
         final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
-        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(), pbfRelationConfiguration == null ?
-                null :
-                SparkJob.resource(pbfRelationConfiguration, sparkContext).all());
+        propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
+                pbfRelationConfiguration == null ? null
+                        : SparkJob.resource(pbfRelationConfiguration, sparkContext).all());
         
         final String slicingConfiguration = (String) command.get(SLICING_CONFIGURATION);
-        propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ?
-                null :
-                SparkJob.resource(slicingConfiguration, sparkContext).all());
+        propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ? null
+                : SparkJob.resource(slicingConfiguration, sparkContext).all());
         
         return propertyMap;
     }
-    
+
     protected static SwitchList switches()
     {
         return new SwitchList().with(COUNTRIES, COUNTRY_SHAPES, SHARDING_TYPE, PBF_PATH, PBF_SCHEME,
@@ -293,7 +287,7 @@ public final class AtlasGeneratorParameters
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
                 CONFIGURED_FILTER_NAME, STATISTICS);
     }
-    
+
     private AtlasGeneratorParameters()
     {
     }
