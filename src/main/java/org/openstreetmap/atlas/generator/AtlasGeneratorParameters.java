@@ -82,12 +82,14 @@ public final class AtlasGeneratorParameters
             "shouldAlwaysSliceConfiguration",
             "The path to the configuration file that defines which entities on which country slicing will"
                     + " always be attempted regardless of the number of countries it intersects according to the"
-                    + " country boundary map's grid index.", StringConverter.IDENTITY, Optionality.OPTIONAL);
+                    + " country boundary map's grid index.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
             "shouldIncludeFilteredOutputConfiguration",
             "The path to the configuration file that defines which will be included in filtered output."
                     + " Filtered output will only be generated if this switch is specified, and will be"
-                    + " stored in a separate subdirectory.", StringConverter.IDENTITY, Optionality.OPTIONAL);
+                    + " stored in a separate subdirectory.",
+            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<Boolean> LINE_DELIMITED_GEOJSON_OUTPUT = new Switch<>(
             "lineDelimitedGeojsonOutput",
             "Output each shard as a line delimited geojson output file in the ldgeojson folder.",
@@ -182,15 +184,15 @@ public final class AtlasGeneratorParameters
     {
         final AtlasLoadingOption atlasLoadingOption = AtlasLoadingOption
                 .createOptionWithAllEnabled(boundaries);
-        
+
         // Apply all configurations
         final String edgeConfiguration = properties.get(EDGE_CONFIGURATION.getName());
         if (edgeConfiguration != null)
         {
             atlasLoadingOption
-                .setEdgeFilter(getTaggableFilterFrom(new StringResource(edgeConfiguration)));
+                    .setEdgeFilter(getTaggableFilterFrom(new StringResource(edgeConfiguration)));
         }
-        
+
         final String waySectioningConfiguration = properties
                 .get(WAY_SECTIONING_CONFIGURATION.getName());
         if (waySectioningConfiguration != null)
@@ -198,21 +200,21 @@ public final class AtlasGeneratorParameters
             atlasLoadingOption.setWaySectionFilter(
                     getTaggableFilterFrom(new StringResource(waySectioningConfiguration)));
         }
-        
+
         final String pbfNodeConfiguration = properties.get(PBF_NODE_CONFIGURATION.getName());
         if (pbfNodeConfiguration != null)
         {
             atlasLoadingOption.setOsmPbfNodeFilter(
                     getTaggableFilterFrom(new StringResource(pbfNodeConfiguration)));
         }
-        
+
         final String pbfWayConfiguration = properties.get(PBF_WAY_CONFIGURATION.getName());
         if (pbfWayConfiguration != null)
         {
             atlasLoadingOption.setOsmPbfWayFilter(
                     getTaggableFilterFrom(new StringResource(pbfWayConfiguration)));
         }
-        
+
         final String pbfRelationConfiguration = properties
                 .get(PBF_RELATION_CONFIGURATION.getName());
         if (pbfRelationConfiguration != null)
@@ -220,7 +222,7 @@ public final class AtlasGeneratorParameters
             atlasLoadingOption.setOsmPbfRelationFilter(
                     getTaggableFilterFrom(new StringResource(pbfRelationConfiguration)));
         }
-        
+
         final String forceSlicingConfiguration = properties
                 .get(SHOULD_ALWAYS_SLICE_CONFIGURATION.getName());
         if (forceSlicingConfiguration != null)
@@ -228,14 +230,14 @@ public final class AtlasGeneratorParameters
             atlasLoadingOption.setRelationSlicingFilter(
                     getTaggableFilterFrom(new StringResource(forceSlicingConfiguration)));
         }
-        
+
         final String slicingConfiguration = properties.get(SLICING_CONFIGURATION.getName());
         if (slicingConfiguration != null)
         {
             atlasLoadingOption.setRelationSlicingFilter(
                     getTaggableFilterFrom(new StringResource(slicingConfiguration)));
         }
-        
+
         return atlasLoadingOption;
     }
 
@@ -245,7 +247,7 @@ public final class AtlasGeneratorParameters
         final Map<String, String> propertyMap = new HashMap<>();
         propertyMap.put(CODE_VERSION.getName(), (String) command.get(CODE_VERSION));
         propertyMap.put(DATA_VERSION.getName(), (String) command.get(DATA_VERSION));
-        
+
         final String edgeConfiguration = (String) command.get(EDGE_CONFIGURATION);
         propertyMap.put(EDGE_CONFIGURATION.getName(), edgeConfiguration == null ? null
                 : SparkJob.resource(edgeConfiguration, sparkContext).all());
@@ -255,24 +257,24 @@ public final class AtlasGeneratorParameters
         propertyMap.put(WAY_SECTIONING_CONFIGURATION.getName(),
                 waySectioningConfiguration == null ? null
                         : SparkJob.resource(waySectioningConfiguration, sparkContext).all());
-        
+
         final String pbfNodeConfiguration = (String) command.get(PBF_NODE_CONFIGURATION);
         propertyMap.put(PBF_NODE_CONFIGURATION.getName(), pbfNodeConfiguration == null ? null
                 : SparkJob.resource(pbfNodeConfiguration, sparkContext).all());
-        
+
         final String pbfWayConfiguration = (String) command.get(PBF_WAY_CONFIGURATION);
         propertyMap.put(PBF_WAY_CONFIGURATION.getName(), pbfWayConfiguration == null ? null
                 : SparkJob.resource(pbfWayConfiguration, sparkContext).all());
-        
+
         final String pbfRelationConfiguration = (String) command.get(PBF_RELATION_CONFIGURATION);
         propertyMap.put(PBF_RELATION_CONFIGURATION.getName(),
                 pbfRelationConfiguration == null ? null
                         : SparkJob.resource(pbfRelationConfiguration, sparkContext).all());
-        
+
         final String slicingConfiguration = (String) command.get(SLICING_CONFIGURATION);
         propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ? null
                 : SparkJob.resource(slicingConfiguration, sparkContext).all());
-        
+
         return propertyMap;
     }
 
