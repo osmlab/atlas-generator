@@ -120,12 +120,12 @@ public class AtlasGenerator extends SparkJob
         final PbfContext pbfContext = new PbfContext(pbfPath, pbfSharding, pbfScheme);
         final String shouldIncludeFilteredOutputConfiguration = (String) command
                 .get(AtlasGeneratorParameters.SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION);
-        final String configuredFilterPath = (String) command
+        final StringList configuredFilterPath = (StringList) command
                 .get(AtlasGeneratorParameters.CONFIGURED_FILTER_OUTPUT);
-        final String configuredFilterName = (String) command
+        final StringList configuredFilterName = (StringList) command
                 .get(AtlasGeneratorParameters.CONFIGURED_FILTER_NAME);
         final Predicate<Taggable> taggableOutputFilter;
-        ConfiguredFilter configuredOutputFilter = null;
+        List<ConfiguredFilter> configuredOutputFilter = null;
         if (shouldIncludeFilteredOutputConfiguration == null)
         {
             taggableOutputFilter = taggable -> false;
@@ -142,7 +142,7 @@ public class AtlasGenerator extends SparkJob
                 throw new CoreException(
                         "A filter name must be provided for configured filter output!");
             }
-            configuredOutputFilter = AtlasGeneratorParameters.getConfiguredFilterFrom(
+            configuredOutputFilter = AtlasGeneratorParameters.getConfiguredFilterListFrom(
                     configuredFilterName, configuredFilterPath, sparkContext);
         }
 
@@ -315,10 +315,14 @@ public class AtlasGenerator extends SparkJob
 
         if (configuredOutputFilter != null)
         {
-            final JavaPairRDD<String, Atlas> subAtlasRDD = countryAtlasShardsRDD.mapToPair(
-                    AtlasGeneratorHelper.subatlas(configuredOutputFilter, AtlasCutType.SOFT_CUT))
-                    .filter(tuple -> tuple._2() != null);
-            saveAsHadoop(subAtlasRDD, AtlasGeneratorJobGroup.CONFIGURED_FILTERED_OUTPUT, output);
+            for (final ConfiguredFilter configuredFilter : configuredOutputFilter)
+            {
+                final JavaPairRDD<String, Atlas> subAtlasRDD = countryAtlasShardsRDD.mapToPair(
+                        AtlasGeneratorHelper.subatlas(configuredFilter, AtlasCutType.SOFT_CUT))
+                        .filter(tuple -> tuple._2() != null);
+                saveAsHadoop(subAtlasRDD, AtlasGeneratorJobGroup.CONFIGURED_FILTERED_OUTPUT,
+                        configuredFilter.toString(), output);
+            }
         }
 
         try
@@ -405,6 +409,17 @@ public class AtlasGenerator extends SparkJob
     {
         this.getContext().setJobGroup(group.getId().toString(), group.getDescription());
         atlasRDD.saveAsHadoopFile(getAlternateSubFolderOutput(output, group.getCacheFolder()),
+                Text.class, group.getKeyClass(), group.getOutputClass(),
+                new JobConf(configuration()));
+        logger.info(SAVED_MESSAGE, group.getDescription());
+    }
+
+    private void saveAsHadoop(final JavaPairRDD<?, ?> atlasRDD, final AtlasGeneratorJobGroup group,
+            final String filterName, final String output)
+    {
+        this.getContext().setJobGroup(group.getId().toString(), group.getDescription());
+        atlasRDD.saveAsHadoopFile(
+                getAlternateSubFolderOutput(output, group.getCacheFolder() + "/" + filterName),
                 Text.class, group.getKeyClass(), group.getOutputClass(),
                 new JobConf(configuration()));
         logger.info(SAVED_MESSAGE, group.getDescription());
