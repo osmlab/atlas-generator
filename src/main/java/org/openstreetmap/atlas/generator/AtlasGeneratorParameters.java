@@ -146,7 +146,7 @@ public final class AtlasGeneratorParameters
                 }
             }
         }
-        
+
         return filters;
     }
 
