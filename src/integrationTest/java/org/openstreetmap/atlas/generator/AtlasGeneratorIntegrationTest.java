@@ -40,7 +40,9 @@ public class AtlasGeneratorIntegrationTest
     public static final String COUNTRY_STATS = "resource://test/countryStats";
     public static final String SHARD_STATS = "resource://test/shardStats";
     public static final String CONFIGURED_OUTPUT_FILTER = "resource://test/filter/nothingFilter.json";
+    public static final String CONFIGURED_OUTPUT_FILTER_2 = "resource://test/filter/highwayFilter.json";
     public static final String FILTER_NAME = "nothingFilter";
+    public static final String FILTER_NAME_2 = "highwayFilter";
     public static final String CONFIGURATION = "resource://test/configuration";
     public static final String EDGE_CONFIGURATION = CONFIGURATION + "/atlas-edge.json";
     public static final String WAY_SECTIONING_CONFIGURATION = CONFIGURATION
@@ -69,6 +71,7 @@ public class AtlasGeneratorIntegrationTest
         ResourceFileSystem.addResource(INPUT_SHARDING, "tree-6-14-100000.txt");
         ResourceFileSystem.addResource(INPUT_BOUNDARIES, "DMA.txt", true);
         ResourceFileSystem.addResource(CONFIGURED_OUTPUT_FILTER, "nothingFilter.json");
+        ResourceFileSystem.addResource(CONFIGURED_OUTPUT_FILTER_2, "highwayFilter.json");
         ResourceFileSystem.addResourceContents(INPUT_BOUNDARIES_META, "Meta data for boundaries");
         ResourceFileSystem.addResourceContents(INPUT_SHARDING_META, "Meta data for sharding");
         ResourceFileSystem.addResource(EDGE_CONFIGURATION, "atlas-edge.json", false,
@@ -105,8 +108,9 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-lineDelimitedGeojsonOutput=true");
         arguments.add("-copyShardingAndBoundaries=true");
         arguments.add("-statistics=true");
-        arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
-        arguments.add("-configuredFilterName=" + FILTER_NAME);
+        arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER + ","
+                + CONFIGURED_OUTPUT_FILTER_2);
+        arguments.add("-configuredFilterName=" + FILTER_NAME + "," + FILTER_NAME_2);
         arguments.add("-" + AtlasGeneratorParameters.EDGE_CONFIGURATION.getName() + "="
                 + EDGE_CONFIGURATION);
         arguments.add("-" + AtlasGeneratorParameters.WAY_SECTIONING_CONFIGURATION.getName() + "="
@@ -162,10 +166,14 @@ public class AtlasGeneratorIntegrationTest
             Assert.assertTrue(resourceFileSystem.exists(new Path(
                     SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
 
-            Assert.assertTrue(resourceFileSystem.exists(
-                    new Path("resource://test/configuredOutput/DMA/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(
-                    new Path("resource://test/configuredOutput/DMA/9/DMA_9-168-234.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
+                    + FILTER_NAME + "/DMA/9/DMA_9-168-233.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
+                    + FILTER_NAME + "/DMA/9/DMA_9-168-234.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
+                    + FILTER_NAME_2 + "/DMA/9/DMA_9-168-233.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
+                    + FILTER_NAME_2 + "/DMA/9/DMA_9-168-234.atlas")));
 
             final String countryStats = resourceForName(resourceFileSystem,
                     COUNTRY_STATS + "/DMA.csv.gz").all();
@@ -199,8 +207,9 @@ public class AtlasGeneratorIntegrationTest
         arguments.add("-sharding=geohash@4");
         arguments.add("-lineDelimitedGeojsonOutput=true");
         arguments.add("-copyShardingAndBoundaries=true");
-        arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER);
-        arguments.add("-configuredFilterName=" + FILTER_NAME);
+        arguments.add("-configuredOutputFilter=" + CONFIGURED_OUTPUT_FILTER + ","
+                + CONFIGURED_OUTPUT_FILTER_2);
+        arguments.add("-configuredFilterName=" + FILTER_NAME + "," + FILTER_NAME_2);
         arguments.add("-" + SparkJob.SPARK_OPTIONS.getName() + "=" + sparkConfiguration.join(","));
 
         final String[] args = new String[arguments.size()];
@@ -238,10 +247,14 @@ public class AtlasGeneratorIntegrationTest
             Assert.assertTrue(resourceFileSystem.exists(new Path(
                     SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
 
-            Assert.assertTrue(resourceFileSystem
-                    .exists(new Path("resource://test/configuredOutput/DMA/DMA_ddsq.atlas")));
-            Assert.assertTrue(resourceFileSystem
-                    .exists(new Path("resource://test/configuredOutput/DMA/DMA_ddsr.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path(
+                    "resource://test/configuredOutput/" + FILTER_NAME + "/DMA/DMA_ddsq.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path(
+                    "resource://test/configuredOutput/" + FILTER_NAME + "/DMA/DMA_ddsr.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(new Path(
+                    "resource://test/configuredOutput/" + FILTER_NAME_2 + "/DMA/DMA_ddsq.atlas")));
+            Assert.assertFalse(resourceFileSystem.exists(new Path(
+                    "resource://test/configuredOutput/" + FILTER_NAME_2 + "/DMA/DMA_ddsr.atlas")));
         }
         catch (IllegalArgumentException | IOException e)
         {

@@ -1,0 +1,13 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "filters":
+        {
+            "highwayFilter":
+            {
+                "taggableFilter": "highway->*"
+            }
+        }
+    }
+}

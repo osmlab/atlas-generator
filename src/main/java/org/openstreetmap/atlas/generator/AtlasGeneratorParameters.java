@@ -1,6 +1,8 @@
 package org.openstreetmap.atlas.generator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
@@ -94,12 +96,12 @@ public final class AtlasGeneratorParameters
             Boolean::parseBoolean, Optionality.OPTIONAL, "false");
     public static final Switch<String> SHARDING_TYPE = new Switch<>("sharding",
             "The sharding definition.", StringConverter.IDENTITY, Optionality.OPTIONAL);
-    public static final Switch<String> CONFIGURED_FILTER_OUTPUT = new Switch<>(
+    public static final Switch<StringList> CONFIGURED_FILTER_OUTPUT = new Switch<>(
             "configuredOutputFilter", "Path to configuration file for filtered output",
-            StringConverter.IDENTITY, Optionality.OPTIONAL);
-    public static final Switch<String> CONFIGURED_FILTER_NAME = new Switch<>("configuredFilterName",
-            "Name of the filter to be used for configured output", StringConverter.IDENTITY,
-            Optionality.OPTIONAL);
+            value -> StringList.split(value, ","), Optionality.OPTIONAL);
+    public static final Switch<StringList> CONFIGURED_FILTER_NAME = new Switch<>(
+            "configuredFilterName", "Name of the filter to be used for configured output",
+            value -> StringList.split(value, ","), Optionality.OPTIONAL);
     public static final Switch<Boolean> STATISTICS = new Switch<>("statistics",
             "Whether to run the shard statistics and country statistics", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
@@ -114,6 +116,38 @@ public final class AtlasGeneratorParameters
             final Resource configurationResource)
     {
         return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+    }
+
+    public static List<ConfiguredFilter> getConfiguredFilterListFrom(final StringList name,
+            final Resource configurationResource)
+    {
+        final List<ConfiguredFilter> filters = new ArrayList<>();
+        name.forEach(n -> filters.add(
+                ConfiguredFilter.from(n, getStandardConfigurationFrom(configurationResource))));
+        return filters;
+    }
+
+    public static List<ConfiguredFilter> getConfiguredFilterListFrom(final StringList names,
+            final StringList paths, final Map<String, String> configurationMap)
+    {
+        final List<ConfiguredFilter> filters = new ArrayList<>();
+        // loop through paths
+        for (final String path : paths)
+        {
+            // loop through filter names, check each path for filter with that name, if it exists
+            // add it to the list
+            for (final String name : names)
+            {
+                if (ConfiguredFilter.isPresent(name,
+                        getStandardConfigurationFrom(SparkJob.resource(path, configurationMap))))
+                {
+                    filters.add(getConfiguredFilterFrom(name,
+                            SparkJob.resource(path, configurationMap)));
+                }
+            }
+        }
+
+        return filters;
     }
 
     public static StandardConfiguration getStandardConfigurationFrom(final String path,
