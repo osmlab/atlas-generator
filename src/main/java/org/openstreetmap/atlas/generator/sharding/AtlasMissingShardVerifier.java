@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator.sharding;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -58,6 +59,43 @@ public class AtlasMissingShardVerifier extends Command
     private static final Switch<String> WAY_FILTER = new Switch<>("wayFilter",
             "The json resource that defines what ways are ingested to atlas",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
+    private static final Switch<Integer> RETRY_QUERY_COUNT = new Switch<>("numSplitQuery",
+            "The number of parts to split the query into if it fails", Integer::new,
+            Optionality.OPTIONAL, "2");
+
+    public static StringList createQueryList(final CountryBoundaryMap boundaries,
+            final Set<CountryShard> missingCountryShards, final int numQueries)
+    {
+        final StringList queries = new StringList();
+        int missingShardIndex = 0;
+        final int sectionSize = missingCountryShards.size() / numQueries;
+        final List<CountryShard> missingShardList = new ArrayList<>(missingCountryShards);
+        for (int i = 1; i <= numQueries; i++)
+        {
+            final StringBuilder query = new StringBuilder("(");
+            final int sectionUpperBound;
+            if (i == numQueries)
+            {
+                // if the sections don't divide cleanly, add the remainder to the last query
+                sectionUpperBound = missingCountryShards.size();
+            }
+            else
+            {
+                sectionUpperBound = missingShardIndex + sectionSize;
+            }
+            for (int j = missingShardIndex; j < sectionUpperBound; j++)
+            {
+                final CountryShard countryShard = missingShardList.get(j);
+                final Clip clip = intersectionClip(countryShard, boundaries);
+                final Rectangle clipBounds = clip.getClipMultiPolygon().bounds();
+                query.append(OverpassClient.buildCompactQuery("node", clipBounds));
+                missingShardIndex++;
+            }
+            query.append(");out body;");
+            queries.add(query);
+        }
+        return queries;
+    }
 
     public static void main(final String[] args)
     {
@@ -151,7 +189,8 @@ public class AtlasMissingShardVerifier extends Command
 
     public int verifier(final CountryBoundaryMap boundaries,
             final Set<CountryShard> missingCountryShardsUntrimmed, final File output,
-            final String server, final HttpHost proxy, final ConfiguredTaggableFilter filter)
+            final String server, final HttpHost proxy, final ConfiguredTaggableFilter filter,
+            final Integer numRetryQueries)
     {
         int returnCode = 0;
         final Set<CountryShard> missingCountryShards = removeShardsWithZeroIntersection(
@@ -164,10 +203,24 @@ public class AtlasMissingShardVerifier extends Command
             final List<OverpassOsmWay> ways = client.waysFromQuery(masterQuery);
             if (client.hasTooMuchResponseData())
             {
-                throw new CoreException(
-                        "The overpass query returned too much data. This means that there are "
-                                + "large amounts of data missing! Check the missing shard "
-                                + "list for outliers.");
+                logger.warn(
+                        "The overpass query returned too much data. This means that there's potentially"
+                                + "large amounts of data missing! Rerunning with smaller queries.");
+                client.resetTooMuchDataError();
+                final StringList splitQueries = createQueryList(boundaries, missingCountryShards,
+                        numRetryQueries);
+                nodes.clear();
+                ways.clear();
+                for (final String query : splitQueries)
+                {
+                    nodes.addAll(client.nodesFromQuery(query));
+                    ways.addAll(client.waysFromQuery(query));
+                }
+            }
+            if (client.hasTooMuchResponseData())
+            {
+                throw new CoreException("The overpass query had to much data, even when split "
+                        + numRetryQueries + " times. There is lots of data missing!");
             }
             if (client.hasUnknownError())
             {
@@ -259,6 +312,7 @@ public class AtlasMissingShardVerifier extends Command
         }
         final String server = (String) command.get(OVERPASS_SERVER);
         final StringList proxySettings = (StringList) command.get(PROXY_SETTINGS);
+        final Integer numRetryQueries = (Integer) command.get(RETRY_QUERY_COUNT);
         HttpHost proxy = null;
         if (proxySettings != null)
         {
@@ -277,7 +331,7 @@ public class AtlasMissingShardVerifier extends Command
         try
         {
             returnCode = verifier(boundaries, missingCountryShards, output, server, proxy,
-                    wayFilter);
+                    wayFilter, numRetryQueries);
         }
         catch (final Exception e)
         {
@@ -291,6 +345,6 @@ public class AtlasMissingShardVerifier extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(BOUNDARIES, OUTPUT, MISSING_SHARDS, OVERPASS_SERVER,
-                PROXY_SETTINGS, WAY_FILTER);
+                PROXY_SETTINGS, WAY_FILTER, RETRY_QUERY_COUNT);
     }
 }

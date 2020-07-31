@@ -214,6 +214,11 @@ public class OverpassClient
         }
     }
 
+    public void resetTooMuchDataError()
+    {
+        tooMuchResponseData = false;
+    }
+
     /**
      * Makes a way Overpass query, parses the response xml, and returns the ways that match the
      * query
