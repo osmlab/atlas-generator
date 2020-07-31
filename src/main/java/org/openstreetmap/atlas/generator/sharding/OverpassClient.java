@@ -214,7 +214,7 @@ public class OverpassClient
         }
     }
 
-    public void resetTooMuchDataValue()
+    public void resetTooMuchDataError()
     {
         tooMuchResponseData = false;
     }

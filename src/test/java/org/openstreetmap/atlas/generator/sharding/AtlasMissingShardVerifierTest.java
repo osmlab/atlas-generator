@@ -38,10 +38,6 @@ public class AtlasMissingShardVerifierTest
         countryShards.add(new CountryShard("WWW", "1-1-1"));
         final StringList queries = AtlasMissingShardVerifier.createQueryList(boundaryMap,
                 countryShards, 3);
-        System.out.println(queries.get(0));
-        System.out.println(queries.get(1));
-        System.out.println(queries.get(2));
-        System.out.println(queries.size());
         Assert.assertEquals("(node(0.0,-64.5446777,42.733401,0.0);<;);out body;", queries.get(0));
         Assert.assertEquals("(node(0.0,0.0,50.8447266,71.1584473);<;);out body;", queries.get(1));
         Assert.assertEquals(3, queries.size());

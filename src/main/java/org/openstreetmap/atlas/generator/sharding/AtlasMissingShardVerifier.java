@@ -206,7 +206,7 @@ public class AtlasMissingShardVerifier extends Command
                 logger.warn(
                         "The overpass query returned too much data. This means that there's potentially"
                                 + "large amounts of data missing! Rerunning with smaller queries.");
-                client.resetTooMuchDataValue();
+                client.resetTooMuchDataError();
                 final StringList splitQueries = createQueryList(boundaries, missingCountryShards,
                         numRetryQueries);
                 nodes.clear();
