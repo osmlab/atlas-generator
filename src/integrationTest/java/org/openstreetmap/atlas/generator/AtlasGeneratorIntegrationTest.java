@@ -51,10 +51,10 @@ public class AtlasGeneratorIntegrationTest
     public static final String PBF_WAY_CONFIGURATION = CONFIGURATION + "/osm-pbf-way.json";
     public static final String PBF_RELATION_CONFIGURATION = CONFIGURATION
             + "/osm-pbf-relation.json";
-    public static final String SHOULD_ALWAYS_SLICE_CONFIGURATION = CONFIGURATION
-            + "/osm-pbf-relation.json";
     public static final String SLICING_CONFIGURATION = CONFIGURATION
             + "/atlas-relation-slicing.json";
+
+    private static final String CONFIGURED_OUTPUT = "resource://test/configuredOutput/";
 
     @After
     public void clean()
@@ -84,8 +84,6 @@ public class AtlasGeneratorIntegrationTest
                 AtlasLoadingOption.class);
         ResourceFileSystem.addResource(PBF_RELATION_CONFIGURATION, "osm-pbf-relation.json", false,
                 AtlasLoadingOption.class);
-        ResourceFileSystem.addResource(SHOULD_ALWAYS_SLICE_CONFIGURATION, "osm-pbf-relation.json",
-                false, AtlasLoadingOption.class);
         ResourceFileSystem.addResource(SLICING_CONFIGURATION, "atlas-relation-slicing.json", false,
                 AtlasLoadingOption.class);
     }
@@ -121,8 +119,6 @@ public class AtlasGeneratorIntegrationTest
                 + PBF_WAY_CONFIGURATION);
         arguments.add("-" + AtlasGeneratorParameters.PBF_RELATION_CONFIGURATION.getName() + "="
                 + PBF_RELATION_CONFIGURATION);
-        arguments.add("-" + AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION.getName()
-                + "=" + SHOULD_ALWAYS_SLICE_CONFIGURATION);
         arguments.add("-" + AtlasGeneratorParameters.SLICING_CONFIGURATION.getName() + "="
                 + SLICING_CONFIGURATION);
         arguments.add("-" + SparkJob.SPARK_OPTIONS.getName() + "=" + sparkConfiguration.join(","));
@@ -166,14 +162,14 @@ public class AtlasGeneratorIntegrationTest
             Assert.assertTrue(resourceFileSystem.exists(new Path(
                     SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
 
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME + "/DMA/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME + "/DMA/9/DMA_9-168-234.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME_2 + "/DMA/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME_2 + "/DMA/9/DMA_9-168-234.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(
+                    new Path(CONFIGURED_OUTPUT + FILTER_NAME + "/DMA/9/DMA_9-168-233.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(
+                    new Path(CONFIGURED_OUTPUT + FILTER_NAME + "/DMA/9/DMA_9-168-234.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(
+                    new Path(CONFIGURED_OUTPUT + FILTER_NAME_2 + "/DMA/9/DMA_9-168-233.atlas")));
+            Assert.assertTrue(resourceFileSystem.exists(
+                    new Path(CONFIGURED_OUTPUT + FILTER_NAME_2 + "/DMA/9/DMA_9-168-234.atlas")));
 
             final String countryStats = resourceForName(resourceFileSystem,
                     COUNTRY_STATS + "/DMA.csv.gz").all();
@@ -247,14 +243,14 @@ public class AtlasGeneratorIntegrationTest
             Assert.assertTrue(resourceFileSystem.exists(new Path(
                     SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
 
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME + "/DMA/DMA_ddsq.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME + "/DMA/DMA_ddsr.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME_2 + "/DMA/DMA_ddsq.atlas")));
-            Assert.assertFalse(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME_2 + "/DMA/DMA_ddsr.atlas")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(CONFIGURED_OUTPUT + FILTER_NAME + "/DMA/DMA_ddsq.atlas")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(CONFIGURED_OUTPUT + FILTER_NAME + "/DMA/DMA_ddsr.atlas")));
+            Assert.assertTrue(resourceFileSystem
+                    .exists(new Path(CONFIGURED_OUTPUT + FILTER_NAME_2 + "/DMA/DMA_ddsq.atlas")));
+            Assert.assertFalse(resourceFileSystem
+                    .exists(new Path(CONFIGURED_OUTPUT + FILTER_NAME_2 + "/DMA/DMA_ddsr.atlas")));
         }
         catch (IllegalArgumentException | IOException e)
         {
