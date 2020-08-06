@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -22,9 +23,12 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
 import org.apache.spark.SparkConf;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
+import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.resource.ByteArrayResource;
 import org.openstreetmap.atlas.streaming.resource.File;
+import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
@@ -127,9 +131,44 @@ public class ResourceFileSystem extends FileSystem
         return STORE.keySet();
     }
 
+    public static Optional<PackedAtlas> getAtlas(final String path)
+    {
+        if (!path.endsWith(FileSuffix.ATLAS.toString()))
+        {
+            throw new CoreException("Cannot read resource {} as an Atlas.", path);
+        }
+        return getResource(path).map(PackedAtlas::load);
+    }
+
+    public static PackedAtlas getAtlasOrElse(final String path)
+    {
+        return getAtlas(path).orElseThrow(() -> new CoreException("{} not found.", path));
+    }
+
+    public static Optional<Resource> getResource(final String path)
+    {
+        if (!path.startsWith(SCHEME + "://"))
+        {
+            throw new CoreException("Cannot read resource {} in a {}", path,
+                    ResourceFileSystem.class.getSimpleName());
+        }
+        return Optional.ofNullable(SparkJob.resource(path, simpleconfiguration()));
+    }
+
+    public static Resource getResourceOrElse(final String path)
+    {
+        return getResource(path).orElseThrow(() -> new CoreException("{} not found.", path));
+    }
+
     public static void printContents()
     {
-        files().forEach(file -> logger.info("{}", file));
+        if (logger.isInfoEnabled())
+        {
+            files().forEach(file -> logger.info("{} (length: {})", file,
+                    getResource(file)
+                            .orElseThrow(() -> new CoreException("{} could not be found.", file))
+                            .length()));
+        }
     }
 
     public static synchronized void registerResourceExtractionClass(final Class<?> clazz)
