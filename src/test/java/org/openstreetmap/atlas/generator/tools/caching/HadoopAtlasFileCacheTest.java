@@ -217,9 +217,4 @@ public class HadoopAtlasFileCacheTest
             parent.deleteRecursively();
         }
     }
-
-    private void assertEquals()
-    {
-
-    }
 }
