@@ -27,6 +27,7 @@ import org.openstreetmap.atlas.geography.atlas.change.Change;
 import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
 import org.openstreetmap.atlas.geography.atlas.change.description.ChangeDescriptorType;
 import org.openstreetmap.atlas.geography.atlas.change.diff.AtlasDiff;
+import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
 import org.openstreetmap.atlas.geography.atlas.items.ItemType;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -40,7 +41,6 @@ import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.Resource;
-import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
@@ -541,7 +541,7 @@ public final class AtlasGeneratorHelper implements Serializable
     }
 
     protected static PairFunction<Tuple2<String, Atlas>, String, Atlas> subatlas(
-            final Predicate<Taggable> filter, final AtlasCutType cutType)
+            final Predicate<AtlasEntity> filter, final AtlasCutType cutType)
     {
         return (Serializable & PairFunction<Tuple2<String, Atlas>, String, Atlas>) tuple ->
         {
@@ -556,8 +556,7 @@ public final class AtlasGeneratorHelper implements Serializable
             try
             {
                 // Slice the Atlas
-                final Optional<Atlas> subAtlasOptional = originalAtlas.subAtlas(filter::test,
-                        cutType);
+                final Optional<Atlas> subAtlasOptional = originalAtlas.subAtlas(filter, cutType);
                 if (subAtlasOptional.isPresent())
                 {
                     subAtlas = subAtlasOptional.get();
