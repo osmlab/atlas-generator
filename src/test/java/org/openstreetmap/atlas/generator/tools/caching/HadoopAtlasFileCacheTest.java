@@ -14,7 +14,6 @@ import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlasBuilder;
 import org.openstreetmap.atlas.geography.sharding.SlippyTile;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
-import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 
 /**
@@ -23,15 +22,7 @@ import org.openstreetmap.atlas.utilities.collections.Maps;
 public class HadoopAtlasFileCacheTest
 {
     @Test
-    public void testSequentially()
-    {
-        testCache();
-        testCacheWithFetcher();
-        testCachesWithDifferentNamespaces();
-        testNonexistentResource();
-    }
-
-    private void testCache()
+    public void testCache()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
@@ -46,14 +37,10 @@ public class HadoopAtlasFileCacheTest
             final PackedAtlasBuilder builder1 = new PackedAtlasBuilder();
             builder1.addPoint(1L, Location.CENTER, Maps.hashMap());
             final PackedAtlas atlas1 = (PackedAtlas) builder1.get();
-            final StringResource string1 = new StringResource();
-            atlas1.save(string1);
 
             final PackedAtlasBuilder builder2 = new PackedAtlasBuilder();
             builder2.addPoint(2L, Location.CENTER, Maps.hashMap());
             final PackedAtlas atlas2 = (PackedAtlas) builder2.get();
-            final StringResource string2 = new StringResource();
-            atlas2.save(string2);
 
             final File atlasFile1 = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
             atlas1.save(atlasFile1);
@@ -64,15 +51,15 @@ public class HadoopAtlasFileCacheTest
             final Resource resource1 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource2 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
-            Assert.assertEquals(string1.all(), resource1.all());
-            Assert.assertEquals(string2.all(), resource2.all());
+            Assert.assertEquals(atlas1, PackedAtlas.load(resource1));
+            Assert.assertEquals(atlas2, PackedAtlas.load(resource2));
 
             // cache hit, using cached copy
             final Resource resource3 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource4 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
-            Assert.assertEquals(string1.all(), resource3.all());
-            Assert.assertEquals(string2.all(), resource4.all());
+            Assert.assertEquals(atlas1, PackedAtlas.load(resource3));
+            Assert.assertEquals(atlas2, PackedAtlas.load(resource4));
         }
         finally
         {
@@ -81,7 +68,8 @@ public class HadoopAtlasFileCacheTest
         }
     }
 
-    private void testCacheWithFetcher()
+    @Test
+    public void testCacheWithFetcher()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
@@ -99,14 +87,10 @@ public class HadoopAtlasFileCacheTest
             final PackedAtlasBuilder builder1 = new PackedAtlasBuilder();
             builder1.addPoint(1L, Location.CENTER, Maps.hashMap());
             final PackedAtlas atlas1 = (PackedAtlas) builder1.get();
-            final StringResource string1 = new StringResource();
-            atlas1.save(string1);
 
             final PackedAtlasBuilder builder2 = new PackedAtlasBuilder();
             builder2.addPoint(2L, Location.CENTER, Maps.hashMap());
             final PackedAtlas atlas2 = (PackedAtlas) builder2.get();
-            final StringResource string2 = new StringResource();
-            atlas2.save(string2);
 
             final File atlasFile1 = parentAtlasCountry.child("1/AAA_1-1-1.atlas");
             atlas1.save(atlasFile1);
@@ -117,15 +101,15 @@ public class HadoopAtlasFileCacheTest
             final Resource resource1 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource2 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
-            Assert.assertEquals(string1.all(), resource1.all());
-            Assert.assertEquals(string2.all(), resource2.all());
+            Assert.assertEquals(atlas1, PackedAtlas.load(resource1));
+            Assert.assertEquals(atlas2, PackedAtlas.load(resource2));
 
             // cache hit, using cached copy
             final Resource resource3 = cache.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource4 = cache.get("AAA", new SlippyTile(2, 2, 2)).get();
 
-            Assert.assertEquals(string1.all(), resource3.all());
-            Assert.assertEquals(string2.all(), resource4.all());
+            Assert.assertEquals(atlas1, PackedAtlas.load(resource3));
+            Assert.assertEquals(atlas2, PackedAtlas.load(resource4));
         }
         finally
         {
@@ -134,7 +118,8 @@ public class HadoopAtlasFileCacheTest
         }
     }
 
-    private void testCachesWithDifferentNamespaces()
+    @Test
+    public void testCachesWithDifferentNamespaces()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");
@@ -175,14 +160,14 @@ public class HadoopAtlasFileCacheTest
             final Resource resource2 = cache2.get("AAA", new SlippyTile(1, 1, 1)).get();
 
             // the files should be unequal, even though the URIs are the same
-            Assert.assertNotEquals(resource1.all(), resource2.all());
+            Assert.assertNotEquals(PackedAtlas.load(resource1), PackedAtlas.load(resource2));
 
             // now we are getting the cached versions of the file
             final Resource resource3 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();
             final Resource resource4 = cache2.get("AAA", new SlippyTile(1, 1, 1)).get();
 
             // the files should still be unequal, even though the URIs are the same
-            Assert.assertNotEquals(resource3.all(), resource4.all());
+            Assert.assertNotEquals(PackedAtlas.load(resource3), PackedAtlas.load(resource4));
 
             // delete cache1's cached version of the file
             cache1.invalidate("AAA", new SlippyTile(1, 1, 1));
@@ -196,7 +181,7 @@ public class HadoopAtlasFileCacheTest
             final Resource resource5 = cache1.get("AAA", new SlippyTile(1, 1, 1)).get();
 
             // now the resources should be identical
-            Assert.assertEquals(resource4.all(), resource5.all());
+            Assert.assertEquals(PackedAtlas.load(resource4), PackedAtlas.load(resource5));
         }
         finally
         {
@@ -206,7 +191,8 @@ public class HadoopAtlasFileCacheTest
         }
     }
 
-    private void testNonexistentResource()
+    @Test
+    public void testNonexistentResource()
     {
         final File parent = File.temporaryFolder();
         final File parentAtlas = new File(parent + "/atlas");

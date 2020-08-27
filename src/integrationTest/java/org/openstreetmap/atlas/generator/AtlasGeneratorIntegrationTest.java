@@ -1,23 +1,16 @@
 package org.openstreetmap.atlas.generator;
 
-import java.io.IOException;
-
-import org.apache.hadoop.fs.Path;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.generator.tools.streaming.ResourceFileSystem;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
-import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
-import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
-import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 
@@ -34,9 +27,34 @@ public class AtlasGeneratorIntegrationTest
     public static final String PBF_233 = PBF + "/9/9-168-233.osm.pbf";
     public static final String PBF_234 = PBF + "/9/9-168-234.osm.pbf";
     public static final String OUTPUT = "resource://test/output";
+
+    public static final String DMA_233 = "/DMA/9/DMA_9-168-233";
+    public static final String DMA_234 = "/DMA/9/DMA_9-168-234";
+    public static final String DMA_DDSQ = "/DMA/DMA_ddsq";
+    public static final String DMA_DDSR = "/DMA/DMA_ddsr";
+
     public static final String ATLAS_OUTPUT = "resource://test/atlas";
+    public static final String ATLAS_OUTPUT_233 = ATLAS_OUTPUT + DMA_233
+            + FileSuffix.ATLAS.toString();
+    public static final String ATLAS_OUTPUT_234 = ATLAS_OUTPUT + DMA_234
+            + FileSuffix.ATLAS.toString();
+    public static final String ATLAS_OUTPUT_DDSQ = ATLAS_OUTPUT + DMA_DDSQ
+            + FileSuffix.ATLAS.toString();
+    public static final String ATLAS_OUTPUT_DDSR = ATLAS_OUTPUT + DMA_DDSR
+            + FileSuffix.ATLAS.toString();
+
+    public static final String LDGEOJSON_GZ = ".ldgeojson.gz";
     public static final String LINE_DELIMITED_GEOJSON_OUTPUT = "resource://test/"
-            + AtlasGenerator.LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER + "/DMA";
+            + AtlasGenerator.LINE_DELIMITED_GEOJSON_STATISTICS_FOLDER;
+    public static final String LINE_DELIMITED_GEOJSON_OUTPUT_233 = LINE_DELIMITED_GEOJSON_OUTPUT
+            + DMA_233 + LDGEOJSON_GZ;
+    public static final String LINE_DELIMITED_GEOJSON_OUTPUT_234 = LINE_DELIMITED_GEOJSON_OUTPUT
+            + DMA_234 + LDGEOJSON_GZ;
+    public static final String LINE_DELIMITED_GEOJSON_OUTPUT_DDSQ = LINE_DELIMITED_GEOJSON_OUTPUT
+            + DMA_DDSQ + LDGEOJSON_GZ;
+    public static final String LINE_DELIMITED_GEOJSON_OUTPUT_DDSR = LINE_DELIMITED_GEOJSON_OUTPUT
+            + DMA_DDSR + LDGEOJSON_GZ;
+
     public static final String COUNTRY_STATS = "resource://test/countryStats";
     public static final String SHARD_STATS = "resource://test/shardStats";
     public static final String CONFIGURED_OUTPUT_FILTER = "resource://test/filter/nothingFilter.json";
@@ -51,10 +69,26 @@ public class AtlasGeneratorIntegrationTest
     public static final String PBF_WAY_CONFIGURATION = CONFIGURATION + "/osm-pbf-way.json";
     public static final String PBF_RELATION_CONFIGURATION = CONFIGURATION
             + "/osm-pbf-relation.json";
-    public static final String SHOULD_ALWAYS_SLICE_CONFIGURATION = CONFIGURATION
-            + "/osm-pbf-relation.json";
     public static final String SLICING_CONFIGURATION = CONFIGURATION
             + "/atlas-relation-slicing.json";
+
+    public static final String CONFIGURED_OUTPUT = "resource://test/configuredOutput/";
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_233 = CONFIGURED_OUTPUT + FILTER_NAME
+            + DMA_233;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_234 = CONFIGURED_OUTPUT + FILTER_NAME
+            + DMA_234;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_2_233 = CONFIGURED_OUTPUT
+            + FILTER_NAME_2 + DMA_233;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_2_234 = CONFIGURED_OUTPUT
+            + FILTER_NAME_2 + DMA_234;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_DDSQ = CONFIGURED_OUTPUT + FILTER_NAME
+            + DMA_DDSQ;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_DDSR = CONFIGURED_OUTPUT + FILTER_NAME
+            + DMA_DDSR;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_2_DDSQ = CONFIGURED_OUTPUT
+            + FILTER_NAME_2 + DMA_DDSQ;
+    public static final String CONFIGURED_OUTPUT_FILTER_NAME_2_DDSR = CONFIGURED_OUTPUT
+            + FILTER_NAME_2 + DMA_DDSR;
 
     @After
     public void clean()
@@ -65,6 +99,7 @@ public class AtlasGeneratorIntegrationTest
     @Before
     public void setup()
     {
+        clean();
         ResourceFileSystem.registerResourceExtractionClass(AtlasGeneratorIntegrationTest.class);
         ResourceFileSystem.addResource(PBF_233, "DMA_cutout.osm.pbf");
         ResourceFileSystem.addResource(PBF_234, "DMA_cutout.osm.pbf");
@@ -84,8 +119,6 @@ public class AtlasGeneratorIntegrationTest
                 AtlasLoadingOption.class);
         ResourceFileSystem.addResource(PBF_RELATION_CONFIGURATION, "osm-pbf-relation.json", false,
                 AtlasLoadingOption.class);
-        ResourceFileSystem.addResource(SHOULD_ALWAYS_SLICE_CONFIGURATION, "osm-pbf-relation.json",
-                false, AtlasLoadingOption.class);
         ResourceFileSystem.addResource(SLICING_CONFIGURATION, "atlas-relation-slicing.json", false,
                 AtlasLoadingOption.class);
     }
@@ -121,8 +154,6 @@ public class AtlasGeneratorIntegrationTest
                 + PBF_WAY_CONFIGURATION);
         arguments.add("-" + AtlasGeneratorParameters.PBF_RELATION_CONFIGURATION.getName() + "="
                 + PBF_RELATION_CONFIGURATION);
-        arguments.add("-" + AtlasGeneratorParameters.SHOULD_ALWAYS_SLICE_CONFIGURATION.getName()
-                + "=" + SHOULD_ALWAYS_SLICE_CONFIGURATION);
         arguments.add("-" + AtlasGeneratorParameters.SLICING_CONFIGURATION.getName() + "="
                 + SLICING_CONFIGURATION);
         arguments.add("-" + SparkJob.SPARK_OPTIONS.getName() + "=" + sparkConfiguration.join(","));
@@ -138,56 +169,49 @@ public class AtlasGeneratorIntegrationTest
         ResourceFileSystem.printContents();
         dump();
 
-        try (ResourceFileSystem resourceFileSystem = new ResourceFileSystem())
-        {
-            Assert.assertTrue(resourceFileSystem
-                    .exists(new Path(ATLAS_OUTPUT + "/DMA/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(resourceFileSystem
-                    .exists(new Path(ATLAS_OUTPUT + "/DMA/9/DMA_9-168-234.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(
-                    new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-233.ldgeojson.gz")));
-            Assert.assertTrue(resourceFileSystem.exists(
-                    new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-234.ldgeojson.gz")));
-            Assert.assertEquals(402,
-                    Iterables.size(resourceForName(resourceFileSystem,
-                            LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-234.ldgeojson.gz")
-                                    .lines()));
-            Assert.assertEquals(336,
-                    Iterables.size(resourceForName(resourceFileSystem,
-                            LINE_DELIMITED_GEOJSON_OUTPUT + "/9/DMA_9-168-233.ldgeojson.gz")
-                                    .lines()));
+        Assert.assertTrue(ResourceFileSystem.getResource(ATLAS_OUTPUT_233).isPresent());
+        Assert.assertTrue(ResourceFileSystem.getResource(ATLAS_OUTPUT_234).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_233).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_234).isPresent());
+        Assert.assertEquals(402, Iterables.size(
+                ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_234).lines()));
+        Assert.assertEquals(336, Iterables.size(
+                ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_233).lines()));
 
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_FILE))));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_META))));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_FILE))));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_FILE))
+                .isPresent());
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_META))
+                .isPresent());
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(
+                        SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_FILE))
+                .isPresent());
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(
+                        SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))
+                .isPresent());
 
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME + "/DMA/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME + "/DMA/9/DMA_9-168-234.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME_2 + "/DMA/9/DMA_9-168-233.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path("resource://test/configuredOutput/"
-                    + FILTER_NAME_2 + "/DMA/9/DMA_9-168-234.atlas")));
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_233).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_234).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_2_233).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_2_234).isPresent());
 
-            final String countryStats = resourceForName(resourceFileSystem,
-                    COUNTRY_STATS + "/DMA.csv.gz").all();
-            final String shard933Stats = resourceForName(resourceFileSystem,
-                    SHARD_STATS + "/DMA/9/DMA_9-168-233.csv.gz").all();
-            final String shard934Stats = resourceForName(resourceFileSystem,
-                    SHARD_STATS + "/DMA/9/DMA_9-168-234.csv.gz").all();
-            Assert.assertNotEquals(countryStats, shard933Stats);
-            Assert.assertNotEquals(countryStats, shard934Stats);
-        }
-        catch (IllegalArgumentException | IOException e)
-        {
-            throw new CoreException("Unable to find output Atlas files.", e);
-        }
+        final String countryStats = ResourceFileSystem
+                .getResourceOrElse(COUNTRY_STATS + "/DMA.csv.gz").all();
+        final String shard933Stats = ResourceFileSystem
+                .getResourceOrElse(SHARD_STATS + "/DMA/9/DMA_9-168-233.csv.gz").all();
+        final String shard934Stats = ResourceFileSystem
+                .getResourceOrElse(SHARD_STATS + "/DMA/9/DMA_9-168-234.csv.gz").all();
+        Assert.assertNotEquals(countryStats, shard933Stats);
+        Assert.assertNotEquals(countryStats, shard934Stats);
     }
 
     @Test
@@ -223,43 +247,40 @@ public class AtlasGeneratorIntegrationTest
         ResourceFileSystem.printContents();
         dump();
 
-        try (ResourceFileSystem resourceFileSystem = new ResourceFileSystem())
-        {
-            Assert.assertTrue(
-                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/DMA/DMA_ddsq.atlas")));
-            Assert.assertTrue(
-                    resourceFileSystem.exists(new Path(ATLAS_OUTPUT + "/DMA/DMA_ddsr.atlas")));
-            Assert.assertTrue(resourceFileSystem
-                    .exists(new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsq.ldgeojson.gz")));
-            Assert.assertTrue(resourceFileSystem
-                    .exists(new Path(LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsr.ldgeojson.gz")));
-            Assert.assertEquals(700, Iterables.size(resourceForName(resourceFileSystem,
-                    LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsq.ldgeojson.gz").lines()));
-            Assert.assertEquals(2, Iterables.size(resourceForName(resourceFileSystem,
-                    LINE_DELIMITED_GEOJSON_OUTPUT + "/DMA_ddsr.ldgeojson.gz").lines()));
+        Assert.assertTrue(ResourceFileSystem.getResource(ATLAS_OUTPUT_DDSQ).isPresent());
+        Assert.assertTrue(ResourceFileSystem.getResource(ATLAS_OUTPUT_DDSR).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_DDSQ).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_DDSR).isPresent());
+        Assert.assertEquals(700, Iterables.size(
+                ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_DDSQ).lines()));
+        Assert.assertEquals(2, Iterables.size(
+                ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_DDSR).lines()));
 
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_FILE))));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_META))));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_FILE))));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))));
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_FILE))
+                .isPresent());
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.SHARDING_META))
+                .isPresent());
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(
+                        SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_FILE))
+                .isPresent());
+        Assert.assertTrue(ResourceFileSystem
+                .getResource(
+                        SparkFileHelper.combine(ATLAS_OUTPUT, PersistenceTools.BOUNDARIES_META))
+                .isPresent());
 
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME + "/DMA/DMA_ddsq.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME + "/DMA/DMA_ddsr.atlas")));
-            Assert.assertTrue(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME_2 + "/DMA/DMA_ddsq.atlas")));
-            Assert.assertFalse(resourceFileSystem.exists(new Path(
-                    "resource://test/configuredOutput/" + FILTER_NAME_2 + "/DMA/DMA_ddsr.atlas")));
-        }
-        catch (IllegalArgumentException | IOException e)
-        {
-            throw new CoreException("Unable to find output Atlas files.", e);
-        }
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_DDSQ).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_DDSR).isPresent());
+        Assert.assertTrue(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_2_DDSQ).isPresent());
+        Assert.assertFalse(
+                ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_2_DDSR).isPresent());
     }
 
     void dump()
@@ -278,26 +299,5 @@ public class AtlasGeneratorIntegrationTest
             folder.mkdirs();
             ResourceFileSystem.dumpToDisk(folder);
         }
-    }
-
-    private Resource resourceForName(final ResourceFileSystem resourceFileSystem, final String name)
-    {
-        Decompressor decompressor = Decompressor.NONE;
-        if (name.endsWith(FileSuffix.GZIP.toString()))
-        {
-            decompressor = Decompressor.GZIP;
-        }
-        return new InputStreamResource(() ->
-        {
-            try
-            {
-                return resourceFileSystem.open(new Path(name));
-            }
-            catch (final Exception e)
-            {
-                throw new CoreException("Unable to open Resource {} in ResourceFileSystem", name,
-                        e);
-            }
-        }).withDecompressor(decompressor);
     }
 }
