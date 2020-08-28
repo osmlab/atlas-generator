@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
@@ -25,7 +26,7 @@ import scala.collection.JavaConversions;
 public final class AtlasDataFrame
 {
     protected static Dataset<Row> atlasAreasToDataFrame(final JavaRDD<Atlas> atlasRDD,
-            final SparkSession spark)
+            final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
@@ -47,9 +48,9 @@ public final class AtlasDataFrame
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        final List<Row> rows = new ArrayList<>();
-        atlasRDD.foreach(atlas ->
+        final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
+            final List<Row> rows = new ArrayList<>();
             atlas.areas().forEach(area ->
             {
                 final long nodeIdentifier = area.getIdentifier();
@@ -62,14 +63,11 @@ public final class AtlasDataFrame
                 rows.add(RowFactory.create(idString, wktGeometry, areaBounds,
                         JavaConversions.mapAsScalaMap(area.getTags()), relationArray));
             });
+            return rows.iterator();
         });
 
-        final JavaSparkContext sparkContext = JavaSparkContext
-                .fromSparkContext(spark.sparkContext());
-        final JavaRDD<Row> rowRDD = sparkContext.parallelize(rows);
-
-        // Create dataframe from rowRDD
-        return spark.createDataFrame(rowRDD, schema);
+        final SQLContext sqlContext = new SQLContext(javaSparkContext);
+        return sqlContext.createDataFrame(rowRDD, schema);
     }
 
     protected static Dataset<Row> atlasEdgesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -374,7 +372,7 @@ public final class AtlasDataFrame
         }
     }
 
-    private AtlasDataFrame()
+    public AtlasDataFrame()
     {
 
     }
