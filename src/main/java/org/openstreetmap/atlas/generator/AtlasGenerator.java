@@ -20,6 +20,7 @@ import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
+import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.sub.AtlasCutType;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -27,7 +28,6 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMapArchiver;
 import org.openstreetmap.atlas.geography.boundary.CountryShardListing;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
-import org.openstreetmap.atlas.tags.Taggable;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
@@ -124,16 +124,17 @@ public class AtlasGenerator extends SparkJob
                 .get(AtlasGeneratorParameters.CONFIGURED_FILTER_OUTPUT);
         final StringList configuredFilterName = (StringList) command
                 .get(AtlasGeneratorParameters.CONFIGURED_FILTER_NAME);
-        final Predicate<Taggable> taggableOutputFilter;
+        final Predicate<AtlasEntity> taggableOutputFilter;
         List<ConfiguredFilter> configuredOutputFilter = null;
         if (shouldIncludeFilteredOutputConfiguration == null)
         {
-            taggableOutputFilter = taggable -> false;
+            taggableOutputFilter = atlasEntity -> false;
         }
         else
         {
-            taggableOutputFilter = AtlasGeneratorParameters
-                    .getTaggableFilterFrom(shouldIncludeFilteredOutputConfiguration, sparkContext);
+            taggableOutputFilter = atlasEntity -> AtlasGeneratorParameters
+                    .getTaggableFilterFrom(shouldIncludeFilteredOutputConfiguration, sparkContext)
+                    .test(atlasEntity);
         }
         if (configuredFilterPath != null)
         {
@@ -183,7 +184,7 @@ public class AtlasGenerator extends SparkJob
         saveAsHadoop(countryRawAtlasRDD, AtlasGeneratorJobGroup.RAW, output);
 
         // Subatlas the raw shard Atlas files based on water relations
-        final Predicate<Taggable> slicingFilter = AtlasGeneratorParameters
+        final Predicate<AtlasEntity> slicingFilter = AtlasGeneratorParameters
                 .buildAtlasLoadingOption(broadcastBoundaries.getValue(),
                         broadcastLoadingOptions.getValue())
                 .getRelationSlicingFilter();
@@ -214,7 +215,7 @@ public class AtlasGenerator extends SparkJob
             logger.warn(EXCEPTION_MESSAGE, AtlasGeneratorJobGroup.SLICED.getDescription(),
                     exception);
         }
-        final Predicate<Taggable> edgeFilter = AtlasGeneratorParameters.buildAtlasLoadingOption(
+        final Predicate<AtlasEntity> edgeFilter = AtlasGeneratorParameters.buildAtlasLoadingOption(
                 broadcastBoundaries.getValue(), broadcastLoadingOptions.getValue()).getEdgeFilter();
         final JavaPairRDD<String, Atlas> edgeOnlySubAtlasRDD = slicedAtlasShardsRDD
                 .mapToPair(AtlasGeneratorHelper.subatlas(edgeFilter, AtlasCutType.SILK_CUT))

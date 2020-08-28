@@ -9,6 +9,7 @@ import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
+import org.openstreetmap.atlas.geography.atlas.pbf.BridgeConfiguredFilter;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasSlicer;
@@ -39,13 +40,6 @@ import org.slf4j.LoggerFactory;
 public class WorldAtlasGenerator extends Command
 {
     private static final Logger logger = LoggerFactory.getLogger(WorldAtlasGenerator.class);
-
-    private static final Switch<Resource> PBF = new Switch<>("pbf",
-            "The pbf file or folder containing the OSM pbfs", value -> openResource(value),
-            Optionality.REQUIRED);
-    private static final Switch<WritableResource> ATLAS = new Switch<>("atlas",
-            "The atlas file to which the Atlas will be saved", value -> openWritableResource(value),
-            Optionality.REQUIRED);
     private static final Switch<File> STATISTICS = new Switch<>("statistics",
             "The file that will contain the statistics", File::new, Optionality.OPTIONAL);
     // the default boundary is a bounding box of the world
@@ -81,6 +75,12 @@ public class WorldAtlasGenerator extends Command
             new StandardConfiguration(new StringResource("{\"filters\": []}")));
     private static Map<String, String> configuration = Maps.hashMap("fs.file.impl",
             LocalFileSystem.class.getName());
+    private static final Switch<Resource> PBF = new Switch<>("pbf",
+            "The pbf file or folder containing the OSM pbfs", WorldAtlasGenerator::openResource,
+            Optionality.REQUIRED);
+    private static final Switch<WritableResource> ATLAS = new Switch<>("atlas",
+            "The atlas file to which the Atlas will be saved",
+            WorldAtlasGenerator::openWritableResource, Optionality.REQUIRED);
 
     public static void main(final String[] args)
     {
@@ -131,7 +131,8 @@ public class WorldAtlasGenerator extends Command
         if (edgeConfiguration != null)
         {
             loadingOptions.setEdgeFilter(
-                    new ConfiguredTaggableFilter(new StandardConfiguration(edgeConfiguration)));
+                    new BridgeConfiguredFilter("", AtlasLoadingOption.ATLAS_EDGE_FILTER_NAME,
+                            new StandardConfiguration(edgeConfiguration)));
         }
 
         if (pbfWayConfiguration == null)

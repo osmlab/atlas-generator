@@ -10,6 +10,7 @@ import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenc
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
+import org.openstreetmap.atlas.geography.atlas.pbf.BridgeConfiguredFilter;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
@@ -78,12 +79,6 @@ public final class AtlasGeneratorParameters
             "osmPbfRelationConfiguration",
             "The path to the configuration file that defines which PBF Relations becomes an Atlas Entity",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
-    public static final Switch<String> SHOULD_ALWAYS_SLICE_CONFIGURATION = new Switch<>(
-            "shouldAlwaysSliceConfiguration",
-            "The path to the configuration file that defines which entities on which country slicing will"
-                    + " always be attempted regardless of the number of countries it intersects according to the"
-                    + " country boundary map's grid index.",
-            StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION = new Switch<>(
             "shouldIncludeFilteredOutputConfiguration",
             "The path to the configuration file that defines which will be included in filtered output."
@@ -116,6 +111,13 @@ public final class AtlasGeneratorParameters
             final Resource configurationResource)
     {
         return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+    }
+
+    public static BridgeConfiguredFilter getConfiguredFilterFrom(final String root,
+            final String name, final Resource configurationResource)
+    {
+        return new BridgeConfiguredFilter(root, name,
+                getStandardConfigurationFrom(configurationResource));
     }
 
     public static List<ConfiguredFilter> getConfiguredFilterListFrom(final StringList name,
@@ -189,8 +191,9 @@ public final class AtlasGeneratorParameters
         final String edgeConfiguration = properties.get(EDGE_CONFIGURATION.getName());
         if (edgeConfiguration != null)
         {
-            atlasLoadingOption
-                    .setEdgeFilter(getTaggableFilterFrom(new StringResource(edgeConfiguration)));
+            atlasLoadingOption.setEdgeFilter(
+                    getConfiguredFilterFrom("", AtlasLoadingOption.ATLAS_EDGE_FILTER_NAME,
+                            new StringResource(edgeConfiguration)));
         }
 
         final String waySectioningConfiguration = properties
@@ -198,7 +201,8 @@ public final class AtlasGeneratorParameters
         if (waySectioningConfiguration != null)
         {
             atlasLoadingOption.setWaySectionFilter(
-                    getTaggableFilterFrom(new StringResource(waySectioningConfiguration)));
+                    getConfiguredFilterFrom("", AtlasLoadingOption.ATLAS_WAY_SECTION_FILTER_NAME,
+                            new StringResource(waySectioningConfiguration)));
         }
 
         final String pbfNodeConfiguration = properties.get(PBF_NODE_CONFIGURATION.getName());
@@ -223,19 +227,12 @@ public final class AtlasGeneratorParameters
                     getTaggableFilterFrom(new StringResource(pbfRelationConfiguration)));
         }
 
-        final String forceSlicingConfiguration = properties
-                .get(SHOULD_ALWAYS_SLICE_CONFIGURATION.getName());
-        if (forceSlicingConfiguration != null)
-        {
-            atlasLoadingOption.setRelationSlicingFilter(
-                    getTaggableFilterFrom(new StringResource(forceSlicingConfiguration)));
-        }
-
         final String slicingConfiguration = properties.get(SLICING_CONFIGURATION.getName());
         if (slicingConfiguration != null)
         {
-            atlasLoadingOption.setRelationSlicingFilter(
-                    getTaggableFilterFrom(new StringResource(slicingConfiguration)));
+            atlasLoadingOption.setRelationSlicingFilter(getConfiguredFilterFrom("",
+                    AtlasLoadingOption.ATLAS_RELATION_SLICING_FILTER_NAME,
+                    new StringResource(slicingConfiguration)));
         }
 
         return atlasLoadingOption;
@@ -284,7 +281,7 @@ public final class AtlasGeneratorParameters
                 PBF_SHARDING, PREVIOUS_OUTPUT_FOR_DELTA, CODE_VERSION, DATA_VERSION,
                 EDGE_CONFIGURATION, WAY_SECTIONING_CONFIGURATION, PBF_NODE_CONFIGURATION,
                 PBF_WAY_CONFIGURATION, PBF_RELATION_CONFIGURATION, SLICING_CONFIGURATION,
-                ATLAS_SCHEME, SHOULD_ALWAYS_SLICE_CONFIGURATION, LINE_DELIMITED_GEOJSON_OUTPUT,
+                ATLAS_SCHEME, LINE_DELIMITED_GEOJSON_OUTPUT,
                 SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
                 CONFIGURED_FILTER_NAME, STATISTICS);
