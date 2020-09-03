@@ -38,7 +38,7 @@ public class SparkInputTest
     @Before
     public void setup()
     {
-        // @TODO: replace with inclusive language once
+        // TODO replace with inclusive language once
         // https://issues.apache.org/jira/browse/SPARK-32333 is completed
         final SparkConf conf = new SparkConf();
         conf.setMaster("local");

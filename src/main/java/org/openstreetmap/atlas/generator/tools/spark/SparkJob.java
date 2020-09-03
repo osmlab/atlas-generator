@@ -140,7 +140,7 @@ public abstract class SparkJob extends Command implements Serializable
 
         if (sparkCluster != null)
         {
-            // @TODO: replace with inclusive language once
+            // TODO replace with inclusive language once
             // https://issues.apache.org/jira/browse/SPARK-32333 is completed
             configuration.setMaster(sparkCluster);
         }

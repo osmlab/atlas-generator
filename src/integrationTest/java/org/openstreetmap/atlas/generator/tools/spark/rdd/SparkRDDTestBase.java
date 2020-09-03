@@ -17,7 +17,7 @@ public class SparkRDDTestBase extends DefaultSparkContextProvider
 
     private Map<String, String> fileSystemConfig = new HashMap<>();
 
-    // @TODO: replace with inclusive language once https://issues.apache.org/jira/browse/SPARK-32333
+    // TODO replace with inclusive language once https://issues.apache.org/jira/browse/SPARK-32333
     // is completed
     private SparkConf configuration = new SparkConf().setMaster("local[*]")
             .setAppName(this.getClass().getCanonicalName());
