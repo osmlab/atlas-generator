@@ -102,19 +102,19 @@ public class AtlasMissingShardVerifier extends Command
         new AtlasMissingShardVerifier().run(args);
     }
 
-    private static String createMasterQuery(final CountryBoundaryMap boundaries,
+    private static String createPrimaryQuery(final CountryBoundaryMap boundaries,
             final Set<CountryShard> missingCountryShards)
     {
         // Build Overpass query that downloads all the nodes and ways needed
-        final StringBuilder masterQuery = new StringBuilder("(");
+        final StringBuilder primaryQuery = new StringBuilder("(");
         for (final CountryShard countryShard : missingCountryShards)
         {
             final Clip clip = intersectionClip(countryShard, boundaries);
             final Rectangle clipBounds = clip.getClipMultiPolygon().bounds();
-            masterQuery.append(OverpassClient.buildCompactQuery("node", clipBounds));
+            primaryQuery.append(OverpassClient.buildCompactQuery("node", clipBounds));
         }
-        masterQuery.append(");out body;");
-        return masterQuery.toString();
+        primaryQuery.append(");out body;");
+        return primaryQuery.toString();
     }
 
     private static HttpHost createProxy(final StringList proxySettings)
@@ -195,12 +195,12 @@ public class AtlasMissingShardVerifier extends Command
         int returnCode = 0;
         final Set<CountryShard> missingCountryShards = removeShardsWithZeroIntersection(
                 missingCountryShardsUntrimmed, boundaries);
-        final String masterQuery = createMasterQuery(boundaries, missingCountryShards);
+        final String primaryQuery = createPrimaryQuery(boundaries, missingCountryShards);
         final OverpassClient client = new OverpassClient(server, proxy);
         try (SafeBufferedWriter writer = output.writer())
         {
-            final List<OverpassOsmNode> nodes = client.nodesFromQuery(masterQuery);
-            final List<OverpassOsmWay> ways = client.waysFromQuery(masterQuery);
+            final List<OverpassOsmNode> nodes = client.nodesFromQuery(primaryQuery);
+            final List<OverpassOsmWay> ways = client.waysFromQuery(primaryQuery);
             if (client.hasTooMuchResponseData())
             {
                 logger.warn(
