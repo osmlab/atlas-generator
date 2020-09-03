@@ -81,7 +81,7 @@ public class SparkJobIntegrationTest
                 .forEach(entry -> sparkConfiguration.add(entry.getKey() + "=" + entry.getValue()));
 
         final StringList arguments = new StringList();
-        arguments.add("-master=local");
+        arguments.add("-cluster=local");
         arguments.add("-output=resource://blah");
         arguments.add("-sparkOptions=" + sparkConfiguration.join(","));
 

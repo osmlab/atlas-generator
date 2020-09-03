@@ -131,7 +131,7 @@ public class AtlasGeneratorIntegrationTest
                 .forEach(entry -> sparkConfiguration.add(entry.getKey() + "=" + entry.getValue()));
 
         final StringList arguments = new StringList();
-        arguments.add("-master=local");
+        arguments.add("-cluster=local");
         arguments.add("-output=" + OUTPUT);
         arguments.add("-startedFolder=resource://test/started");
         arguments.add("-countries=DMA");
@@ -222,7 +222,7 @@ public class AtlasGeneratorIntegrationTest
                 .forEach(entry -> sparkConfiguration.add(entry.getKey() + "=" + entry.getValue()));
 
         final StringList arguments = new StringList();
-        arguments.add("-master=local");
+        arguments.add("-cluster=local");
         arguments.add("-output=" + OUTPUT);
         arguments.add("-startedFolder=resource://test/started");
         arguments.add("-countries=DMA");

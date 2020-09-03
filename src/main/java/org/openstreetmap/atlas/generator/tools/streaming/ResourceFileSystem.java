@@ -101,6 +101,8 @@ public class ResourceFileSystem extends FileSystem
 
     public static SparkConf configuredConf()
     {
+        // @TODO: replace with inclusive language once
+        // https://issues.apache.org/jira/browse/SPARK-32333 is completed
         final SparkConf result = new SparkConf();
         result.set(RESOURCE_FILE_SYSTEM_CONFIGURATION, ResourceFileSystem.class.getCanonicalName());
         result.set("spark.master", "local");

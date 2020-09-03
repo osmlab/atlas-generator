@@ -53,7 +53,7 @@ public abstract class SparkJob extends Command implements Serializable
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<String> OUTPUT = new Switch<>("output",
             "Output path of the Spark Job", StringConverter.IDENTITY, Optionality.REQUIRED);
-    public static final Switch<String> MASTER = new Switch<>("master", "The spark master URL",
+    public static final Switch<String> CLUSTER = new Switch<>("cluster", "The spark cluster URL",
             StringConverter.IDENTITY, Optionality.OPTIONAL);
     public static final Switch<Map<String, String>> SPARK_OPTIONS = new Switch<>("sparkOptions",
             "Comma separated list of Spark options, i.e. key1->value1,key2->value2",
@@ -124,7 +124,7 @@ public abstract class SparkJob extends Command implements Serializable
     @Override
     public int onRun(final CommandMap command)
     {
-        final String sparkMaster = (String) command.get(MASTER);
+        final String sparkCluster = (String) command.get(CLUSTER);
         @SuppressWarnings("unchecked")
         final Map<String, String> options = (Map<String, String>) command.get(SPARK_OPTIONS);
         @SuppressWarnings("unchecked")
@@ -138,9 +138,11 @@ public abstract class SparkJob extends Command implements Serializable
         options.forEach(configuration::set);
         logOptions(options);
 
-        if (sparkMaster != null)
+        if (sparkCluster != null)
         {
-            configuration.setMaster(sparkMaster);
+            // @TODO: replace with inclusive language once
+            // https://issues.apache.org/jira/browse/SPARK-32333 is completed
+            configuration.setMaster(sparkCluster);
         }
         configuration.set("spark.serializer", JavaSerializer.class.getCanonicalName());
         configuration.set(org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.COMPRESS,
@@ -325,8 +327,8 @@ public abstract class SparkJob extends Command implements Serializable
     @Override
     protected SwitchList switches()
     {
-        return new SwitchList().with(INPUT, OUTPUT, MASTER, SPARK_OPTIONS, ADDITIONAL_SPARK_OPTIONS,
-                COMPRESS_OUTPUT, SPARK_CONTEXT_PROVIDER);
+        return new SwitchList().with(INPUT, OUTPUT, CLUSTER, SPARK_OPTIONS,
+                ADDITIONAL_SPARK_OPTIONS, COMPRESS_OUTPUT, SPARK_CONTEXT_PROVIDER);
     }
 
     private FileSystem getFileSystem(final String path) throws IOException

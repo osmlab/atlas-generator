@@ -143,7 +143,7 @@
 		<module name="TrailingComment">
 			<property name="legalComment" value="NOSONAR"/>
 		</module>
-		<module name="TodoComment" />
+		<!--<module name="TodoComment" />-->
 		<module name="UpperEll" />
 		<module name="org.openstreetmap.atlas.utilities.checkstyle.ArrangementCheck">
 			<property name="arrangementDefinition" value="${config_loc}/arrangement.txt" />
