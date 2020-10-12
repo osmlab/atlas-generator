@@ -143,7 +143,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
      * @param parentAtlasPath
      *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
      * @param namespace
-     *            The namespace for this cache's resoures
+     *            The namespace for this cache's resources
      * @param configuration
      *            The configuration map
      */
@@ -187,15 +187,15 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
                 {
                     return true;
                 }
-                catch (final Exception e)
+                catch (final Exception exception)
                 {
-                    if (e.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND))
+                    if (exception.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND))
                     {
                         return false;
                     }
                     else
                     {
-                        throw new CoreException("Unable to test existence of {}", uri, e);
+                        throw new CoreException("Unable to test existence of {}", uri, exception);
                     }
                 }
             });
@@ -272,8 +272,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
 
     /**
      * Invalidate a given shard for a given country. It is highly recommended to use this
-     * implementation of {@link HadoopAtlasFileCache#invalidate(String, Shard)} over
-     * {@link HadoopAtlasFileCache#invalidate(URI)}.
+     * implementation over {@link HadoopAtlasFileCache#invalidate(URI)}.
      *
      * @param country
      *            the country
