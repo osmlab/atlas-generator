@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
     private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
-    private static final String GLOBAL_HADOOP_FILECACHE_NAMESPACE = "__HadoopAtlasFileCache_global_namespace__";
+    private static final String GLOBAL_HADOOP_FILE_CACHE_NAMESPACE = "__HadoopAtlasFileCache_global_namespace__";
     private static final int RETRY_ATTEMPTS = 5;
 
     private final String parentAtlasPath;
@@ -85,7 +85,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Map<String, String> configuration)
     {
-        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
+        this(parentAtlasPath, GLOBAL_HADOOP_FILE_CACHE_NAMESPACE,
                 AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), configuration);
     }
 
@@ -100,7 +100,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Function<URI, Optional<Resource>> fetcher)
     {
-        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
+        this(parentAtlasPath, GLOBAL_HADOOP_FILE_CACHE_NAMESPACE,
                 AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), fetcher);
     }
 
@@ -134,7 +134,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
-        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE, atlasScheme, configuration);
+        this(parentAtlasPath, GLOBAL_HADOOP_FILE_CACHE_NAMESPACE, atlasScheme, configuration);
     }
 
     /**
