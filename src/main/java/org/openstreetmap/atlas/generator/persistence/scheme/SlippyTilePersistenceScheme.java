@@ -31,14 +31,12 @@ import org.openstreetmap.atlas.streaming.resource.FileSuffix;
  */
 public class SlippyTilePersistenceScheme implements Serializable
 {
-    private static final long serialVersionUID = -7098822765716165700L;
-
     public static final String ZOOM = "zz";
     public static final String X_INDEX = "xx";
     public static final String Y_INDEX = "yy";
-
     static final String HYPHEN = "-";
-
+    private static final long serialVersionUID = -7098822765716165700L;
+    private final SlippyTilePersistenceSchemeType type;
     private final String scheme;
     private final FileSuffix suffix;
 
@@ -63,6 +61,7 @@ public class SlippyTilePersistenceScheme implements Serializable
 
     public SlippyTilePersistenceScheme(final SlippyTilePersistenceSchemeType type)
     {
+        this.type = type;
         this.scheme = type.getValue();
         this.suffix = type.getSuffix();
     }
@@ -83,5 +82,10 @@ public class SlippyTilePersistenceScheme implements Serializable
     public String getScheme()
     {
         return this.scheme + this.suffix;
+    }
+
+    public SlippyTilePersistenceSchemeType getType()
+    {
+        return this.type;
     }
 }
