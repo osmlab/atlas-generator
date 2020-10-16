@@ -1,15 +1,15 @@
 # cloudPBFShardController - PBF Sharding on EC2 Controller
 
-This group of scripts can be used to export the process of sharding a pbf file. In order to achieve efficient distributed processing of global OSM data, this sharding process shards a planet pbf (or other large pbf file) into many small pbf files (mostly with a size of 2~5 MB). Atlas uses a dynamic quadtree of Slippy tiles to shard global OSM data.
+This group of scripts can be used to automate the process of sharding a pbf file in the cloud. In order to achieve efficient distributed processing of global OSM data, this sharding process shards a planet pbf (or other large pbf file) into many small pbf files (mostly with a size of 2~5 MB). Atlas uses a dynamic quadtree of Slippy tiles to shard global OSM data.
 
 The root of the quadtree is the single slippy tile at zoom level 0 covering the whole world. Starting from the root, the sharding process does recursive quadtree-splitting on the leaf nodes of the tree, until the amount of data in each leaf is lower than a predefined threshold. To shard one node, the Slippy tile corresponding to the node is split into 4 smaller tiles on the next zoom level, and each smaller tile will become a new child of the node. The end result of the process is a quadtree where each node corresponds to a Slippy tile, and the depth of the node corresponds to the zoom level of the tile. The final leaf nodes define the bounding boxes of all the shards.
 
 Since the sharding process can take a great deal of memory and processing it is recommended to execute the sharding in the cloud. This folder contains the following files to facilitate starting a VM, executing the sharding processing, pushing the resulting sharded pbf files to an object store, and terminating the VM.
 
-- `sharding_quadtree.txt` - An example sharding quadtree plan. This can be updated or replaced if needed.
-- `README.md` - This file to document the reason and usage of these scripts.
-- `pbfShardGenerator.py` - A python script to be executed on the virtual machine in the cloud. This script performs the actual sharding of the pbf file and also pushes the results to an S3 object store.
 - `cloudPBFShardControl.py` - A python script to be executed on a local server that controls the creation and termination of cloud VMs. This scrip also executes the `pbfShardGenerator.py` on the remote VM to start the sharding process.
+- `pbfShardGenerator.py` - A python script to be executed on the virtual machine in the cloud. This script performs the actual sharding of the pbf file and also pushes the results to an S3 object store.
+- `README.md` - This file to document the reason and usage of these scripts.
+- `sharding_quadtree.txt` - An example sharding quadtree plan. This can be updated or replaced if needed.
 
 ## Prerequisites
 
