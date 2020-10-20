@@ -408,7 +408,7 @@ class CloudPBFShardControl:
         finish("Timeout while waiting for EC2 instance to be ready", -1)
 
 
-def parse_args(cloudctl) -> argparse.ArgumentParser:
+def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
     """Parse user parameters
 
     :returns: args
