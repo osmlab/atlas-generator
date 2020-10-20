@@ -316,19 +316,17 @@ class CloudPBFShardControl:
             if not self.is_sharding_script_running():
                 logger.info("Sharding script has completed.")
                 if self.ssh_cmd(
-                    "grep 'PBFShardGenerator:Done' {}".format(self.shardLog), quiet=True
+                    "grep 'CRITICAL Done' {}".format(self.shardLog), quiet=True
                 ):
                     logger.error("Sharding script did not complete successfully.")
-                    self.get_files(
-                        self.shardLog,
-                        "./pbfShardGenerator-"
-                        + time.strftime("%Y%m%d-%H%M%S")
-                        + ".log",
+                    localLog = (
+                        "./pbfShardGenerator-" + time.strftime("%Y%m%d%H%M%S") + ".log"
                     )
+                    self.get_files(self.shardLog, localLog)
                     logger.error(
-                        "---tail of shard log output ({})---".format(self.shardLogName)
+                        "---tail of shard log output ({})---\n\t".format(localLog)
+                        + "\t".join(map(str, open(localLog, "r").readlines()[-10:]))
                     )
-                    logger.error(open(self.shardLogName, "r").readlines()[-10:])
                     finish(status=-1)
                 return 0
             time.sleep(60)
@@ -343,7 +341,7 @@ class CloudPBFShardControl:
         :returns: 0 - if sharding process is NOT running
         :returns: 1 - if sharding process is running
         """
-        if self.ssh_cmd("pgrep -P1 -f pbfShardGenerator"):
+        if self.ssh_cmd("pgrep -P1 -f pbfShardGenerator", quiet=True):
             return 0
         logger.debug("Sharding script is still running ... ")
         return 1
