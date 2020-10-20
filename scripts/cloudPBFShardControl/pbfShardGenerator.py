@@ -598,7 +598,7 @@ class SlippyTileQuadTreeNode:
         )
 
 
-def parse_args(sharder: "PBFShardCtl") -> "ArgumentParser":
+def parse_args(sharder: PBFShardCtl) -> argparse.ArgumentParser:
     """
     Parse user parameters
     return: args
@@ -622,7 +622,7 @@ def parse_args(sharder: "PBFShardCtl") -> "ArgumentParser":
     parser_prep = subparsers.add_parser(
         "prep", help="Prepare the local system to execute the sharding process."
     )
-    parser_prep.set_defaults(func=PBFShardCtl.prep)
+    parser_prep.set_defaults(func=sharder.prep)
 
     parser_shard = subparsers.add_parser("shard", help="Start the sharding process.")
     parser_shard.add_argument(
@@ -659,7 +659,7 @@ def parse_args(sharder: "PBFShardCtl") -> "ArgumentParser":
             sharder.maxShardPerConfig
         ),
     )
-    parser_shard.set_defaults(func=PBFShardCtl.shard)
+    parser_shard.set_defaults(func=sharder.shard)
 
     parser_sync = subparsers.add_parser(
         "sync", help="Sync pbf files from this system to an S3 bucket and folder"
@@ -667,18 +667,18 @@ def parse_args(sharder: "PBFShardCtl") -> "ArgumentParser":
     parser_sync.add_argument(
         "-o", "--out", required=True, help="Out - The S3 Output directory."
     )
-    parser_sync.set_defaults(func=PBFShardCtl.sync)
+    parser_sync.set_defaults(func=sharder.sync)
 
     parser_clean = subparsers.add_parser(
         "clean", help="Clean up sharding instance accoutrements"
     )
-    parser_clean.set_defaults(func=PBFShardCtl.clean)
+    parser_clean.set_defaults(func=sharder.clean)
 
     args = parser.parse_args()
     return args
 
 
-def execute(args, sharder: "PBFShardCtl"):
+def execute(args, sharder: PBFShardCtl):
     """
     Evaluate the given arguments.
     :param args: The user's input.
@@ -701,7 +701,7 @@ def execute(args, sharder: "PBFShardCtl"):
         finish()
 
     if hasattr(args, "func") and args.func:
-        args.func(sharder)
+        args.func()
     else:
         finish("A command must be specified. Try '-h' for help.")
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-execute the pbf sharding process on an EC2 instance
+Control the pbf sharding process on a remote EC2 instance
 """
 import argparse
 import logging
@@ -94,7 +94,6 @@ class CloudPBFShardControl:
         localFiles = [
             self.shardGenName,
             "sharding_quadtree.txt",
-            "sharding_quadtree.cfg",
         ]
         self.put_files(localFiles, self.shardDir)
 
@@ -161,18 +160,6 @@ class CloudPBFShardControl:
                 "No S3 output folder specified, skipping s3 sync. Use -o 's3folder/path' to sync to s3"
             )
             return
-        # # copy AWS config and credentials files
-        # awsConfig = os.path.join(os.environ.get("HOME"), ".aws/config")
-        # awsCredentials = os.path.join(os.environ.get("HOME"), ".aws/credentials")
-        # logger.info(
-        #     "Pushing AWS config({}) and credentials({}) to EC2 instance.".format(
-        #         awsConfig, awsCredentials
-        #     )
-        # )
-        # remoteDir = "/home/ubuntu/.aws/"
-        # if self.ssh_cmd("mkdir -p {}".format(remoteDir)):
-        #     finish("Unable to create directory", -1)
-        # self.put_files([awsConfig, awsCredentials], remoteDir)
         logger.info(
             "Syncing EC2 instance pbf output with S3 bucket {}.".format(self.s3Folder)
         )
@@ -246,7 +233,7 @@ class CloudPBFShardControl:
 
     def ssh_connect(self):
         """Connect to an EC2 instance"""
-        for timeout in range(5):
+        for timeout in range(16):
             try:
                 keyFile = "{}/.ssh/{}.pem".format(os.environ.get("HOME"), self.key)
                 key = paramiko.RSAKey.from_private_key_file(keyFile)
@@ -421,7 +408,7 @@ class CloudPBFShardControl:
         finish("Timeout while waiting for EC2 instance to be ready", -1)
 
 
-def parse_args(cloudctl):
+def parse_args(cloudctl) -> argparse.ArgumentParser:
     """Parse user parameters
 
     :returns: args
@@ -486,7 +473,7 @@ def parse_args(cloudctl):
     parser_prep.add_argument(
         "-i", "--id", help="ID - Indicates the ID of an existing VM instance to use"
     )
-    parser_prep.set_defaults(func=CloudPBFShardControl.prep)
+    parser_prep.set_defaults(func=cloudctl.prep)
 
     parser_shard = subparsers.add_parser(
         "shard",
@@ -526,7 +513,7 @@ def parse_args(cloudctl):
         help="processes - The number of parallel osmium processes to start "
         "(Default: {})".format(cloudctl.processes),
     )
-    parser_shard.set_defaults(func=CloudPBFShardControl.shard)
+    parser_shard.set_defaults(func=cloudctl.shard)
 
     parser_sync = subparsers.add_parser(
         "sync", help="Sync pbf files from instance to S3 folder"
@@ -552,7 +539,7 @@ def parse_args(cloudctl):
     parser_sync.add_argument(
         "-o", "--out", required=True, help="Out - The S3 Output directory"
     )
-    parser_sync.set_defaults(func=CloudPBFShardControl.sync)
+    parser_sync.set_defaults(func=cloudctl.sync)
 
     parser_clean = subparsers.add_parser("clean", help="Clean up instance")
     parser_clean.add_argument(
@@ -573,7 +560,7 @@ def parse_args(cloudctl):
         "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html. "
         "(e.g. `--key=aws-key`)",
     )
-    parser_clean.set_defaults(func=CloudPBFShardControl.clean)
+    parser_clean.set_defaults(func=cloudctl.clean)
 
     args = parser.parse_args()
     return args
@@ -609,7 +596,7 @@ def evaluate(args, cloudctl):
         finish()
 
     if hasattr(args, "func") and args.func:
-        args.func(cloudctl)
+        args.func()
     else:
         finish("A command must be specified. Try '-h' for help.")
 

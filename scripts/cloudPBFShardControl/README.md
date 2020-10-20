@@ -48,18 +48,18 @@ echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n  eval "$(pyenv init -)"\nf
 
 ### Python libraries
 
-Install python libraries necessary to execute the application.
+Install python libraries necessary to execute the application as listed in requirements.txt.
 
 - boto3 - the python libraries to control EC2 instances
 - paramiko - ssh agent so the script can ssh to the EC2 instance.
 
 ```
-sudo pip install boto3 paramiko
+sudo pip install -r requirements.txt
 ```
 
 ## Running the cloudPBFShardControl script
 
-There are three major commands you can use with the cloudPBFShardControl.py script. Each one has its own help. The main help display shows the flags and parameters that work with all the commands. The following parameters apply to all commands and must be used on the command line before the command.
+There are four major commands you can use with the cloudPBFShardControl.py script. Each one has its own help. The main help display shows the flags and parameters that work with all the commands. The following parameters apply to all commands and must be used on the command line before the command.
 
 - `-h, --help` - Show help message and exit
 - `-n NAME, --name NAME` - If creating an EC2 instance, this NAME will be used to override the default EC2 instance name: 'PBFShardGenerator'. The script doesn't use the EC2 instance name so this can be set to any value that the user would like to use.
