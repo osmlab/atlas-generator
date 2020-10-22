@@ -570,30 +570,29 @@ def evaluate(args, cloudctl):
     :param args: The user's input.
     :param cloudctl: An instance of CloudPBFShardControl to use.
     """
-    if args.terminate:
-        cloudctl.terminate = args.terminate
-    if args.name:
-        cloudctl.instanceName = args.name
-    if args.template:
-        cloudctl.templateName = args.templateName
-    if args.minutes:
-        cloudctl.timeoutMinutes = args.minutes
-    if hasattr(args, "processes") and args.processes:
-        cloudctl.processes = args.processes
-    if hasattr(args, "key") and args.key:
-        cloudctl.key = args.key
-    if hasattr(args, "out") and args.out:
-        cloudctl.s3Folder = args.out
-    if hasattr(args, "pbf") and args.pbf:
-        cloudctl.pbfURL = args.pbf
-    if hasattr(args, "id") and args.id:
-        cloudctl.instanceId = args.id
-        cloudctl.get_instance_info()
-    if args.version:
+    cloudctl.terminate = args.terminate
+    if args.version is True:
         logger.critical("This is version {0}.".format(VERSION))
         finish()
+    if args.name is not None:
+        cloudctl.instanceName = args.name
+    if args.template is not None:
+        cloudctl.templateName = args.templateName
+    if args.minutes is not None:
+        cloudctl.timeoutMinutes = args.minutes
+    if hasattr(args, "processes") and args.processes is not None:
+        cloudctl.processes = args.processes
+    if hasattr(args, "key") and args.key is not None:
+        cloudctl.key = args.key
+    if hasattr(args, "out") and args.out is not None:
+        cloudctl.s3Folder = args.out
+    if hasattr(args, "pbf") and args.pbf is not None:
+        cloudctl.pbfURL = args.pbf
+    if hasattr(args, "id") and args.id is not None:
+        cloudctl.instanceId = args.id
+        cloudctl.get_instance_info()
 
-    if hasattr(args, "func") and args.func:
+    if hasattr(args, "func") and args.func is not None:
         args.func()
     else:
         finish("A command must be specified. Try '-h' for help.")

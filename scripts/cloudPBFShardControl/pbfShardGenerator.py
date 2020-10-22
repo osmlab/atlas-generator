@@ -684,23 +684,23 @@ def execute(args, sharder: PBFShardCtl):
     :param args: The user's input.
     """
 
-    if hasattr(args, "quadtree_txt_file") and args.quadtree_txt_file:
-        sharder.quadtreeFileName = args.quadtree_txt_file
-    if hasattr(args, "max_shard_per_step") and args.max_shard_per_step:
-        sharder.maxShardPerStep = args.max_shard_per_step
-    if hasattr(args, "max_shard_per_config") and args.max_shard_per_config:
-        sharder.maxShardPerConfig = args.max_shard_per_config
-    if hasattr(args, "out") and args.out:
-        sharder.s3Folder = args.out
-    if hasattr(args, "pbf") and args.pbf:
-        sharder.pbfURL = args.pbf
-    if hasattr(args, "processes") and args.processes:
-        sharder.maxOsmiumProcesses = args.processes
-    if args.version:
+    if args.version is True:
         logger.critical("This is version {0}.".format(VERSION))
         finish()
+    if hasattr(args, "quadtree_txt_file") and args.quadtree_txt_file is not None:
+        sharder.quadtreeFileName = args.quadtree_txt_file
+    if hasattr(args, "max_shard_per_step") and args.max_shard_per_step is not None:
+        sharder.maxShardPerStep = args.max_shard_per_step
+    if hasattr(args, "max_shard_per_config") and args.max_shard_per_config is not None:
+        sharder.maxShardPerConfig = args.max_shard_per_config
+    if hasattr(args, "out") and args.out is not None:
+        sharder.s3Folder = args.out
+    if hasattr(args, "pbf") and args.pbf is not None:
+        sharder.pbfURL = args.pbf
+    if hasattr(args, "processes") and args.processes is not None:
+        sharder.maxOsmiumProcesses = args.processes
 
-    if hasattr(args, "func") and args.func:
+    if hasattr(args, "func") and args.func is not None:
         args.func()
     else:
         finish("A command must be specified. Try '-h' for help.")
