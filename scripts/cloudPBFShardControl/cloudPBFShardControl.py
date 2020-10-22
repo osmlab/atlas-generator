@@ -87,6 +87,10 @@ class CloudPBFShardControl:
         versions of software need to be pushed to the instance prior to sharding.
         """
         logger.info("Prepare EC2 instance for sharding")
+        if self.instanceId == "":
+            self.create_instance()
+            self.get_instance_info()
+
         if self.ssh_cmd("mkdir -p {}".format(self.shardDir)):
             finish("Unable to create directory", -1)
 
