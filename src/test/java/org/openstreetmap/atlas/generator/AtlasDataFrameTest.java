@@ -16,6 +16,11 @@ import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Test for AtlasDataFrame.
+ * 
+ * @author jamesgage
+ */
 public class AtlasDataFrameTest
 {
     private static final Logger logger = LoggerFactory.getLogger(AtlasDataFrameTest.class);
@@ -41,9 +46,7 @@ public class AtlasDataFrameTest
         final JavaRDD<Atlas> atlasJavaRDD = javaSparkContext.parallelize(atlasList,
                 atlasList.size());
 
-        final AtlasDataFrame atlasDataFrame = new AtlasDataFrame();
-
-        final Dataset<Row> areaDataframe = atlasDataFrame.atlasAreasToDataFrame(atlasJavaRDD,
+        final Dataset<Row> areaDataframe = AtlasDataFrame.atlasAreasToDataFrame(atlasJavaRDD,
                 javaSparkContext);
 
         areaDataframe.show();

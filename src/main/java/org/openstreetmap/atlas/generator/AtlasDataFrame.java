@@ -372,7 +372,7 @@ public final class AtlasDataFrame
         }
     }
 
-    public AtlasDataFrame()
+    private AtlasDataFrame()
     {
 
     }
