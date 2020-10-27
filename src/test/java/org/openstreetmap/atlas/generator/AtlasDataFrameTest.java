@@ -27,7 +27,7 @@ public class AtlasDataFrameTest
                 () -> new File("/Users/jamesgage/Desktop/scratch/dfTesting/DMA_9-168-233.atlas")
                         .read());
         final Atlas atlas = PackedAtlas.load(file);
-        logger.info(atlas.metaData().toReadableString());
+        logger.info(atlas.edges().toString());
 
         final ArrayList<Atlas> atlasList = new ArrayList<>();
         atlasList.add(atlas);
