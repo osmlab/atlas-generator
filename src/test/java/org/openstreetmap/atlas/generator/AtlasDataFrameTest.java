@@ -7,10 +7,10 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.junit.Assert;
 import org.junit.Test;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
-import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
-import org.openstreetmap.atlas.streaming.resource.File;
+import org.openstreetmap.atlas.geography.atlas.AtlasResourceLoader;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
 import org.slf4j.Logger;
@@ -29,9 +29,9 @@ public class AtlasDataFrameTest
     public void atlasDataFrameTest()
     {
         final Resource file = new InputStreamResource(
-                () -> new File("/Users/jamesgage/Desktop/scratch/dfTesting/DMA_9-168-233.atlas")
-                        .read());
-        final Atlas atlas = PackedAtlas.load(file);
+                () -> AtlasDataFrameTest.class.getResourceAsStream("Alcatraz.atlas.txt"));
+        final AtlasResourceLoader loader = new AtlasResourceLoader();
+        final Atlas atlas = loader.load(file);
         logger.info(atlas.edges().toString());
 
         final ArrayList<Atlas> atlasList = new ArrayList<>();
@@ -42,13 +42,12 @@ public class AtlasDataFrameTest
         sparkConf.setMaster("local");
         final JavaSparkContext javaSparkContext = new JavaSparkContext(sparkConf);
 
-        // final JavaRDD<Atlas> atlasJavaRDD = atlasRDD.toJavaRDD();
         final JavaRDD<Atlas> atlasJavaRDD = javaSparkContext.parallelize(atlasList,
                 atlasList.size());
 
         final Dataset<Row> areaDataframe = AtlasDataFrame.atlasAreasToDataFrame(atlasJavaRDD,
                 javaSparkContext);
 
-        areaDataframe.show();
+        Assert.assertEquals(areaDataframe.first().get(0), "24433389000000");
     }
 }

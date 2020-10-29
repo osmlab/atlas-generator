@@ -25,7 +25,7 @@ import scala.collection.JavaConversions;
  */
 public final class AtlasDataFrame
 {
-    protected static Dataset<Row> atlasAreasToDataFrame(final JavaRDD<Atlas> atlasRDD,
+    public static Dataset<Row> atlasAreasToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
@@ -70,7 +70,7 @@ public final class AtlasDataFrame
         return sqlContext.createDataFrame(rowRDD, schema);
     }
 
-    protected static Dataset<Row> atlasEdgesToDataFrame(final JavaRDD<Atlas> atlasRDD,
+    public static Dataset<Row> atlasEdgesToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final SparkSession spark)
     {
         // Generate the schema
@@ -140,7 +140,7 @@ public final class AtlasDataFrame
         return spark.createDataFrame(rowRDD, schema);
     }
 
-    protected static Dataset<Row> atlasLinesToDataFrame(final JavaRDD<Atlas> atlasRDD,
+    public static Dataset<Row> atlasLinesToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final SparkSession spark)
     {
         // Generate the schema
@@ -190,7 +190,7 @@ public final class AtlasDataFrame
         return spark.createDataFrame(rowRDD, schema);
     }
 
-    protected static Dataset<Row> atlasNodesToDataFrame(final JavaRDD<Atlas> atlasRDD,
+    public static Dataset<Row> atlasNodesToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final SparkSession spark)
     {
         // Generate the schema
@@ -243,7 +243,7 @@ public final class AtlasDataFrame
         return spark.createDataFrame(rowRDD, schema);
     }
 
-    protected static Dataset<Row> atlasPointsToDataFrame(final JavaRDD<Atlas> atlasRDD,
+    public static Dataset<Row> atlasPointsToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final SparkSession spark)
     {
         // Generate the schema
@@ -286,7 +286,7 @@ public final class AtlasDataFrame
         return spark.createDataFrame(rowRDD, schema);
     }
 
-    protected static Dataset<Row> atlasRelationsToDataFrame(final JavaRDD<Atlas> atlasRDD,
+    public static Dataset<Row> atlasRelationsToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final SparkSession spark)
     {
         // Generate the schema
@@ -350,16 +350,19 @@ public final class AtlasDataFrame
 
     private static String typeValueToString(final int value)
     {
+        final int node = 0;
+        final int edge = 1;
+        final int area = 2;
         final int line = 3;
         final int point = 4;
         final int relation = 5;
         switch (value)
         {
-            case 0:
+            case node:
                 return "NODE";
-            case 1:
+            case edge:
                 return "EDGE";
-            case 2:
+            case area:
                 return "AREA";
             case line:
                 return "LINE";
