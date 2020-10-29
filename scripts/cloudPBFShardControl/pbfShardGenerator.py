@@ -16,7 +16,7 @@ import time
 from typing import List, TextIO, Tuple
 
 
-VERSION = "0.1.0"
+VERSION = "0.4.0"
 
 
 def setup_logging(default_level=logging.INFO):
@@ -52,8 +52,9 @@ class PBFShardCtl:
     def __init__(
         self,
         pbfURL="",
-        processes=5,
+        processes=4,
         s3Folder=None,
+        s3QuadTree=None,
         quadtree="sharding_quadtree.txt",
         maxShardPerStep=512,
         maxShardPerConfig=32,
@@ -77,6 +78,7 @@ class PBFShardCtl:
         self.pbfURL = pbfURL
         self.maxOsmiumProcesses = processes
         self.s3Folder = s3Folder
+        self.s3QuadTree = s3QuadTree
         self.quadtreeFileName = quadtree
         self.maxShardPerStep = maxShardPerStep
         self.maxShardPerConfig = maxShardPerConfig
@@ -92,10 +94,6 @@ class PBFShardCtl:
     @property
     def osmiumCfgDir(self):
         return os.path.join(self.scriptDir, "osmium_config/")
-
-    @property
-    def quadtreeFilePath(self):
-        return os.path.join(self.scriptDir, self.__quadtreeFileName)
 
     @property
     def quadtreeFileName(self):
@@ -398,9 +396,14 @@ class PBFShardCtl:
             shutil.rmtree(self.tmpDir)
         os.makedirs(self.tmpDir)
 
-        logger.info("Reading %s...", self.quadtreeFilePath)
+        if self.s3QuadTree is not None:
+            cmd = "aws s3 cp s3://{} {} ".format(self.s3QuadTree, self.quadtreeFileName)
+            if self.ssh_cmd(cmd):
+                finish("Unable to get {}".format(self.s3QuadTree), -1)
+
+        logger.info("Reading %s...", self.quadtreeFileName)
         tree = None
-        with open(self.quadtreeFilePath, "r+") as f:
+        with open(self.quadtreeFileName, "r+") as f:
             tree = SlippyTileQuadTreeNode.read(f)
 
         max_leaf_level, min_leaf_level, num_leaves = tree.scan_meta_data()
@@ -453,7 +456,7 @@ class PBFShardCtl:
                 finish("Unable to run osmium batch script...", -1)
 
         shutil.copy(
-            self.quadtreeFilePath, os.path.join(self.pbfFinalDir, "sharding.txt")
+            self.quadtreeFileName, os.path.join(self.pbfFinalDir, "sharding.txt")
         )
 
     def sync(self) -> None:
@@ -640,6 +643,10 @@ def parse_args(sharder: PBFShardCtl) -> argparse.ArgumentParser:
         ),
     )
     parser_shard.add_argument(
+        "--s3_quadtree_path",
+        help="bucket and path to Quadtree on S3. If not specified then local file is used.",
+    )
+    parser_shard.add_argument(
         "--quadtree_txt_file",
         help="Text file dump of a quadtree. (Default: {})".format(
             sharder.quadtreeFileName
@@ -687,6 +694,9 @@ def execute(args, sharder: PBFShardCtl):
     if args.version is True:
         logger.critical("This is version {0}.".format(VERSION))
         finish()
+
+    if hasattr(args, "s3_quadtree_path") and args.s3_quadtree_path is not None:
+        sharder.s3_quadtree_path = args.s3_quadtree_path
     if hasattr(args, "quadtree_txt_file") and args.quadtree_txt_file is not None:
         sharder.quadtreeFileName = args.quadtree_txt_file
     if hasattr(args, "max_shard_per_step") and args.max_shard_per_step is not None:

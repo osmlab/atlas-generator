@@ -16,7 +16,7 @@ from paramiko.auth_handler import AuthenticationException
 from scp import SCPClient
 
 
-VERSION = "0.1.0"
+VERSION = "0.4.0"
 ec2 = boto3.client("ec2")
 
 
@@ -56,7 +56,8 @@ class CloudPBFShardControl:
         key="",
         instanceId="",
         pbfURL="",
-        processes=5,
+        processes=4,
+        quadtree=None,
         s3Folder=None,
         terminate=False,
         templateName="pbf-sharding-ec2-template",
@@ -65,6 +66,7 @@ class CloudPBFShardControl:
         self.key = key
         self.instanceId = instanceId
         self.pbfURL = pbfURL
+        self.quadtree = quadtree
         self.processes = processes
         self.s3Folder = s3Folder
         self.terminate = terminate
@@ -128,9 +130,18 @@ class CloudPBFShardControl:
             self.get_instance_info()
 
         if not self.is_sharding_script_running():
-            start_cmd = "nohup {} shard -p {} -P {} > {} 2>&1 &".format(
-                self.shardGen, self.pbfURL, self.processes, self.shardLog
-            )
+            if self.quadtree is not None:
+                start_cmd = "nohup {} shard --s3_quadtree_path {} -p {} -P {} > {} 2>&1 &".format(
+                    self.shardGen,
+                    self.quadtree,
+                    self.pbfURL,
+                    self.processes,
+                    self.shardLog,
+                )
+            else:
+                start_cmd = "nohup {} shard -p {} -P {} > {} 2>&1 &".format(
+                    self.shardGen, self.pbfURL, self.processes, self.shardLog
+                )
             logger.info(
                 "Execute sharding scripts on EC2 instance. {}".format(start_cmd)
             )
@@ -515,6 +526,11 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         help="processes - The number of parallel osmium processes to start "
         "(Default: {})".format(cloudctl.processes),
     )
+    parser_shard.add_argument(
+        "-q",
+        "--quadtree",
+        help="bucket and path to Quadtree on S3. If not specified then local file is used.",
+    )
     parser_shard.set_defaults(func=cloudctl.shard)
 
     parser_sync = subparsers.add_parser(
@@ -584,6 +600,8 @@ def evaluate(args, cloudctl):
         cloudctl.templateName = args.templateName
     if args.minutes is not None:
         cloudctl.timeoutMinutes = args.minutes
+    if hasattr(args, "quadtree") and args.quadtree is not None:
+        cloudctl.quadtree = args.quadtree
     if hasattr(args, "processes") and args.processes is not None:
         cloudctl.processes = args.processes
     if hasattr(args, "key") and args.key is not None:
