@@ -26,7 +26,6 @@ repositories
     // For geotools
     maven { url "http://repo.osgeo.org/repository/release/" }
     mavenCentral()
-    mavenLocal()
     // For Spark CDH
     maven { url "https://repository.cloudera.com/content/repositories/releases/" }
     // For jetty (through spark)
