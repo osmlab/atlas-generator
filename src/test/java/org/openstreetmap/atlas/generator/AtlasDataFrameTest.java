@@ -48,6 +48,8 @@ public class AtlasDataFrameTest
         final Dataset<Row> areaDataframe = AtlasDataFrame.atlasAreasToDataFrame(atlasJavaRDD,
                 javaSparkContext);
 
+        areaDataframe.show();
         Assert.assertEquals(areaDataframe.first().get(0), "24433389000000");
+        javaSparkContext.close();
     }
 }
