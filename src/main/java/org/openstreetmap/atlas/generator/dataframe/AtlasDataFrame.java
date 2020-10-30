@@ -1,4 +1,4 @@
-package org.openstreetmap.atlas.generator;
+package org.openstreetmap.atlas.generator.dataframe;
 
 import java.util.ArrayList;
 import java.util.List;
