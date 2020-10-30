@@ -23,9 +23,6 @@ import org.openstreetmap.atlas.geography.sharding.converters.StringToShardConver
 public abstract class AbstractMultipleAtlasBasedOutputFormat<T>
         extends MultipleOutputFormat<String, T>
 {
-    // By default, save all the shards under each country folder
-    public static final String DEFAULT_SCHEME = "";
-
     @Override
     protected String generateFileNameForKeyValue(final String key, final T value, final String name)
     {
