@@ -9,7 +9,6 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -71,7 +70,7 @@ public final class AtlasDataFrame
     }
 
     public static Dataset<Row> atlasEdgesToDataFrame(final JavaRDD<Atlas> atlasRDD,
-            final SparkSession spark)
+            final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
@@ -106,9 +105,10 @@ public final class AtlasDataFrame
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        final List<Row> rows = new ArrayList<>();
-        atlasRDD.foreach(atlas ->
+        // final List<Row> rows = new ArrayList<>();
+        final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
+            final List<Row> rows = new ArrayList<>();
             atlas.edges().forEach(edge ->
             {
                 final long nodeIdentifier = edge.getIdentifier();
@@ -131,17 +131,16 @@ public final class AtlasDataFrame
                         outEdgeArray, hasReverseEdge, isClosedEdge,
                         JavaConversions.mapAsScalaMap(edge.getTags()), relationArray));
             });
+            return rows.iterator();
         });
-        final JavaSparkContext sparkContext = JavaSparkContext
-                .fromSparkContext(spark.sparkContext());
-        final JavaRDD<Row> rowRDD = sparkContext.parallelize(rows);
+        final SQLContext sqlContext = new SQLContext(javaSparkContext);
 
         // Create dataframe from rowRDD
-        return spark.createDataFrame(rowRDD, schema);
+        return sqlContext.createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasLinesToDataFrame(final JavaRDD<Atlas> atlasRDD,
-            final SparkSession spark)
+            final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
@@ -166,9 +165,9 @@ public final class AtlasDataFrame
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        final List<Row> rows = new ArrayList<>();
-        atlasRDD.foreach(atlas ->
+        final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
+            final List<Row> rows = new ArrayList<>();
             atlas.lines().forEach(line ->
             {
                 final long nodeIdentifier = line.getIdentifier();
@@ -182,16 +181,15 @@ public final class AtlasDataFrame
                 rows.add(RowFactory.create(idString, wktGeometry, lineBounds, isClosedLine,
                         JavaConversions.mapAsScalaMap(line.getTags()), relationArray));
             });
+            return rows.iterator();
         });
-        final JavaSparkContext sparkContext = JavaSparkContext
-                .fromSparkContext(spark.sparkContext());
-        final JavaRDD<Row> rowRDD = sparkContext.parallelize(rows);
+        final SQLContext sqlContext = new SQLContext(javaSparkContext);
         // Create dataframe from rowRDD
-        return spark.createDataFrame(rowRDD, schema);
+        return sqlContext.createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasNodesToDataFrame(final JavaRDD<Atlas> atlasRDD,
-            final SparkSession spark)
+            final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
@@ -216,9 +214,9 @@ public final class AtlasDataFrame
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        final List<Row> rows = new ArrayList<>();
-        atlasRDD.foreach(atlas ->
+        final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
+            final List<Row> rows = new ArrayList<>();
             atlas.nodes().forEach(node ->
             {
                 final long nodeIdentifier = node.getIdentifier();
@@ -234,17 +232,16 @@ public final class AtlasDataFrame
                 rows.add(RowFactory.create(idString, locationString, inEdgeArray, outEdgeArray,
                         JavaConversions.mapAsScalaMap(node.getTags()), relationArray));
             });
+            return rows.iterator();
         });
-        final JavaSparkContext sparkContext = JavaSparkContext
-                .fromSparkContext(spark.sparkContext());
-        final JavaRDD<Row> rowRDD = sparkContext.parallelize(rows);
+        final SQLContext sqlContext = new SQLContext(javaSparkContext);
 
         // Create dataframe from rowRDD
-        return spark.createDataFrame(rowRDD, schema);
+        return sqlContext.createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasPointsToDataFrame(final JavaRDD<Atlas> atlasRDD,
-            final SparkSession spark)
+            final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
@@ -263,9 +260,9 @@ public final class AtlasDataFrame
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        final List<Row> rows = new ArrayList<>();
-        atlasRDD.foreach(atlas ->
+        final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
+            final List<Row> rows = new ArrayList<>();
             atlas.points().forEach(point ->
             {
                 final long nodeIdentifier = point.getIdentifier();
@@ -277,17 +274,16 @@ public final class AtlasDataFrame
                 rows.add(RowFactory.create(idString, locationString,
                         JavaConversions.mapAsScalaMap(point.getTags()), relationArray));
             });
+            return rows.iterator();
         });
-        final JavaSparkContext sparkContext = JavaSparkContext
-                .fromSparkContext(spark.sparkContext());
-        final JavaRDD<Row> rowRDD = sparkContext.parallelize(rows);
+        final SQLContext sqlContext = new SQLContext(javaSparkContext);
 
         // Create dataframe from rowRDD
-        return spark.createDataFrame(rowRDD, schema);
+        return sqlContext.createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasRelationsToDataFrame(final JavaRDD<Atlas> atlasRDD,
-            final SparkSession spark)
+            final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
@@ -315,9 +311,9 @@ public final class AtlasDataFrame
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        final List<Row> rows = new ArrayList<>();
-        atlasRDD.foreach(atlas ->
+        final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
+            final List<Row> rows = new ArrayList<>();
             atlas.relations().forEach(relation ->
             {
                 final long nodeIdentifier = relation.getIdentifier();
@@ -339,13 +335,11 @@ public final class AtlasDataFrame
                         relationMemberTypes, relationMemberRoles,
                         JavaConversions.mapAsScalaMap(relation.getTags()), relationArray));
             });
+            return rows.iterator();
         });
-        final JavaSparkContext sparkContext = JavaSparkContext
-                .fromSparkContext(spark.sparkContext());
-        final JavaRDD<Row> rowRDD = sparkContext.parallelize(rows);
-
+        final SQLContext sqlContext = new SQLContext(javaSparkContext);
         // Create dataframe from rowRDD
-        return spark.createDataFrame(rowRDD, schema);
+        return sqlContext.createDataFrame(rowRDD, schema);
     }
 
     private static String typeValueToString(final int value)
