@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 public class HadoopAtlasFileCache extends ConcurrentResourceCache
 {
     private static final Logger logger = LoggerFactory.getLogger(HadoopAtlasFileCache.class);
-    private static final String GLOBAL_HADOOP_FILECACHE_NAMESPACE = "__HadoopAtlasFileCache_global_namespace__";
+    private static final String GLOBAL_HADOOP_FILE_CACHE_NAMESPACE = "__HadoopAtlasFileCache_global_namespace__";
     private static final int RETRY_ATTEMPTS = 5;
 
     private final String parentAtlasPath;
@@ -85,7 +85,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Map<String, String> configuration)
     {
-        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
+        this(parentAtlasPath, GLOBAL_HADOOP_FILE_CACHE_NAMESPACE,
                 AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), configuration);
     }
 
@@ -100,7 +100,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final Function<URI, Optional<Resource>> fetcher)
     {
-        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE,
+        this(parentAtlasPath, GLOBAL_HADOOP_FILE_CACHE_NAMESPACE,
                 AtlasGeneratorParameters.ATLAS_SCHEME.getDefault(), fetcher);
     }
 
@@ -134,7 +134,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
     public HadoopAtlasFileCache(final String parentAtlasPath,
             final SlippyTilePersistenceScheme atlasScheme, final Map<String, String> configuration)
     {
-        this(parentAtlasPath, GLOBAL_HADOOP_FILECACHE_NAMESPACE, atlasScheme, configuration);
+        this(parentAtlasPath, GLOBAL_HADOOP_FILE_CACHE_NAMESPACE, atlasScheme, configuration);
     }
 
     /**
@@ -143,7 +143,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
      * @param parentAtlasPath
      *            The parent path to the atlas files. This might look like hdfs://some/path/to/files
      * @param namespace
-     *            The namespace for this cache's resoures
+     *            The namespace for this cache's resources
      * @param configuration
      *            The configuration map
      */
@@ -182,20 +182,20 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
             final Retry retry = new Retry(RETRY_ATTEMPTS, Duration.ONE_SECOND).withQuadratic(true);
             final boolean exists = retry.run(() ->
             {
-                try (InputStream input = FileSystemHelper.resource(uri.toString(), configuration)
+                try (InputStream ignored = FileSystemHelper.resource(uri.toString(), configuration)
                         .read())
                 {
                     return true;
                 }
-                catch (final Exception e)
+                catch (final Exception exception)
                 {
-                    if (e.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND))
+                    if (exception.getMessage().contains(FileSystemHelper.FILE_NOT_FOUND))
                     {
                         return false;
                     }
                     else
                     {
-                        throw new CoreException("Unable to test existence of {}", uri, e);
+                        throw new CoreException("Unable to test existence of {}", uri, exception);
                     }
                 }
             });
@@ -272,8 +272,7 @@ public class HadoopAtlasFileCache extends ConcurrentResourceCache
 
     /**
      * Invalidate a given shard for a given country. It is highly recommended to use this
-     * implementation of {@link HadoopAtlasFileCache#invalidate(String, Shard)} over
-     * {@link HadoopAtlasFileCache#invalidate(URI)}.
+     * implementation over {@link HadoopAtlasFileCache#invalidate(URI)}.
      *
      * @param country
      *            the country

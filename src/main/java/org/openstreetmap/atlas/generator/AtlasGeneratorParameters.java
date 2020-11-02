@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.openstreetmap.atlas.generator.persistence.AbstractMultipleAtlasBasedOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceScheme;
+import org.openstreetmap.atlas.generator.persistence.scheme.SlippyTilePersistenceSchemeType;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
@@ -48,7 +48,7 @@ public final class AtlasGeneratorParameters
             "The folder structure of the output Atlas. Example: \"zz/xx/yy/\" or \"\""
                     + " (everything under the same folder)",
             SlippyTilePersistenceScheme::getSchemeInstanceFromString, Optionality.OPTIONAL,
-            AbstractMultipleAtlasBasedOutputFormat.DEFAULT_SCHEME);
+            SlippyTilePersistenceSchemeType.EMPTY.getValue());
     public static final Switch<String> PREVIOUS_OUTPUT_FOR_DELTA = new Switch<>(
             "previousOutputForDelta",
             "The path of the output of the previous job that can be used for delta computation",
