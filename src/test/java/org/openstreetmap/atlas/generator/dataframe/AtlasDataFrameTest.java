@@ -58,12 +58,12 @@ public class AtlasDataFrameTest
         final Dataset<Row> relationDataframe = AtlasDataFrame
                 .atlasRelationsToDataFrame(atlasJavaRDD, javaSparkContext);
 
-        Assert.assertEquals(areaDataframe.first().get(0), "24433389000000");
-        Assert.assertEquals(edgeDataframe.first().get(0), "27989500000000");
-        Assert.assertEquals(nodeDataframe.first().get(0), "307351652000000");
-        Assert.assertEquals(lineDataframe.first().get(0), "99202295000000");
-        Assert.assertEquals(pointDataframe.first().get(0), "4553243887000000");
-        Assert.assertEquals(relationDataframe.first().get(0), "9451753000000");
+        Assert.assertEquals("24433389000000", areaDataframe.first().get(0));
+        Assert.assertEquals("27989500000000", edgeDataframe.first().get(0));
+        Assert.assertEquals("307351652000000", nodeDataframe.first().get(0));
+        Assert.assertEquals("99202295000000", lineDataframe.first().get(0));
+        Assert.assertEquals("4553243887000000", pointDataframe.first().get(0));
+        Assert.assertEquals("9451753000000", relationDataframe.first().get(0));
         javaSparkContext.close();
     }
 }

@@ -24,15 +24,19 @@ import scala.collection.JavaConversions;
  */
 public final class AtlasDataFrame
 {
+    private static final String IDENTIFIER = "identifier";
+    private static final String GEOMETRY = "geometry";
+    private static final String RELATIONS = "relations";
+
     public static Dataset<Row> atlasAreasToDataFrame(final JavaRDD<Atlas> atlasRDD,
             final JavaSparkContext javaSparkContext)
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
-        final StructField identifier = DataTypes.createStructField("identifier",
-                DataTypes.StringType, true);
+        final StructField identifier = DataTypes.createStructField(IDENTIFIER, DataTypes.StringType,
+                true);
         fields.add(identifier);
-        final StructField geometry = DataTypes.createStructField("geometry", DataTypes.StringType,
+        final StructField geometry = DataTypes.createStructField(GEOMETRY, DataTypes.StringType,
                 true);
         fields.add(geometry);
         final StructField bounds = DataTypes.createStructField("bounds", DataTypes.StringType,
@@ -41,7 +45,7 @@ public final class AtlasDataFrame
         final StructField tags = DataTypes.createStructField("tags",
                 DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType), true);
         fields.add(tags);
-        final StructField relations = DataTypes.createStructField("relations",
+        final StructField relations = DataTypes.createStructField(RELATIONS,
                 DataTypes.createArrayType(DataTypes.StringType), true);
         fields.add(relations);
         final StructType schema = DataTypes.createStructType(fields);
@@ -74,10 +78,10 @@ public final class AtlasDataFrame
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
-        final StructField identifier = DataTypes.createStructField("identifier",
-                DataTypes.StringType, true);
+        final StructField identifier = DataTypes.createStructField(IDENTIFIER, DataTypes.StringType,
+                true);
         fields.add(identifier);
-        final StructField geometry = DataTypes.createStructField("geometry", DataTypes.StringType,
+        final StructField geometry = DataTypes.createStructField(GEOMETRY, DataTypes.StringType,
                 true);
         fields.add(geometry);
         final StructField start = DataTypes.createStructField("start", DataTypes.StringType, true);
@@ -99,13 +103,12 @@ public final class AtlasDataFrame
         final StructField tags = DataTypes.createStructField("tags",
                 DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType), true);
         fields.add(tags);
-        final StructField relations = DataTypes.createStructField("relations",
+        final StructField relations = DataTypes.createStructField(RELATIONS,
                 DataTypes.createArrayType(DataTypes.StringType), true);
         fields.add(relations);
         final StructType schema = DataTypes.createStructType(fields);
 
         // Convert entities of atlas to Rows
-        // final List<Row> rows = new ArrayList<>();
         final JavaRDD<Row> rowRDD = atlasRDD.flatMap(atlas ->
         {
             final List<Row> rows = new ArrayList<>();
@@ -144,10 +147,10 @@ public final class AtlasDataFrame
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
-        final StructField identifier = DataTypes.createStructField("identifier",
-                DataTypes.StringType, true);
+        final StructField identifier = DataTypes.createStructField(IDENTIFIER, DataTypes.StringType,
+                true);
         fields.add(identifier);
-        final StructField geometry = DataTypes.createStructField("geometry", DataTypes.StringType,
+        final StructField geometry = DataTypes.createStructField(GEOMETRY, DataTypes.StringType,
                 true);
         fields.add(geometry);
         final StructField bounds = DataTypes.createStructField("bounds", DataTypes.StringType,
@@ -159,7 +162,7 @@ public final class AtlasDataFrame
         final StructField tags = DataTypes.createStructField("tags",
                 DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType), true);
         fields.add(tags);
-        final StructField relations = DataTypes.createStructField("relations",
+        final StructField relations = DataTypes.createStructField(RELATIONS,
                 DataTypes.createArrayType(DataTypes.StringType), true);
         fields.add(relations);
         final StructType schema = DataTypes.createStructType(fields);
@@ -193,8 +196,8 @@ public final class AtlasDataFrame
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
-        final StructField identifier = DataTypes.createStructField("identifier",
-                DataTypes.StringType, true);
+        final StructField identifier = DataTypes.createStructField(IDENTIFIER, DataTypes.StringType,
+                true);
         fields.add(identifier);
         final StructField location = DataTypes.createStructField("location", DataTypes.StringType,
                 true);
@@ -208,7 +211,7 @@ public final class AtlasDataFrame
         final StructField tags = DataTypes.createStructField("tags",
                 DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType), true);
         fields.add(tags);
-        final StructField relations = DataTypes.createStructField("relations",
+        final StructField relations = DataTypes.createStructField(RELATIONS,
                 DataTypes.createArrayType(DataTypes.StringType), true);
         fields.add(relations);
         final StructType schema = DataTypes.createStructType(fields);
@@ -245,8 +248,8 @@ public final class AtlasDataFrame
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
-        final StructField identifier = DataTypes.createStructField("identifier",
-                DataTypes.StringType, true);
+        final StructField identifier = DataTypes.createStructField(IDENTIFIER, DataTypes.StringType,
+                true);
         fields.add(identifier);
         final StructField location = DataTypes.createStructField("location", DataTypes.StringType,
                 true);
@@ -254,7 +257,7 @@ public final class AtlasDataFrame
         final StructField tags = DataTypes.createStructField("tags",
                 DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType), true);
         fields.add(tags);
-        final StructField relations = DataTypes.createStructField("relations",
+        final StructField relations = DataTypes.createStructField(RELATIONS,
                 DataTypes.createArrayType(DataTypes.StringType), true);
         fields.add(relations);
         final StructType schema = DataTypes.createStructType(fields);
@@ -287,10 +290,10 @@ public final class AtlasDataFrame
     {
         // Generate the schema
         final List<StructField> fields = new ArrayList<>();
-        final StructField identifier = DataTypes.createStructField("identifier",
-                DataTypes.StringType, true);
+        final StructField identifier = DataTypes.createStructField(IDENTIFIER, DataTypes.StringType,
+                true);
         fields.add(identifier);
-        final StructField geometry = DataTypes.createStructField("geometry", DataTypes.StringType,
+        final StructField geometry = DataTypes.createStructField(GEOMETRY, DataTypes.StringType,
                 true);
         fields.add(geometry);
         final StructField members = DataTypes.createStructField("memberIds",
@@ -305,7 +308,7 @@ public final class AtlasDataFrame
         final StructField tags = DataTypes.createStructField("tags",
                 DataTypes.createMapType(DataTypes.StringType, DataTypes.StringType), true);
         fields.add(tags);
-        final StructField relations = DataTypes.createStructField("relations",
+        final StructField relations = DataTypes.createStructField(RELATIONS,
                 DataTypes.createArrayType(DataTypes.StringType), true);
         fields.add(relations);
         final StructType schema = DataTypes.createStructType(fields);
