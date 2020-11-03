@@ -318,7 +318,7 @@ public final class SparkInput
     {
         final FileSystem fileSystem = fileSystem(context, path);
         // Always return as if it was elastic here:
-        return Optional.of(fileSystem);
+        return Optional.ofNullable(fileSystem);
     }
 
     private static FileSystem fileSystem(final JavaSparkContext context, final String path)
@@ -339,15 +339,14 @@ public final class SparkInput
     private static Resource getResource(final Path elasticPath, final Map<String, String> map)
     {
         final InputStreamResource resource;
-        try
+        try (FileSystem fileSystem = getFileSystemCreator().get(elasticPath.toString(), map))
         {
             // Provide the resource with a Supplier, so the resource can be read multiple times.
             resource = new InputStreamResource(() ->
             {
                 try
                 {
-                    return getFileSystemCreator().get(elasticPath.toString(), map)
-                            .open(elasticPath);
+                    return fileSystem.open(elasticPath);
                 }
                 catch (final Exception e)
                 {
@@ -377,7 +376,7 @@ public final class SparkInput
     private static Configuration toHadoop(final Map<String, String> conf)
     {
         final Configuration result = new Configuration();
-        conf.forEach((key, value) -> result.set(key, value));
+        conf.forEach(result::set);
         return result;
     }
 
@@ -409,7 +408,7 @@ public final class SparkInput
     private static SparkConf toSpark(final Map<String, String> conf)
     {
         final SparkConf result = new SparkConf();
-        conf.forEach((key, value) -> result.set(key, value));
+        conf.forEach(result::set);
         return result;
     }
 
@@ -460,12 +459,10 @@ public final class SparkInput
         final Optional<FileSystem> fileSystemOption = elasticFileSystem(context, path);
         if (fileSystemOption.isPresent() || defaultFunction == null)
         {
-            // Case 1. We have an elastic file system. Use the elastic method.
-            @SuppressWarnings("resource")
-            final FileSystem fileSystem = fileSystemOption.isPresent() ? fileSystemOption.get()
-                    : fileSystem(context, path);
             final List<String> files = new ArrayList<>();
-            try
+            // Case 1. We have an elastic file system. Use the elastic method.
+            try (FileSystem fileSystem = fileSystemOption.isPresent() ? fileSystemOption.get()
+                    : fileSystem(context, path))
             {
                 // List the files first, which will make the base for the first RDD
                 final FileStatus[] statuses = fileSystem.listStatus(new Path(path));
