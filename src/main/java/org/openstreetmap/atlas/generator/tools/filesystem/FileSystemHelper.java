@@ -4,8 +4,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.hadoop.fs.FileStatus;
@@ -144,34 +146,8 @@ public final class FileSystemHelper
 
         try (FileSystem fileSystem = new FileSystemCreator().get(directory, configuration))
         {
-            streamPathsRecursively(directory, configuration, filter).forEach(path ->
-            {
-                try
-                {
-                    final InputStreamResource resource = new InputStreamResource(() ->
-                    {
-                        try
-                        {
-                            return fileSystem.open(path);
-                        }
-                        catch (final Exception e)
-                        {
-                            throw new CoreException(UNABLE_TO_OPEN, path, e);
-                        }
-                    }).withName(path.getName());
-
-                    if (path.getName().endsWith(FileSuffix.GZIP.toString()))
-                    {
-                        resource.setDecompressor(Decompressor.GZIP);
-                    }
-
-                    resources.add(resource);
-                }
-                catch (final Exception e)
-                {
-                    throw new CoreException(UNABLE_TO_READ, path, e);
-                }
-            });
+            streamPathsRecursively(directory, configuration, filter)
+                    .map(path -> getResource(fileSystem, path)).forEach(resources::add);
         }
         catch (final IOException e)
         {
@@ -307,7 +283,6 @@ public final class FileSystemHelper
     public static List<Resource> resources(final String directory,
             final Map<String, String> configuration, final PathFilter filter)
     {
-        final List<Resource> resources = new ArrayList<>();
         try (FileSystem fileSystem = new FileSystemCreator().get(directory, configuration))
         {
 
@@ -322,42 +297,15 @@ public final class FileSystemHelper
                 throw new CoreException("Could not locate files on directory {}", directory, e);
             }
 
-            for (final FileStatus fileStatus : fileStatusList)
-            {
-                final Path path = fileStatus.getPath();
-                try
-                {
-                    final InputStreamResource resource = new InputStreamResource(() ->
-                    {
-                        try
-                        {
-                            return fileSystem.open(path);
-                        }
-                        catch (final Exception e)
-                        {
-                            throw new CoreException(UNABLE_TO_OPEN, path, e);
-                        }
-                    }).withName(path.getName());
-
-                    if (path.getName().endsWith(FileSuffix.GZIP.toString()))
-                    {
-                        resource.setDecompressor(Decompressor.GZIP);
-                    }
-
-                    resources.add(resource);
-                }
-                catch (final Exception e)
-                {
-                    throw new CoreException(UNABLE_TO_READ, path, e);
-                }
-            }
+            return Stream.of(fileStatusList).map(FileStatus::getPath)
+                    .map(path -> getResource(fileSystem, path)).collect(Collectors.toList());
         }
         catch (final IOException e)
         {
             logger.error(FILESYSTEM_NOT_CLOSED, e);
         }
 
-        return resources;
+        return Collections.emptyList();
     }
 
     /**
@@ -448,6 +396,44 @@ public final class FileSystemHelper
         catch (final Exception e)
         {
             throw new CoreException(UNABLE_TO_READ, hadoopPath, e);
+        }
+    }
+
+    /**
+     * Get a resource from a FileSystem and a Path in that FileSystem
+     *
+     * @param fileSystem
+     *            The FileSystem with the resource
+     * @param path
+     *            The path to the resource on the FileSystem
+     * @return An InputStream for the resource
+     */
+    private static InputStreamResource getResource(final FileSystem fileSystem, final Path path)
+    {
+        try
+        {
+            final InputStreamResource resource = new InputStreamResource(() ->
+            {
+                try
+                {
+                    return fileSystem.open(path);
+                }
+                catch (final Exception e)
+                {
+                    throw new CoreException(UNABLE_TO_OPEN, path, e);
+                }
+            }).withName(path.getName());
+
+            if (path.getName().endsWith(FileSuffix.GZIP.toString()))
+            {
+                resource.setDecompressor(Decompressor.GZIP);
+            }
+
+            return resource;
+        }
+        catch (final Exception e)
+        {
+            throw new CoreException(UNABLE_TO_READ, path, e);
         }
     }
 
