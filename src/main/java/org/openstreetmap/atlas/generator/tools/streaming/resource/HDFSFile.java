@@ -22,7 +22,7 @@ import org.openstreetmap.atlas.utilities.scalars.Duration;
  * @author cuthbertm
  * @author sbhalekar
  */
-public class HDFSFile extends AbstractWritableResource
+public class HDFSFile extends AbstractWritableResource implements AutoCloseable
 {
     private static final int DEFAULT_RETRIES = 3;
     private static final Duration DEFAULT_RETRYWAIT = Duration.seconds(2);
@@ -74,6 +74,12 @@ public class HDFSFile extends AbstractWritableResource
             final Configuration configuration) throws URISyntaxException, IOException
     {
         this(new Path(String.format(HDFS_PATH_FORMAT, server, port, path)), configuration);
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        this.system.close();
     }
 
     public boolean exists()
