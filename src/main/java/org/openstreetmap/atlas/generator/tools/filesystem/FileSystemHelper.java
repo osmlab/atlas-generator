@@ -285,24 +285,19 @@ public final class FileSystemHelper
     {
         try (FileSystem fileSystem = new FileSystemCreator().get(directory, configuration))
         {
-
-            final FileStatus[] fileStatusList;
-            try
-            {
-                fileStatusList = filter == null ? fileSystem.listStatus(new Path(directory))
-                        : fileSystem.listStatus(new Path(directory), filter);
-            }
-            catch (final Exception e)
-            {
-                throw new CoreException("Could not locate files on directory {}", directory, e);
-            }
-
+            final FileStatus[] fileStatusList = filter == null
+                    ? fileSystem.listStatus(new Path(directory))
+                    : fileSystem.listStatus(new Path(directory), filter);
             return Stream.of(fileStatusList).map(FileStatus::getPath)
                     .map(path -> getResource(fileSystem, path)).collect(Collectors.toList());
         }
         catch (final IOException e)
         {
             logger.error(FILESYSTEM_NOT_CLOSED, e);
+        }
+        catch (final Exception e)
+        {
+            throw new CoreException("Could not locate files on directory {}", directory, e);
         }
 
         return Collections.emptyList();
