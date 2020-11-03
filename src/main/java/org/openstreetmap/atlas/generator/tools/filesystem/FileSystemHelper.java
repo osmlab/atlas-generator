@@ -41,6 +41,10 @@ public final class FileSystemHelper
             RawLocalFileSystem.class.getCanonicalName());
     private static final Logger logger = LoggerFactory.getLogger(FileSystemHelper.class);
 
+    private static final String UNABLE_TO_READ = "Unable to read {}";
+    private static final String UNABLE_TO_OPEN = "Unable to open {}";
+    private static final String FILESYSTEM_NOT_CLOSED = "FileSystem not properly closed";
+
     /**
      * Deletes given path using given configuration settings.
      *
@@ -56,9 +60,8 @@ public final class FileSystemHelper
     public static boolean delete(final String path, final boolean recursive,
             final Map<String, String> configuration)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
-            final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
             return fileSystem.delete(new Path(path), recursive);
         }
         catch (final Exception e)
@@ -90,9 +93,9 @@ public final class FileSystemHelper
      */
     public static boolean exists(final String path, final Map<String, String> configuration)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
-            return new FileSystemCreator().get(path, configuration).exists(new Path(path));
+            return fileSystem.exists(new Path(path));
         }
         catch (final IOException exception)
         {
@@ -102,9 +105,9 @@ public final class FileSystemHelper
 
     public static boolean isDirectory(final String path, final Map<String, String> configuration)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
-            return new FileSystemCreator().get(path, configuration).isDirectory(new Path(path));
+            return fileSystem.isDirectory(new Path(path));
         }
         catch (final IOException exception)
         {
@@ -115,9 +118,9 @@ public final class FileSystemHelper
 
     public static boolean isFile(final String path, final Map<String, String> configuration)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
-            return new FileSystemCreator().get(path, configuration).isFile(new Path(path));
+            return fileSystem.isFile(new Path(path));
         }
         catch (final IOException exception)
         {
@@ -138,36 +141,42 @@ public final class FileSystemHelper
             final Map<String, String> configuration, final PathFilter filter)
     {
         final List<Resource> resources = new ArrayList<>();
-        final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
 
-        streamPathsRecursively(directory, configuration, filter).forEach(path ->
+        try (FileSystem fileSystem = new FileSystemCreator().get(directory, configuration))
         {
-            try
+            streamPathsRecursively(directory, configuration, filter).forEach(path ->
             {
-                final InputStreamResource resource = new InputStreamResource(() ->
+                try
                 {
-                    try
+                    final InputStreamResource resource = new InputStreamResource(() ->
                     {
-                        return fileSystem.open(path);
-                    }
-                    catch (final Exception e)
-                    {
-                        throw new CoreException("Unable to open {}", path, e);
-                    }
-                }).withName(path.getName());
+                        try
+                        {
+                            return fileSystem.open(path);
+                        }
+                        catch (final Exception e)
+                        {
+                            throw new CoreException(UNABLE_TO_OPEN, path, e);
+                        }
+                    }).withName(path.getName());
 
-                if (path.getName().endsWith(FileSuffix.GZIP.toString()))
-                {
-                    resource.setDecompressor(Decompressor.GZIP);
+                    if (path.getName().endsWith(FileSuffix.GZIP.toString()))
+                    {
+                        resource.setDecompressor(Decompressor.GZIP);
+                    }
+
+                    resources.add(resource);
                 }
-
-                resources.add(resource);
-            }
-            catch (final Exception e)
-            {
-                throw new CoreException("Unable to read {}", path, e);
-            }
-        });
+                catch (final Exception e)
+                {
+                    throw new CoreException(UNABLE_TO_READ, path, e);
+                }
+            });
+        }
+        catch (final IOException e)
+        {
+            logger.error(FILESYSTEM_NOT_CLOSED, e);
+        }
 
         return resources;
     }
@@ -183,9 +192,8 @@ public final class FileSystemHelper
      */
     public static boolean mkdir(final String path, final Map<String, String> configuration)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
-            final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
             return fileSystem.mkdirs(new Path(path));
         }
         catch (final Exception e)
@@ -210,9 +218,8 @@ public final class FileSystemHelper
     public static boolean rename(final String sourcePath, final String destinationPath,
             final Map<String, String> configuration)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(sourcePath, configuration))
         {
-            final FileSystem fileSystem = new FileSystemCreator().get(sourcePath, configuration);
             return fileSystem.rename(new Path(sourcePath), new Path(destinationPath));
         }
         catch (final Exception e)
@@ -240,9 +247,8 @@ public final class FileSystemHelper
      */
     public static Resource resource(final String path, final Map<String, String> configuration)
     {
-        final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
         final Path hadoopPath = new Path(path);
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
             final InputStreamResource resource = new InputStreamResource(() ->
             {
@@ -257,7 +263,7 @@ public final class FileSystemHelper
                 }
                 catch (final Exception e)
                 {
-                    throw new CoreException("Unable to open {}", hadoopPath, e);
+                    throw new CoreException(UNABLE_TO_OPEN, hadoopPath, e);
                 }
             }).withName(hadoopPath.getName());
 
@@ -270,7 +276,7 @@ public final class FileSystemHelper
         }
         catch (final Exception e)
         {
-            throw new CoreException("Unable to read {}", hadoopPath, e);
+            throw new CoreException(UNABLE_TO_READ, hadoopPath, e);
         }
     }
 
@@ -302,47 +308,53 @@ public final class FileSystemHelper
             final Map<String, String> configuration, final PathFilter filter)
     {
         final List<Resource> resources = new ArrayList<>();
-        final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
+        try (FileSystem fileSystem = new FileSystemCreator().get(directory, configuration))
+        {
 
-        final FileStatus[] fileStatusList;
-        try
-        {
-            fileStatusList = filter == null ? fileSystem.listStatus(new Path(directory))
-                    : fileSystem.listStatus(new Path(directory), filter);
-        }
-        catch (final Exception e)
-        {
-            throw new CoreException("Could not locate files on directory {}", directory, e);
-        }
-
-        for (final FileStatus fileStatus : fileStatusList)
-        {
-            final Path path = fileStatus.getPath();
+            final FileStatus[] fileStatusList;
             try
             {
-                final InputStreamResource resource = new InputStreamResource(() ->
-                {
-                    try
-                    {
-                        return fileSystem.open(path);
-                    }
-                    catch (final Exception e)
-                    {
-                        throw new CoreException("Unable to open {}", path, e);
-                    }
-                }).withName(path.getName());
-
-                if (path.getName().endsWith(FileSuffix.GZIP.toString()))
-                {
-                    resource.setDecompressor(Decompressor.GZIP);
-                }
-
-                resources.add(resource);
+                fileStatusList = filter == null ? fileSystem.listStatus(new Path(directory))
+                        : fileSystem.listStatus(new Path(directory), filter);
             }
             catch (final Exception e)
             {
-                throw new CoreException("Unable to read {}", path, e);
+                throw new CoreException("Could not locate files on directory {}", directory, e);
             }
+
+            for (final FileStatus fileStatus : fileStatusList)
+            {
+                final Path path = fileStatus.getPath();
+                try
+                {
+                    final InputStreamResource resource = new InputStreamResource(() ->
+                    {
+                        try
+                        {
+                            return fileSystem.open(path);
+                        }
+                        catch (final Exception e)
+                        {
+                            throw new CoreException(UNABLE_TO_OPEN, path, e);
+                        }
+                    }).withName(path.getName());
+
+                    if (path.getName().endsWith(FileSuffix.GZIP.toString()))
+                    {
+                        resource.setDecompressor(Decompressor.GZIP);
+                    }
+
+                    resources.add(resource);
+                }
+                catch (final Exception e)
+                {
+                    throw new CoreException(UNABLE_TO_READ, path, e);
+                }
+            }
+        }
+        catch (final IOException e)
+        {
+            logger.error(FILESYSTEM_NOT_CLOSED, e);
         }
 
         return resources;
@@ -377,10 +389,18 @@ public final class FileSystemHelper
     public static Stream<Path> streamPathsRecursively(final String directory,
             final Map<String, String> configuration, final PathFilter filter, final int maxDepth)
     {
-        final FileSystem fileSystem = new FileSystemCreator().get(directory, configuration);
-        return new HDFSWalker(maxDepth).usingConfiguration(fileSystem.getConf())
-                .walk(new Path(directory)).map(HDFSWalker.debug(path -> logger.trace("{}", path)))
-                .map(FileStatus::getPath).filter(path -> filter == null || filter.accept(path));
+        try (FileSystem fileSystem = new FileSystemCreator().get(directory, configuration))
+        {
+            return new HDFSWalker(maxDepth).usingConfiguration(fileSystem.getConf())
+                    .walk(new Path(directory))
+                    .map(HDFSWalker.debug(path -> logger.trace("{}", path)))
+                    .map(FileStatus::getPath).filter(path -> filter == null || filter.accept(path));
+        }
+        catch (final IOException e)
+        {
+            logger.error(FILESYSTEM_NOT_CLOSED, e);
+        }
+        return Stream.empty();
     }
 
     /**
@@ -404,9 +424,8 @@ public final class FileSystemHelper
             final Map<String, String> configuration)
     {
         final Path hadoopPath = new Path(path);
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
         {
-            final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
             final OutputStream out;
             try
             {
@@ -414,7 +433,7 @@ public final class FileSystemHelper
             }
             catch (final Exception e)
             {
-                throw new CoreException("Unable to open {}", hadoopPath, e);
+                throw new CoreException(UNABLE_TO_OPEN, hadoopPath, e);
             }
 
             final OutputStreamWritableResource resource = new OutputStreamWritableResource(out);
@@ -428,7 +447,7 @@ public final class FileSystemHelper
         }
         catch (final Exception e)
         {
-            throw new CoreException("Unable to read {}", hadoopPath, e);
+            throw new CoreException(UNABLE_TO_READ, hadoopPath, e);
         }
     }
 
