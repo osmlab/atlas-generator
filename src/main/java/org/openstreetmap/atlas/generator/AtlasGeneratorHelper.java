@@ -308,16 +308,13 @@ public final class AtlasGeneratorHelper implements Serializable
                     .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
             atlasLoadingOption.setCountryCode(countryName);
 
-            // Build the PbfLoader
-            final PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries.getValue(),
+            // Build the PbfLoader and generate the raw Atlas for this shard
+            final Atlas atlas;
+            try (PbfLoader loader = new PbfLoader(pbfContext, sparkContext, boundaries.getValue(),
                     atlasLoadingOption,
                     loadingOptions.getValue().get(AtlasGeneratorParameters.CODE_VERSION.getName()),
                     loadingOptions.getValue().get(AtlasGeneratorParameters.DATA_VERSION.getName()),
-                    task.getAllShards());
-
-            // Generate the raw Atlas for this shard
-            final Atlas atlas;
-            try
+                    task.getAllShards()))
             {
                 atlas = loader.generateRawAtlas(countryName, shard);
             }

@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -44,7 +45,7 @@ public class PbfLocatorTest
     }
 
     @Test
-    public void testDefaultTileFinder()
+    public void testDefaultTileFinder() throws IOException
     {
         // Test a default scheme
         final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
@@ -52,17 +53,19 @@ public class PbfLocatorTest
         logger.warn("{}", scheme.getScheme());
         final PbfContext pbfContext = new PbfContext("resource://" + version,
                 new SlippyTileSharding(10), scheme);
-        final PbfLocator locator = new PbfLocator(pbfContext,
-                ResourceFileSystem.simpleconfiguration());
-        final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
-                Location.forString("25.131896,-77.207033"));
-        final MultiPolygon multiPolygon = MultiPolygon.forPolygon(outer);
-        final List<LocatedPbf> tiles = Iterables.asList(locator.pbfsCovering(multiPolygon));
-        Assert.assertEquals(2, tiles.size());
+        try (PbfLocator locator = new PbfLocator(pbfContext,
+                ResourceFileSystem.simpleconfiguration()))
+        {
+            final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
+                    Location.forString("25.131896,-77.207033"));
+            final MultiPolygon multiPolygon = MultiPolygon.forPolygon(outer);
+            final List<LocatedPbf> tiles = Iterables.asList(locator.pbfsCovering(multiPolygon));
+            Assert.assertEquals(2, tiles.size());
+        }
     }
 
     @Test
-    public void testDifferentTileFinder()
+    public void testDifferentTileFinder() throws IOException
     {
         // Test a non-default scheme
         final SlippyTilePersistenceScheme scheme = new SlippyTilePersistenceScheme(
@@ -70,13 +73,15 @@ public class PbfLocatorTest
         logger.warn("{}", scheme.getScheme());
         final PbfContext pbfContext = new PbfContext("resource://" + version,
                 new SlippyTileSharding(10), scheme);
-        final PbfLocator locator = new PbfLocator(pbfContext,
-                ResourceFileSystem.simpleconfiguration());
-        final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
-                Location.forString("25.131896,-77.207033"));
-        final MultiPolygon multiPolygon = MultiPolygon.forPolygon(outer);
-        final List<LocatedPbf> tiles = Iterables.asList(locator.pbfsCovering(multiPolygon));
-        Assert.assertEquals(2, tiles.size());
+        try (PbfLocator locator = new PbfLocator(pbfContext,
+                ResourceFileSystem.simpleconfiguration()))
+        {
+            final Polygon outer = Rectangle.forCorners(Location.forString("24.953302,-77.608195"),
+                    Location.forString("25.131896,-77.207033"));
+            final MultiPolygon multiPolygon = MultiPolygon.forPolygon(outer);
+            final List<LocatedPbf> tiles = Iterables.asList(locator.pbfsCovering(multiPolygon));
+            Assert.assertEquals(2, tiles.size());
+        }
     }
 
     private void uploadFile(final String name)

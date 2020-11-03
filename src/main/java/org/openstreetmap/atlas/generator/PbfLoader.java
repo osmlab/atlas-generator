@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author matthieun
  */
-public class PbfLoader implements Serializable
+public class PbfLoader implements AutoCloseable, Serializable
 {
     private static final long serialVersionUID = -3991330796225288845L;
 
@@ -82,6 +83,12 @@ public class PbfLoader implements Serializable
         this.codeVersion = codeVersion;
         this.dataVersion = dataVersion;
         this.countryShards = countryShards;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        this.locator.close();
     }
 
     public Atlas generateRawAtlas(final String countryName, final Shard shard)
