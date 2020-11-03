@@ -65,6 +65,7 @@ public final class HDFSWalker
      * @author cstaylor
      */
     private static final class HDFSIterator extends AbstractIterator<FileStatus>
+            implements AutoCloseable
     {
 
         /**
@@ -108,6 +109,12 @@ public final class HDFSWalker
             {
                 throw new CoreException("Error when creating an HDFSIterator", oops);
             }
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            this.fileSystem.close();
         }
 
         @Override
@@ -199,9 +206,16 @@ public final class HDFSWalker
 
     public Stream<FileStatus> walk(final Path root)
     {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                new HDFSIterator(root, getConfiguration(), this.maxDepth), Spliterator.ORDERED),
-                false);
+        try (HDFSIterator iterator = new HDFSIterator(root, getConfiguration(), this.maxDepth))
+        {
+            return StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+        }
+        catch (final IOException e)
+        {
+            // TODO add a logger or throw?
+        }
+        return Stream.empty();
     }
 
     public Stream<HDFSFile> walkFiles(final Path root)
