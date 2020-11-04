@@ -6,24 +6,36 @@
 
 Areas:
 
-`identifier` `geometry` `bounds` `tags` `relations`
+|`identifier` | `geometry` | `bounds` | `tags` | `relations` |
+|-----|-----|-----|---|---|
+| String | String | String | Map | Array |
 
 Edges:
 
-`identifier` `geometry` `start` `end` `inEdges` `outEdges` `hasReverseEdge` `isClosed` `tags` `relations`
+| `identifier` | `geometry` | `start` | `end` | `inEdges` | `outEdges` | `hasReverseEdge` | `isClosed` | `tags` | `relations` |
+|-----|-----|-----|---|---|-----|-----|-----|---|---|
+| String | String | String | String | Array | Array | Boolean | Boolean | Map | Array |
 
 Lines:
 
-`identifier` `geometry` `bounds` `isClosed` `tags` `relations`
+| `identifier` | `geometry` | `bounds` | `isClosed` | `tags` | `relations` |
+|-----|-----|-----|---|---|---|
+| String | String | String | String | Boolean | Map | Array |
 
 Nodes:
 
-`identifier` `location` `inEdges` `outEdges` `tags` `relations`
+| `identifier` | `location` | `inEdges` | `outEdges` | `tags` | `relations` |
+|-----|-----|-----|---|---|---|
+| String | String | Array | Array | Map | Array |
 
 Points:
 
-`identifier` `location` `tags` `relations`
+| `identifier` | `location` | `tags` | `relations` |
+|-----|-----|-----|---|
+| String | String | Map | Array |
 
 Relations:
 
-`identifier` `geometry` `memberIds` `memberTypes` `memberRoles` `tags` `relations`
+| `identifier` | `geometry` | `memberIds` | `memberTypes` | `memberRoles` | `tags` | `relations` |
+|-----|-----|-----|---|---|-----|-----|
+| String | String | Array | Array | Array | Map | Array |
