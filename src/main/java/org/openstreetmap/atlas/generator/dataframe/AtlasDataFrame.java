@@ -3,12 +3,13 @@ package org.openstreetmap.atlas.generator.dataframe;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
-import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -69,8 +70,10 @@ public final class AtlasDataFrame
             return rows.iterator();
         });
 
-        final SQLContext sqlContext = new SQLContext(javaSparkContext);
-        return sqlContext.createDataFrame(rowRDD, schema);
+        // Create dataframe from rowRDD
+        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
+                schema);
     }
 
     public static Dataset<Row> atlasEdgesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -136,10 +139,10 @@ public final class AtlasDataFrame
             });
             return rows.iterator();
         });
-        final SQLContext sqlContext = new SQLContext(javaSparkContext);
-
         // Create dataframe from rowRDD
-        return sqlContext.createDataFrame(rowRDD, schema);
+        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
+                schema);
     }
 
     public static Dataset<Row> atlasLinesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -186,9 +189,10 @@ public final class AtlasDataFrame
             });
             return rows.iterator();
         });
-        final SQLContext sqlContext = new SQLContext(javaSparkContext);
         // Create dataframe from rowRDD
-        return sqlContext.createDataFrame(rowRDD, schema);
+        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
+                schema);
     }
 
     public static Dataset<Row> atlasNodesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -237,10 +241,10 @@ public final class AtlasDataFrame
             });
             return rows.iterator();
         });
-        final SQLContext sqlContext = new SQLContext(javaSparkContext);
-
         // Create dataframe from rowRDD
-        return sqlContext.createDataFrame(rowRDD, schema);
+        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
+                schema);
     }
 
     public static Dataset<Row> atlasPointsToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -279,10 +283,10 @@ public final class AtlasDataFrame
             });
             return rows.iterator();
         });
-        final SQLContext sqlContext = new SQLContext(javaSparkContext);
-
         // Create dataframe from rowRDD
-        return sqlContext.createDataFrame(rowRDD, schema);
+        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
+                schema);
     }
 
     public static Dataset<Row> atlasRelationsToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -340,9 +344,10 @@ public final class AtlasDataFrame
             });
             return rows.iterator();
         });
-        final SQLContext sqlContext = new SQLContext(javaSparkContext);
         // Create dataframe from rowRDD
-        return sqlContext.createDataFrame(rowRDD, schema);
+        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
+                schema);
     }
 
     private static String typeValueToString(final int value)
