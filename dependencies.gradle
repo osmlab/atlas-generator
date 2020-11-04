@@ -11,6 +11,7 @@ project.ext.packages = [
     atlas: "org.openstreetmap.atlas:atlas:${versions.atlas}",
     spark:[
         core: "org.apache.spark:spark-core_2.12:${versions.spark}",
+        sql : "org.apache.spark:spark-sql_2.12:${versions.spark}",
     ],
     snappy: "org.xerial.snappy:snappy-java:${versions.snappy}",
     checkstyle: "com.puppycrawl.tools:checkstyle:${versions.checkstyle}",

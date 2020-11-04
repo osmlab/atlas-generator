@@ -43,6 +43,7 @@ configurations
         {
             force packages.atlas
             force packages.spark.core
+            force packages.spark.sql
             // Snappy 1.1.1.6 is the one that has the proper .so libs.
             // https://github.com/xerial/snappy-java/issues/6
             force packages.snappy
@@ -54,6 +55,7 @@ configurations
         {
             force packages.atlas
             force packages.spark.core
+            force packages.spark.sql
             // Snappy 1.1.1.6 is the one that has the proper .so libs.
             // https://github.com/xerial/snappy-java/issues/6
             force packages.snappy
@@ -68,6 +70,7 @@ dependencies
 {
     compile packages.atlas
     compile packages.spark.core
+    compile packages.spark.sql
 
     checkstyle packages.checkstyle
     checkstyle packages.atlas_checkstyle
