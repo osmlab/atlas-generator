@@ -71,9 +71,9 @@ public final class AtlasDataFrame
         });
 
         // Create dataframe from rowRDD
-        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
-        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
-                schema);
+        final SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sparkContext).getOrCreate()
+                .createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasEdgesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -140,9 +140,9 @@ public final class AtlasDataFrame
             return rows.iterator();
         });
         // Create dataframe from rowRDD
-        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
-        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
-                schema);
+        final SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sparkContext).getOrCreate()
+                .createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasLinesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -190,9 +190,9 @@ public final class AtlasDataFrame
             return rows.iterator();
         });
         // Create dataframe from rowRDD
-        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
-        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
-                schema);
+        final SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sparkContext).getOrCreate()
+                .createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasNodesToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -242,9 +242,9 @@ public final class AtlasDataFrame
             return rows.iterator();
         });
         // Create dataframe from rowRDD
-        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
-        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
-                schema);
+        final SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sparkContext).getOrCreate()
+                .createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasPointsToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -284,9 +284,9 @@ public final class AtlasDataFrame
             return rows.iterator();
         });
         // Create dataframe from rowRDD
-        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
-        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
-                schema);
+        final SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sparkContext).getOrCreate()
+                .createDataFrame(rowRDD, schema);
     }
 
     public static Dataset<Row> atlasRelationsToDataFrame(final JavaRDD<Atlas> atlasRDD,
@@ -345,9 +345,9 @@ public final class AtlasDataFrame
             return rows.iterator();
         });
         // Create dataframe from rowRDD
-        final SparkContext sc = JavaSparkContext.toSparkContext(javaSparkContext);
-        return SparkSession.builder().sparkContext(sc).getOrCreate().createDataFrame(rowRDD,
-                schema);
+        final SparkContext sparkContext = JavaSparkContext.toSparkContext(javaSparkContext);
+        return SparkSession.builder().sparkContext(sparkContext).getOrCreate()
+                .createDataFrame(rowRDD, schema);
     }
 
     private static String typeValueToString(final int value)
