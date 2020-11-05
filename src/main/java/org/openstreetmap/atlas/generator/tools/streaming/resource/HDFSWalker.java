@@ -16,6 +16,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.AbstractIterator;
 
@@ -31,6 +33,8 @@ import com.google.common.collect.AbstractIterator;
  */
 public final class HDFSWalker
 {
+    private static final Logger logger = LoggerFactory.getLogger(HDFSWalker.class);
+
     /**
      * Collection of hadoop file status object and it's corresponding depth in the filesystem
      * hierarchy
@@ -213,7 +217,7 @@ public final class HDFSWalker
         }
         catch (final IOException e)
         {
-            // TODO add a logger or throw?
+            logger.error("HDFSIterator not closed properly", e);
         }
         return Stream.empty();
     }

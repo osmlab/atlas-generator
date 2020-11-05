@@ -1,5 +1,8 @@
 package org.openstreetmap.atlas.generator.tools.streaming.resource;
 
+import static org.junit.Assert.assertTrue;
+
+import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,17 +31,14 @@ public class HDFSWalkerTest
         final List<FileStatus> fileStatusList = new ArrayList<>();
         final List<String> debugStrings = new ArrayList<>();
         new HDFSWalker(depth).walk(new Path(directory.getPathString()))
-                .map(HDFSWalker.debug(debugStrings::add)).forEach(status ->
-                {
-                    fileStatusList.add(status);
-                });
+                .map(HDFSWalker.debug(debugStrings::add)).forEach(fileStatusList::add);
         return Tuple.createTuple(fileStatusList, debugStrings);
     }
 
     @Test
     public void testDirectoryListingWithMaxDepth()
     {
-        final File rootDirectory = File.temporaryFolder();
+        final File rootDirectory = File.temporaryFolder(FileSystems.getDefault());
         final File pathOne = rootDirectory.child("test-a");
         final File pathTwo = rootDirectory.child("test-b");
         pathOne.mkdirs();
@@ -65,7 +65,7 @@ public class HDFSWalkerTest
     @Test
     public void testDirectoryWithAFile()
     {
-        final File directory = File.temporaryFolder();
+        final File directory = File.temporaryFolder(FileSystems.getDefault());
         directory.child("test.tmp").writeAndClose("test file");
         final Tuple<List<FileStatus>, List<String>> results = HDFSWalkerTest.test(directory);
 
@@ -87,7 +87,7 @@ public class HDFSWalkerTest
     @Test
     public void testDirectoryWithAFileInsideAChildDirectory()
     {
-        final File directory = File.temporaryFolder();
+        final File directory = File.temporaryFolder(FileSystems.getDefault());
         directory.child("test.tmp").writeAndClose("test file");
         final File childDirectory = directory.child("child-directory");
         childDirectory.child("file-in-child-directory.tmp").writeAndClose("test child file");
@@ -100,11 +100,11 @@ public class HDFSWalkerTest
         // Verify debug strings
         Assert.assertFalse(results.getSecond().isEmpty());
         Assert.assertEquals(3, results.getSecond().size());
-        Assert.assertTrue(results.getSecond().contains(String.format("[D] file:%s/%s",
+        assertTrue(results.getSecond().contains(String.format("[D] file:%s/%s",
                 directory.getAbsolutePathString(), "child-directory")));
-        Assert.assertTrue(results.getSecond().contains(String.format("[F] file:%s/%s",
+        assertTrue(results.getSecond().contains(String.format("[F] file:%s/%s",
                 childDirectory.getAbsolutePathString(), "file-in-child-directory.tmp")));
-        Assert.assertTrue(results.getSecond().contains(
+        assertTrue(results.getSecond().contains(
                 String.format("[F] file:%s/%s", directory.getAbsolutePathString(), "test.tmp")));
 
         // Clean up
@@ -114,12 +114,12 @@ public class HDFSWalkerTest
     @Test
     public void testEmptyDirectory()
     {
-        final File emptyDirectory = File.temporaryFolder();
+        final File emptyDirectory = File.temporaryFolder(FileSystems.getDefault());
         final Tuple<List<FileStatus>, List<String>> results = HDFSWalkerTest.test(emptyDirectory);
 
         // Verify status and debug strings are empty
-        Assert.assertTrue(results.getFirst().isEmpty());
-        Assert.assertTrue(results.getSecond().isEmpty());
+        assertTrue(results.getFirst().isEmpty());
+        assertTrue(results.getSecond().isEmpty());
         emptyDirectory.deleteRecursively();
     }
 }
