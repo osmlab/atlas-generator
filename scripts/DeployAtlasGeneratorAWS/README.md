@@ -1,0 +1,1 @@
+# DeployAtlasGeneratorAWS.py - Atlas Generation on EMR
