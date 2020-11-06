@@ -15,9 +15,8 @@ import os
 import time
 from botocore.exceptions import ClientError
 from datetime import datetime
-from types import SimpleNamespace
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -47,12 +46,16 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(description='This script creates EMR cluster to generate Atlas')
     try:
-        parser.add_argument('--config', help="Path to configuration.json file")
-        parser.add_argument('-b', '--bucket', help="s3 bucket name")
-        parser.add_argument('-c', '--country', help="Specify country Alpha-3 ISO codes.")
-        parser.add_argument('-p', '--pbf', help="Sharded PBF input folder.", required=True)
-        parser.add_argument('-o', '--output', help="Atlas output folder.", required=True)
-        parser.add_argument('-r', '--region', help="Specify region.")
+        parser.add_argument('--bucket', help="s3 bucket name.")
+        parser.add_argument('--config', help="Path to configuration.json file.")
+        parser.add_argument('--country', help="Specify country Alpha-3 ISO codes.")
+        parser.add_argument('--jar', help="S3 path to Atlas jar file.")
+        parser.add_argument('--log', help="S3 path for EMR logs.")
+        parser.add_argument('--pbf', help="Sharded PBF input folder.", required=True)
+        parser.add_argument('--output', help="Atlas output folder.", required=True)
+        parser.add_argument('--region', help="Select region.")
+        parser.add_argument('--util', help="S3 path to Atlas util files.")
+        parser.add_argument('--zone', help="EMR region.")
     except argparse.ArgumentError as e:
         terminate('{}'.format(e))
     return parser.parse_args()
@@ -70,7 +73,7 @@ def get_key_val(json_dict: dict, json_key: str):
     except KeyError as e:
         terminate('JSON Key {} is unknown.'.format(e))
     if not value or value is None:
-        terminate("value for key '{}' is empty".format(json_key))
+        terminate("value for key '{}' is empty in configuration.json".format(json_key))
     return value
 
 
@@ -107,13 +110,14 @@ def get_json_s3(s3bucket: str, s3key: str) -> dict:
     return json_content
 
 
-def json_object(data: str):
-    return json.loads(data, object_hook=lambda d: SimpleNamespace(**d))
-
-
 def is_key_exist_s3(s3bucket: str, s3key: str) -> bool:
+    """
+    Check file(key) existence on S3
+    :param s3bucket:
+    :param s3key:
+    :return: true if file exist on S3
+    """
     try:
-        print(s3bucket, s3key)
         s3 = boto3.resource('s3')
         s3.Object(s3bucket, s3key).load()
     except ClientError as e:
@@ -149,16 +153,23 @@ class DeployAtlasScriptOnAws(object):
         self.atlas_destination_folder = self.args.output
         # assign
         self.country_list = None
+        self.emr_zone = None
         self.job_flow_id = None
         self.job_name = None
+        self.s3bucket = None
+        self.s3jar = None
+        self.s3log = None
+        self.s3util = None
 
     def run(self):
         # Process arguments
         self.parse_args()
+        # Validate application parameters
+        self.validate_atlas_param()
         # Generate job name
         self.generate_job_name()
         # Open EMR connection
-        conn = boto3.client('emr', region_name=self.aws['emr']['region']['zone'])
+        conn = boto3.client('emr', region_name=self.emr_zone)
         # Start Spark EMR cluster
         self.start_spark_cluster(conn)
         # Add step 'spark-submit'
@@ -170,16 +181,31 @@ class DeployAtlasScriptOnAws(object):
         """
         Assign values.
         """
-        if self.args.country:
-            self.country_list = [[self.args.country]]
-        else:
-            self.country_list = self.get_region(self.args.region)
+        self.country_list = [[self.args.country]] if self.args.country else self.get_region(self.args.region)
+        self.emr_zone = self.args.zone if self.args.zone else get_key_val(self.emr['region'], 'zone')
+        self.s3bucket = self.args.bucket if self.args.bucket else get_key_val(self.s3, 'bucket')
+        self.s3jar = self.args.jar if self.args.jar else get_key_val(self.s3, 'atlas_jar')
+        self.s3log = self.args.log if self.args.log else get_key_val(self.s3, 'logging')
+        self.s3util = self.args.util if self.args.util else get_key_val(self.s3, 'atlas_utilities')
 
     def generate_job_name(self):
         """
         Generate
         """
-        self.job_name = "{}.{}".format(self.app['name'], datetime.now().strftime("%Y%m%d.%H%M"))
+        self.job_name = "{}.{}".format(self.app['name'],
+                                       datetime.now().strftime("%Y%m%d.%H%M"))
+
+    def validate_atlas_param(self):
+        """
+        Ensure that all Atlas side files exist on S3
+        """
+        for param in self.app['parameters']:
+            key = self.s3util.partition(self.s3bucket + '/')[2] + '/' + param
+            if not is_key_exist_s3(self.s3bucket, key):
+                terminate("{}/{} doesn't exist".format(self.s3util, param))
+        if not is_key_exist_s3(self.s3bucket, self.osm_pbf_folder.partition(
+                self.s3bucket + '/')[2] + '/' + 'sharding.txt'):
+            terminate("{}/{} doesn't exist".format(self.s3util, 'sharding.txt'))
 
     def get_region(self, region: str) -> list:
         """
@@ -197,9 +223,9 @@ class DeployAtlasScriptOnAws(object):
         try:
             response = conn.run_job_flow(
                 Name=self.job_name,
-                LogUri=self.s3['logging'],
-                ReleaseLabel=self.aws['emr']['version'],
-                Applications=self.emr['software'],
+                LogUri=self.s3log,
+                ReleaseLabel=get_key_val(self.aws['emr'], 'version'),
+                Applications=get_key_val(self.emr, 'software'),
                 Instances={
                     'InstanceGroups': [
                         self.instance_group_template('Driver-1', 'ON_DEMAND', 'MASTER'),
@@ -318,20 +344,18 @@ class DeployAtlasScriptOnAws(object):
                 '--deploy-mode', 'cluster',
                 '--master', 'yarn-cluster',
                 '--class', self.app['main_class'],
-                self.s3['atlas_jar'],
+                self.s3jar,
                 '-output={}/output'.format(self.atlas_destination_folder),
                 '-countries={}'.format(country_list.upper()),
-                '-countryShapes={}/osm_world_boundaries_v2.txt.gz'.format(self.s3['atlas_utilities']),
-                '-edgeConfiguration={}/what-becomes-an-edge.json'.format(self.s3['atlas_utilities']),
-                '-osmPbfWayConfiguration={}/what-osm-ways-enter-atlas.json'.format(self.s3['atlas_utilities']),
+                '-countryShapes={}/osm_world_boundaries.txt.gz'.format(self.s3util),
+                '-edgeConfiguration={}/what-becomes-an-edge.json'.format(self.s3util),
+                '-osmPbfWayConfiguration={}/what-osm-ways-enter-atlas.json'.format(self.s3util),
                 '-pbfScheme=zz/xx/yy/zz-xx-yy.pbf',
                 '-pbfSharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
                 '-pbfs={}'.format(self.osm_pbf_folder),
                 '-sharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
-                '-slicingConfiguration={}/what-relations-are-dynamically-expanded.json'.format(
-                    self.s3['atlas_utilities']),
-                '-waySectioningConfiguration={}/what-node-tags-trigger-way-sectioning.json'.format(
-                    self.s3['atlas_utilities'])]
+                '-slicingConfiguration={}/what-relations-are-dynamically-expanded.json'.format(self.s3util),
+                '-waySectioningConfiguration={}/what-node-tags-trigger-way-sectioning.json'.format(self.s3util)]
 
     def instance_group_template(self, name: str, market: str, role: str) -> dict:
         return {
@@ -355,6 +379,7 @@ if __name__ == "__main__":
     # parse arguments
     args = parse_args()
     # load config file
-    config = get_json_local('configuration.json')
+    config = get_json_local(args.config) if args.config \
+        else get_json_local('configuration.json')
     # deployment
     DeployAtlasScriptOnAws(args, config).run()
