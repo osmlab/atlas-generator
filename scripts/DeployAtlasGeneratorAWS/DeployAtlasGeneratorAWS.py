@@ -16,7 +16,7 @@ import time
 from botocore.exceptions import ClientError
 from datetime import datetime
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -50,8 +50,8 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument('--config', help="Path to configuration.json file.")
         parser.add_argument('--jar', help="S3 path to Atlas jar file.")
         parser.add_argument('--log', help="S3 path for EMR logs.")
-        parser.add_argument('--pbf', help="Sharded PBF input folder.", required=True)
-        parser.add_argument('--output', help="Atlas output folder.", required=True)
+        parser.add_argument('--pbf', help="S3 path to Sharded PBF input folder.", required=True)
+        parser.add_argument('--output', help="S3 path to Atlas output folder.", required=True)
         parser.add_argument('--util', help="S3 path to Atlas util files.")
         parser.add_argument('--zone', help="EMR zone e.g. us-west-1")
         group = parser.add_mutually_exclusive_group(required=True)

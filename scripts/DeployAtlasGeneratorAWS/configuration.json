@@ -3,7 +3,6 @@
       "name":"atlas-generator",
       "main_class":"org.openstreetmap.atlas.generator.AtlasGenerator",
       "parameters": {
-         "unknown": "ferry-plus-first-degree-roads.json",
          "edgeConfiguration": "what-becomes-an-edge.json",
          "waySectioningConfiguration": "what-node-tags-trigger-way-sectioning.json",
          "osmPbfWayConfiguration": "what-osm-ways-enter-atlas.json",
