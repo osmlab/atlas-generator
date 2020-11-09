@@ -48,14 +48,15 @@ def parse_args() -> argparse.Namespace:
     try:
         parser.add_argument('--bucket', help="s3 bucket name.")
         parser.add_argument('--config', help="Path to configuration.json file.")
-        parser.add_argument('--country', help="Specify country Alpha-3 ISO codes.")
         parser.add_argument('--jar', help="S3 path to Atlas jar file.")
         parser.add_argument('--log', help="S3 path for EMR logs.")
         parser.add_argument('--pbf', help="Sharded PBF input folder.", required=True)
         parser.add_argument('--output', help="Atlas output folder.", required=True)
-        parser.add_argument('--region', help="Select region.")
         parser.add_argument('--util', help="S3 path to Atlas util files.")
-        parser.add_argument('--zone', help="EMR region.")
+        parser.add_argument('--zone', help="EMR zone e.g. us-west-1")
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument('--country', help="Specify country Alpha-3 ISO codes.")
+        group.add_argument('--region', help="Country region e.g. America, Europe.")
     except argparse.ArgumentError as e:
         terminate('{}'.format(e))
     return parser.parse_args()
@@ -199,13 +200,13 @@ class DeployAtlasScriptOnAws(object):
         """
         Ensure that all Atlas side files exist on S3
         """
-        for param in self.app['parameters']:
+        for param in self.app['parameters'].values():
             key = self.s3util.partition(self.s3bucket + '/')[2] + '/' + param
             if not is_key_exist_s3(self.s3bucket, key):
                 terminate("{}/{} doesn't exist".format(self.s3util, param))
         if not is_key_exist_s3(self.s3bucket, self.osm_pbf_folder.partition(
                 self.s3bucket + '/')[2] + '/' + 'sharding.txt'):
-            terminate("{}/{} doesn't exist".format(self.s3util, 'sharding.txt'))
+            terminate("{}/sharding.txt doesn't exist".format(self.s3util))
 
     def get_region(self, region: str) -> list:
         """
@@ -233,6 +234,7 @@ class DeployAtlasScriptOnAws(object):
                     ],
                     'KeepJobFlowAliveWhenNoSteps': True,
                     'TerminationProtected': False,
+                    # optional. default is empty in configuration.json
                     'Ec2SubnetId': self.emr['region']['subnet'],
                 },
                 Configurations=self.spark_config,
@@ -272,7 +274,7 @@ class DeployAtlasScriptOnAws(object):
             logger.info(state)
             time.sleep(30)  # Prevent ThrottlingException
 
-    def terminate_cluster(self, c: boto3):
+    def terminate_cluster(self, c: boto3) -> None:
         """
         Terminate cluster
         :param c:
@@ -295,10 +297,6 @@ class DeployAtlasScriptOnAws(object):
         time.sleep(30)  # Prevent ThrottlingException
 
     def step_spark_submit(self, c: boto3) -> None:
-        """
-        :param c:
-        :return:
-        """
         try:
             response = c.add_job_flow_steps(
                 JobFlowId=self.job_flow_id,
@@ -330,6 +328,11 @@ class DeployAtlasScriptOnAws(object):
         return steps
 
     def emr_step_template(self, action_on_failure: str, country_list: str) -> dict:
+        """
+        :param action_on_failure: Continue or Terminate
+        :param country_list: country iso codes
+        :return: generate EMR step template.
+        """
         return {
             'Name': self.app['name'],
             'ActionOnFailure': action_on_failure,
@@ -340,6 +343,12 @@ class DeployAtlasScriptOnAws(object):
         }
 
     def hadoop_jar_step_args(self, country_list: str) -> list:
+        """
+        Generate hadoop step.
+        :param country_list:
+        :return:
+        """
+        param = get_key_val(self.app, 'parameters')
         return ['spark-submit',
                 '--deploy-mode', 'cluster',
                 '--master', 'yarn-cluster',
@@ -347,17 +356,24 @@ class DeployAtlasScriptOnAws(object):
                 self.s3jar,
                 '-output={}/output'.format(self.atlas_destination_folder),
                 '-countries={}'.format(country_list.upper()),
-                '-countryShapes={}/osm_world_boundaries.txt.gz'.format(self.s3util),
-                '-edgeConfiguration={}/what-becomes-an-edge.json'.format(self.s3util),
-                '-osmPbfWayConfiguration={}/what-osm-ways-enter-atlas.json'.format(self.s3util),
+                '-countryShapes={}/{}'.format(self.s3util, param['countryShapes']),
+                '-edgeConfiguration={}/{}'.format(self.s3util, param['edgeConfiguration']),
+                '-osmPbfWayConfiguration={}/{}'.format(self.s3util, param['osmPbfWayConfiguration']),
                 '-pbfScheme=zz/xx/yy/zz-xx-yy.pbf',
                 '-pbfSharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
                 '-pbfs={}'.format(self.osm_pbf_folder),
                 '-sharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
-                '-slicingConfiguration={}/what-relations-are-dynamically-expanded.json'.format(self.s3util),
-                '-waySectioningConfiguration={}/what-node-tags-trigger-way-sectioning.json'.format(self.s3util)]
+                '-slicingConfiguration={}/{}'.format(self.s3util, param['slicingConfiguration']),
+                '-waySectioningConfiguration={}/{}'.format(self.s3util, param['waySectioningConfiguration'])]
 
     def instance_group_template(self, name: str, market: str, role: str) -> dict:
+        """
+        Generate EMR instance group template
+        :param name:
+        :param market:
+        :param role:
+        :return:
+        """
         return {
             'Name': name,
             'Market': market,
@@ -367,9 +383,17 @@ class DeployAtlasScriptOnAws(object):
         }
 
     def get_instance_type(self, role: str) -> str:
+        """
+        :param role: MASTER (driver) or CORE (worker)
+        :return: EC2 Instance Type
+        """
         return self.ec2[role.lower()]['type']
 
     def get_instance_count(self, role: str) -> int:
+        """
+        :param role: MASTER (driver) or CORE (worker)
+        :return: EC2 instances for EMR cluster
+        """
         return self.ec2[role.lower()]['count']
 
 

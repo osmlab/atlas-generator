@@ -2,14 +2,14 @@
    "application":{
       "name":"atlas-generator",
       "main_class":"org.openstreetmap.atlas.generator.AtlasGenerator",
-      "parameters": [
-         "ferry-plus-first-degree-roads.json",
-         "what-becomes-an-edge.json",
-         "what-node-tags-trigger-way-sectioning.json",
-         "what-osm-ways-enter-atlas.json",
-         "what-relations-are-dynamically-expanded.json",
-         "osm_world_boundaries.txt.gz"
-      ]
+      "parameters": {
+         "unknown": "ferry-plus-first-degree-roads.json",
+         "edgeConfiguration": "what-becomes-an-edge.json",
+         "waySectioningConfiguration": "what-node-tags-trigger-way-sectioning.json",
+         "osmPbfWayConfiguration": "what-osm-ways-enter-atlas.json",
+         "slicingConfiguration": "what-relations-are-dynamically-expanded.json",
+         "countryShapes": "osm_world_boundaries.txt.gz"
+      }
    },
    "aws":{
       "emr":{
