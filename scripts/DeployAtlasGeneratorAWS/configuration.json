@@ -1,0 +1,143 @@
+{
+   "application":{
+      "name":"atlas-generator",
+      "main_class":"org.openstreetmap.atlas.generator.AtlasGenerator",
+      "parameters": {
+         "configuration": {
+            "edgeConfiguration": "what-becomes-an-edge.json",
+            "waySectioningConfiguration": "what-node-tags-trigger-way-sectioning.json",
+            "osmPbfWayConfiguration": "what-osm-ways-enter-atlas.json",
+            "slicingConfiguration": "what-relations-are-dynamically-expanded.json"
+         },
+         "border": {
+            "countryShapes": "osm_world_boundaries.txt.gz"
+         },
+         "other": {
+
+         }
+      }
+   },
+   "aws":{
+      "emr":{
+         "version":"emr-5.31.0",
+         "software":[
+            {
+               "Name":"Hadoop"
+            },
+            {
+               "Name":"Spark"
+            }
+         ],
+         "region":{
+            "zone":"",
+            "subnet":""
+         }
+      },
+      "ec2":{
+         "master":{
+            "type":"m5.xlarge",
+            "count":1,
+            "market":"ON_DEMAND"
+         },
+         "core":{
+            "type":"r5d.2xlarge",
+            "count":130,
+            "market":"ON_DEMAND"
+         }
+      },
+      "s3":{
+         "bucket":"",
+         "logging":"",
+         "atlas_jar":"",
+         "atlas_utilities":""
+      }
+   },
+   "spark":[
+      {
+         "Classification":"yarn-site",
+         "Properties":{
+            "yarn.nodemanager.pmem-check-enabled":"false",
+            "yarn.nodemanager.vmem-check-enabled":"false"
+         }
+      },
+      {
+         "Classification":"spark",
+         "Properties":{
+            "maximizeResourceAllocation":"true"
+         }
+      },
+      {
+         "Classification":"spark-defaults",
+         "Properties":{
+            "spark.executor.memory":"48g",
+            "spark.driver.memory":"48g",
+            "spark.driver.cores":"5",
+            "spark.executor.heartbeatInterval":"60s",
+            "spark.scheduler.listenerbus.eventqueue.capacity":"100000",
+            "spark.yarn.maxAppAttempts":"1",
+            "spark.network.timeout":"800s",
+            "spark.executor.cores":"5",
+            "spark.hadoop.validateOutputSpecs":"false",
+            "spark.driver.userClassPathFirst":"true",
+            "spark.default.parallelism":"1290",
+            "spark.executor.userClassPathFirst":"true",
+            "spark.scheduler.mode":"FIFO",
+            "spark.executor.memoryOverhead":"8g",
+            "spark.executor.instances":"129"
+         }
+      }
+   ],
+   "regions":{
+      "america":{
+         "title":"North, Central, South",
+         "iso":[
+            [
+               "USA,CAN,MEX,BHS,BLZ,CUB,GTM,HTI,NIC,JAM,ARG,BOL,BRA,CHL,COL,ECU,PRY,PER,SUR,URY,VEN"
+            ]
+         ]
+      },
+      "europe":{
+         "title":"Western, Eastern",
+         "iso":[
+            [
+               "ALB,AND,AUT,BEL,CYP,CHE,DEU,DNK,ESP,FRA,GRC,GIB,IRL,ITA,LUX,LIE,MLT,NOR,NLD,PRT,SWE,GBR,BLR,BIH,BGR,HRV,CHE,CZE,EST,FIN,GEO,HRV,HUN,LTU,LVA,MKD,POL,ROU,RUS,SVK,SRB,SVN,UKR"
+            ]
+         ]
+      },
+      "africa":{
+         "title":"Africa",
+         "iso":[
+            [
+               "DZA,AGO,SHN,BEN,BWA,BFA,BDI,CMR,CPV,CAF,TCD,COM,COG,COD,DJI,EGY,GNQ,ERI,SWZ,ETH,GAB,GMB,GHA,GIN,GNB,CIV,KEN,LSO,LBR,LBY,MDG,MWI,MLI,MRT,MUS,MYT,MAR,MOZ,NAM,NER,NGA,STP,REU,RWA,STP,SEN,SYC,SLE,SOM,ZAF,SSD,SHN,SDN,SWZ,TZA,TGO,TUN,UGA,COD,ZMB,TZA,ZWE"
+            ]
+         ]
+      },
+      "asia":{
+         "title":"Asia",
+         "iso":[
+            [
+               "AFG,ARM,AZE,BHR,BGD,BTN,BRN,KHM,CHN,CXR,CCK,IOT,GEO,HKG,IND,IDN,IRN,IRQ,ISR,JPN,JOR,KAZ,KWT,KGZ,LAO,LBN,MAC,MYS,MDV,MNG,MMR,NPL,PRK,OMN,PAK,PSE,PHL,QAT,SAU,SGP,KOR,LKA,SYR,TWN,TJK,THA,TUR,TKM,ARE,UZB,VNM,YEM"
+            ]
+         ]
+      },
+      "oceania":{
+         "title":"Oceania",
+         "iso":[
+            [
+               "ASM,AUS,COK,TLS,FSM,FJI,PYF,GUM,KIR,MNP,MHL,UMI,NRU,NCL,NZL,NIU,NFK,PLW,PNG,MNP,WSM,SLB,TKL,TON,TUV,VUT,UMI,WLF"
+            ]
+         ]
+      },
+      "global":{
+         "title":"Europe, ROW",
+         "iso":[
+            [
+               "ALB,AND,AUT,BEL,CYP,CHE,DEU,DNK,ESP,FRA,GRC,GIB,IRL,ITA,LUX,LIE,MLT,NOR,NLD,PRT,SWE,GBR,BLR,BIH,BGR,HRV,CHE,CZE,EST,FIN,GEO,HRV,HUN,LTU,LVA,MKD,POL,ROU,RUS,SVK,SRB,SVN,UKR"
+            ],
+            [
+               "USA,CAN,MEX,BHS,BLZ,CUB,GTM,HTI,NIC,JAM,ARG,BOL,BRA,CHL,COL,ECU,PRY,PER,SUR,URY,VEN,DZA,AGO,SHN,BEN,BWA,BFA,BDI,CMR,CPV,CAF,TCD,COM,COG,COD,DJI,EGY,GNQ,ERI,SWZ,ETH,GAB,GMB,GHA,GIN,GNB,CIV,KEN,LSO,LBR,LBY,MDG,MWI,MLI,MRT,MUS,MYT,MAR,MOZ,NAM,NER,NGA,STP,REU,RWA,STP,SEN,SYC,SLE,SOM,ZAF,SSD,SHN,SDN,SWZ,TZA,TGO,TUN,UGA,COD,ZMB,TZA,ZWE,AFG,ARM,AZE,BHR,BGD,BTN,BRN,KHM,CHN,CXR,CCK,IOT,GEO,HKG,IND,IDN,IRN,IRQ,ISR,JPN,JOR,KAZ,KWT,KGZ,LAO,LBN,MAC,MYS,MDV,MNG,MMR,NPL,PRK,OMN,PAK,PSE,PHL,QAT,SAU,SGP,KOR,LKA,SYR,TWN,TJK,THA,TUR,TKM,ARE,UZB,VNM,YEM,ASM,AUS,COK,TLS,FSM,FJI,PYF,GUM,KIR,MNP,MHL,UMI,NRU,NCL,NZL,NIU,NFK,PLW,PNG,MNP,WSM,SLB,TKL,TON,TUV,VUT,UMI,WLF"
+            ]
+         ]
+      }
+   }
+}
