@@ -3,11 +3,18 @@
       "name":"atlas-generator",
       "main_class":"org.openstreetmap.atlas.generator.AtlasGenerator",
       "parameters": {
-         "edgeConfiguration": "what-becomes-an-edge.json",
-         "waySectioningConfiguration": "what-node-tags-trigger-way-sectioning.json",
-         "osmPbfWayConfiguration": "what-osm-ways-enter-atlas.json",
-         "slicingConfiguration": "what-relations-are-dynamically-expanded.json",
-         "countryShapes": "osm_world_boundaries.txt.gz"
+         "configuration": {
+            "edgeConfiguration": "what-becomes-an-edge.json",
+            "waySectioningConfiguration": "what-node-tags-trigger-way-sectioning.json",
+            "osmPbfWayConfiguration": "what-osm-ways-enter-atlas.json",
+            "slicingConfiguration": "what-relations-are-dynamically-expanded.json"
+         },
+         "border": {
+            "countryShapes": "osm_world_boundaries.txt.gz"
+         },
+         "other": {
+
+         }
       }
    },
    "aws":{

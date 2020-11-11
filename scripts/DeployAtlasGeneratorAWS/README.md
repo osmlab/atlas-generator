@@ -15,15 +15,15 @@ Install [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/qu
 [configuration.json](https://github.com/atlas-generator/blob/atlas_generation_aws_script/scripts/DeployAtlasGeneratorAWS/configuration.json) is preconfigured for global Atlas Generation.  
 
 ### Application config
-Atlas Generator Parameters
+All required Atlas-Generator parameters listed under `configuration` and `border` sections. Optional parameters can be added to the `other` section using the same format: parameter name -> parameter value.  
 
 ### EMR config
-EMR and Spark configurations tuned to generate global Atlas run with 130Xr5d.2xlarge node instances. Changing the default instance type require adjusting spark.config accordingly. Please follow the [best practices](https://aws.amazon.com/blogs/big-data/best-practices-for-successfully-managing-memory-for-apache-spark-applications-on-amazon-emr/)   
+EMR and Spark configurations tuned to generate global Atlas run with 130Xr5d.2xlarge node instances. Changing the default instance type require adjusting spark.config accordingly. Please follow the [best practices](https://aws.amazon.com/blogs/big-data/best-practices-for-successfully-managing-memory-for-apache-spark-applications-on-amazon-emr/).   
 
 ### Region config 
 There are 6 predefined regions: America, Europe, Asia, Africa, Oceania or Global. Custom regions can be added with the same format.
 
-### Python3
+## Python3
 
 Make sure python3 is installed. Instructions below for Mac. Also make sure that you source your .zshrc or restart your shell after you perform these steps.
 
@@ -45,7 +45,7 @@ Install python libraries necessary to execute the application as listed in requi
 sudo pip install -r requirements.txt
 ```
 
-### DeployAtlasGeneratorAWS.py script parameters
+## DeployAtlasGeneratorAWS.py script parameters
 - `--help` - Show help message and exit
 mandatory parameters:
 - `--pbf` - S3 path to OSM sharded PBF folder. 

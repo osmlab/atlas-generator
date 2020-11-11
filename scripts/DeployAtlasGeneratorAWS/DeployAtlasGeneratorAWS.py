@@ -16,7 +16,7 @@ import time
 from botocore.exceptions import ClientError
 from datetime import datetime
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -200,13 +200,26 @@ class DeployAtlasScriptOnAws(object):
         """
         Ensure that all Atlas side files exist on S3
         """
-        for param in self.app['parameters'].values():
-            key = self.s3util.partition(self.s3bucket + '/')[2] + '/' + param
-            if not is_key_exist_s3(self.s3bucket, key):
-                terminate("{}/{} doesn't exist".format(self.s3util, param))
+        for section in self.app['parameters'].values():
+            for param in section.values():
+                key = self.s3util.partition(self.s3bucket + '/')[2] + '/' + param
+                if not is_key_exist_s3(self.s3bucket, key):
+                    terminate("{}/{} doesn't exist".format(self.s3util, param))
         if not is_key_exist_s3(self.s3bucket, self.osm_pbf_folder.partition(
                 self.s3bucket + '/')[2] + '/' + 'sharding.txt'):
             terminate("{}/sharding.txt doesn't exist".format(self.s3util))
+
+    def generate_atlas_param(self) -> list:
+        """
+        Build Atlas-Generator parameter list from configuration file
+        :return: parameters list
+        """
+        parameters = get_key_val(self.app, 'parameters')
+        param_list = []
+        for section in parameters.values():
+            for param, value in section.items():
+                param_list.append('-{}={}/{}'.format(param, self.s3util, value))
+        return param_list
 
     def get_region(self, region: str) -> list:
         """
@@ -348,7 +361,6 @@ class DeployAtlasScriptOnAws(object):
         :param country_list:
         :return:
         """
-        param = get_key_val(self.app, 'parameters')
         return ['spark-submit',
                 '--deploy-mode', 'cluster',
                 '--master', 'yarn-cluster',
@@ -356,15 +368,11 @@ class DeployAtlasScriptOnAws(object):
                 self.s3jar,
                 '-output={}/output'.format(self.atlas_destination_folder),
                 '-countries={}'.format(country_list.upper()),
-                '-countryShapes={}/{}'.format(self.s3util, param['countryShapes']),
-                '-edgeConfiguration={}/{}'.format(self.s3util, param['edgeConfiguration']),
-                '-osmPbfWayConfiguration={}/{}'.format(self.s3util, param['osmPbfWayConfiguration']),
                 '-pbfScheme=zz/xx/yy/zz-xx-yy.pbf',
                 '-pbfSharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
                 '-pbfs={}'.format(self.osm_pbf_folder),
                 '-sharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
-                '-slicingConfiguration={}/{}'.format(self.s3util, param['slicingConfiguration']),
-                '-waySectioningConfiguration={}/{}'.format(self.s3util, param['waySectioningConfiguration'])]
+                ] + self.generate_atlas_param()
 
     def instance_group_template(self, name: str, market: str, role: str) -> dict:
         """
