@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -44,12 +45,11 @@ import org.slf4j.LoggerFactory;
  */
 public class ResourceFileSystem extends FileSystem
 {
-    private static final Logger logger = LoggerFactory.getLogger(ResourceFileSystem.class);
-
-    // The store that contains all the known resources in the file system
-    private static final Map<String, Resource> STORE = new ConcurrentHashMap<>();
     public static final String SCHEME = "resource";
     public static final String RESOURCE_FILE_SYSTEM_CONFIGURATION = "fs." + SCHEME + ".impl";
+    private static final Logger logger = LoggerFactory.getLogger(ResourceFileSystem.class);
+    // The store that contains all the known resources in the file system
+    private static final Map<String, Resource> STORE = new ConcurrentHashMap<>();
     private static final Statistics STATISTICS_INTERNAL = new Statistics(SCHEME);
     private static Class<?> clazz = null;
 
@@ -271,9 +271,38 @@ public class ResourceFileSystem extends FileSystem
         final String prefix = hadoopPath.toString();
         for (final String filePath : STORE.keySet())
         {
-            if (filePath.startsWith(prefix))
+            if (filePath.equals(prefix))
             {
+                // This is the simple case, return the entire path as a new fileStatus
                 result.add(new FileStatus(0, false, 0, 0, 0, new Path(filePath)));
+            }
+            else if (filePath.startsWith(prefix))
+            {
+                final String pathWithoutPrefix = StringUtils.removeStart(filePath, prefix);
+                final int numberOfRemainingSlashes = StringUtils.countMatches(pathWithoutPrefix,
+                        "/");
+
+                if (numberOfRemainingSlashes == 1)
+                {
+                    // If there's only one remaining slash, return the full filePath
+                    result.add(new FileStatus(0, false, 0, 0, 0, new Path(filePath)));
+                }
+                else if (numberOfRemainingSlashes > 1)
+                {
+                    // The filePath has multiple children directory underneath the prefix. Return
+                    // the next directory.
+                    final int indexOfSecondSlash = StringUtils.ordinalIndexOf(pathWithoutPrefix,
+                            "/", 2);
+                    final String prefixAndNextDirectory = prefix
+                            + pathWithoutPrefix.substring(0, indexOfSecondSlash + 1);
+                    result.add(new FileStatus(0, true, 0, 0, 0, new Path(prefixAndNextDirectory)));
+                }
+                else
+                {
+                    throw new CoreException(
+                            "Unexpected scenario in listStatus with filePath: {} and prefix: {}",
+                            filePath, prefix);
+                }
             }
         }
         return result.toArray(new FileStatus[0]);
