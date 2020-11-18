@@ -16,6 +16,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.AbstractIterator;
 
@@ -31,6 +33,8 @@ import com.google.common.collect.AbstractIterator;
  */
 public final class HDFSWalker
 {
+    private static final Logger logger = LoggerFactory.getLogger(HDFSWalker.class);
+
     /**
      * Collection of hadoop file status object and it's corresponding depth in the filesystem
      * hierarchy
@@ -65,6 +69,7 @@ public final class HDFSWalker
      * @author cstaylor
      */
     private static final class HDFSIterator extends AbstractIterator<FileStatus>
+            implements AutoCloseable
     {
 
         /**
@@ -108,6 +113,12 @@ public final class HDFSWalker
             {
                 throw new CoreException("Error when creating an HDFSIterator", oops);
             }
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            this.fileSystem.close();
         }
 
         @Override
@@ -199,9 +210,16 @@ public final class HDFSWalker
 
     public Stream<FileStatus> walk(final Path root)
     {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                new HDFSIterator(root, getConfiguration(), this.maxDepth), Spliterator.ORDERED),
-                false);
+        try (HDFSIterator iterator = new HDFSIterator(root, getConfiguration(), this.maxDepth))
+        {
+            return StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+        }
+        catch (final IOException e)
+        {
+            logger.error("HDFSIterator not closed properly", e);
+        }
+        return Stream.empty();
     }
 
     public Stream<HDFSFile> walkFiles(final Path root)

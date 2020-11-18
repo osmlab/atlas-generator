@@ -55,6 +55,42 @@ public abstract class DataLocator<T> implements Serializable
 
     private final Map<String, String> sparkContext;
 
+    /**
+     * Check if a file exists (useful for elastic file systems, where {@link FileSystem#exists} may
+     * not work well).
+     *
+     * @param fileSystem
+     *            The filesystem to check for a file
+     * @param value
+     *            The path to the file on the filesystem
+     * @return {@code true} if the file exists
+     */
+    private static boolean fileExists(final FileSystem fileSystem, final Path value)
+    {
+        // Do not use FileSystem.exists() here as it does not play best with elastic file
+        // systems.
+        FileStatus fileStatus = null;
+        try
+        {
+            fileStatus = fileSystem.getFileStatus(value);
+        }
+        catch (final FileNotFoundException e)
+        {
+            // File is not there
+        }
+        catch (final IOException e)
+        {
+            throw new CoreException("Cannot test if {} exists.", value.toString(), e);
+        }
+        if (fileStatus == null || !fileStatus.isFile())
+        {
+            logger.warn("Resource {} does not exist.",
+                    logger.isWarnEnabled() ? value.toString() : "");
+            return false;
+        }
+        return true;
+    }
+
     public DataLocator(final Map<String, String> sparkContext)
     {
         this.sparkContext = sparkContext;
@@ -69,8 +105,8 @@ public abstract class DataLocator<T> implements Serializable
      */
     public Iterable<T> retrieve(final Iterable<String> paths)
     {
-        return Iterables.stream(paths).map(this::retrieve).filter(option -> option.isPresent())
-                .map(option -> option.get()).collect();
+        return Iterables.stream(paths).map(this::retrieve).filter(Optional::isPresent)
+                .map(Optional::get).collect();
     }
 
     /**
@@ -83,47 +119,35 @@ public abstract class DataLocator<T> implements Serializable
     public Optional<T> retrieve(final String path)
     {
         final Path value = new Path(path);
-        final FileSystem fileSystem = new FileSystemCreator().get(value.toUri().toString(),
-                this.sparkContext);
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(value.toUri().toString(),
+                this.sparkContext))
         {
-            // Do not use FileSystem.exists() here as it does not play best with elastic file
-            // systems.
-            FileStatus fileStatus = null;
-            try
+            if (!fileExists(fileSystem, value))
             {
-                fileStatus = fileSystem.getFileStatus(value);
-            }
-            catch (final FileNotFoundException e)
-            {
-                // File is not there
-            }
-            if (fileStatus == null || !fileStatus.isFile())
-            {
-                logger.warn("Resource {} does not exist.", value.toString());
                 return Optional.empty();
             }
+            final InputStreamResource resource = new InputStreamResource(() ->
+            {
+                try
+                {
+                    return fileSystem.open(value);
+                }
+                catch (final Exception e)
+                {
+                    throw new CoreException("Cannot translate {} to a resource.", value, e);
+                }
+            }).withName(path);
+            if (path.endsWith(FileSuffix.GZIP.toString()))
+            {
+                resource.setDecompressor(Decompressor.GZIP);
+            }
+            return readFrom(resource);
         }
         catch (final IOException e)
         {
-            throw new CoreException("Cannot test if {} exists.", value.toString(), e);
+            logger.error("FileSystem not properly closed", e);
         }
-        final InputStreamResource resource = new InputStreamResource(() ->
-        {
-            try
-            {
-                return fileSystem.open(value);
-            }
-            catch (final Exception e)
-            {
-                throw new CoreException("Cannot translate {} to a resource.", value, e);
-            }
-        }).withName(path);
-        if (path.endsWith(FileSuffix.GZIP.toString()))
-        {
-            resource.setDecompressor(Decompressor.GZIP);
-        }
-        return readFrom(resource);
+        return Optional.empty();
     }
 
     /**

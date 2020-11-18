@@ -81,13 +81,12 @@ public abstract class SparkJob extends Command implements Serializable
 
     public static Resource resource(final String path, final Map<String, String> configurationMap)
     {
-        try
+        if (path.startsWith("http"))
         {
-            if (path.startsWith("http"))
-            {
-                return new GetResource(path);
-            }
-            final FileSystem fileSystem = new FileSystemCreator().get(path, configurationMap);
+            return new GetResource(path);
+        }
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, configurationMap))
+        {
             if (!fileSystem.exists(new Path(path)))
             {
                 return null;
@@ -113,6 +112,20 @@ public abstract class SparkJob extends Command implements Serializable
         catch (final Exception e)
         {
             throw new CoreException("Could not open resource {}", path, e);
+        }
+    }
+
+    private static void logOptions(final Map<String, String> options)
+    {
+        if (logger.isInfoEnabled())
+        {
+            for (final Entry<String, String> entry : options.entrySet())
+            {
+                final String key = entry.getKey();
+                final String value = entry.getValue();
+                logger.info("Forcing configuration from -{}: key: \"{}\", value: \"{}\"",
+                        SPARK_OPTIONS.getName(), key, value);
+            }
         }
     }
 
@@ -204,7 +217,7 @@ public abstract class SparkJob extends Command implements Serializable
     {
         final Boolean copyToOutput = (Boolean) command
                 .get(PersistenceTools.COPY_SHARDING_AND_BOUNDARIES);
-        if (copyToOutput)
+        if (Boolean.TRUE.equals(copyToOutput))
         {
             new PersistenceTools(configurationMap()).copyShardingAndBoundariesToOutput(input,
                     output);
@@ -336,30 +349,14 @@ public abstract class SparkJob extends Command implements Serializable
         return new Path(path).getFileSystem(configuration());
     }
 
-    private void logOptions(final Map<String, String> options)
-    {
-        if (logger.isInfoEnabled())
-        {
-            for (final Entry<String, String> entry : options.entrySet())
-            {
-                final String key = entry.getKey();
-                final String value = entry.getValue();
-                logger.info("Forcing configuration from -{}: key: \"{}\", value: \"{}\"",
-                        SPARK_OPTIONS.getName(), key, value);
-            }
-        }
-    }
-
     private void writeStatus(final String path, final String name, final String contents)
     {
-        try
+        try (FileSystem fileSystem = getFileSystem(path);
+                BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
+                        fileSystem.create(new Path(SparkFileHelper.combine(path, name))))))
         {
-            final FileSystem fileSystem = getFileSystem(path);
-            try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(
-                    fileSystem.create(new Path(SparkFileHelper.combine(path, name))))))
-            {
-                out.write(contents);
-            }
+            out.write(contents);
+
         }
         catch (final Exception e)
         {

@@ -462,9 +462,8 @@ public class SparkFileHelper implements Serializable
      */
     public boolean exists(final String path)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, this.sparkContext))
         {
-            final FileSystem fileSystem = new FileSystemCreator().get(path, this.sparkContext);
             return fileSystem.exists(new Path(path));
         }
         catch (final Exception e)
@@ -481,9 +480,8 @@ public class SparkFileHelper implements Serializable
      */
     public boolean isDirectory(final String path)
     {
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(path, this.sparkContext))
         {
-            final FileSystem fileSystem = new FileSystemCreator().get(path, this.sparkContext);
             return fileSystem.isDirectory(new Path(path));
         }
         catch (final Exception e)

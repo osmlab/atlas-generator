@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -99,10 +100,9 @@ public class ShardedAtlasRDDLoader
         final String atlasPath = atlasPath(atlasDirectory, country, shardName);
         logger.info("Start to load atlas from atlas directory: {} ", atlasPath);
         Atlas atlas = null;
-        try
+        try (FileSystem fileSystem = new FileSystemCreator().get(atlasPath, configurationMap))
         {
-            if (!new FileSystemCreator().get(atlasPath, configurationMap)
-                    .exists(new Path(atlasPath)))
+            if (!fileSystem.exists(new Path(atlasPath)))
             {
                 logger.warn("No atlas found for path {}", atlasPath);
                 return atlas;

@@ -63,9 +63,9 @@ public class FileSystemCreator
     public FileSystem get(final String path, final Map<String, String> configuration)
     {
         final Configuration conf = new Configuration();
-        for (final String key : configuration.keySet())
+        for (final Map.Entry<String, String> entry : configuration.entrySet())
         {
-            conf.set(key, configuration.get(key));
+            conf.set(entry.getKey(), entry.getValue());
         }
         return get(path, conf);
     }

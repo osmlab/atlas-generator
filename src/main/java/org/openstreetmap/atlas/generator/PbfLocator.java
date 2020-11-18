@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author matthieun
  */
-public class PbfLocator
+public class PbfLocator implements AutoCloseable
 {
     /**
      * @author matthieun
@@ -73,6 +73,8 @@ public class PbfLocator
     private final Function<SlippyTile, Optional<LocatedPbf>> pbfFetcher;
     private final Retry retry = new Retry(5, Duration.ONE_SECOND);
 
+    private final FileSystem fileSystem;
+
     /**
      * Construct
      *
@@ -85,13 +87,12 @@ public class PbfLocator
     public PbfLocator(final PbfContext pbfContext, final Map<String, String> spark)
     {
         this.pbfContext = pbfContext;
-        final FileSystem fileSystem = new FileSystemCreator().get(this.pbfContext.getPbfPath(),
-                spark);
+        this.fileSystem = new FileSystemCreator().get(this.pbfContext.getPbfPath(), spark);
         this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
             final Path pbfName = new Path(SparkFileHelper.combine(this.pbfContext.getPbfPath(),
                     this.pbfContext.getScheme().compile(shard)));
-            if (!exists(fileSystem, pbfName))
+            if (!exists(this.fileSystem, pbfName))
             {
                 logger.warn("PBF Resource {} does not exist.", pbfName);
                 return Optional.empty();
@@ -100,7 +101,7 @@ public class PbfLocator
             {
                 try
                 {
-                    return open(fileSystem, pbfName);
+                    return open(this.fileSystem, pbfName);
                 }
                 catch (final Exception e)
                 {
@@ -109,6 +110,12 @@ public class PbfLocator
             }).withName(pbfName.toString()), shard.bounds());
             return Optional.of(locatedPbf);
         };
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        this.fileSystem.close();
     }
 
     /**
