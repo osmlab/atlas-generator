@@ -249,7 +249,7 @@ class CloudPBFShardControl:
 
     def ssh_connect(self):
         """Connect to an EC2 instance"""
-        for timeout in range(16):
+        for _timeout in range(16):
             try:
                 keyFile = "{}/.ssh/{}.pem".format(os.environ.get("HOME"), self.key)
                 key = paramiko.RSAKey.from_private_key_file(keyFile)
@@ -281,10 +281,9 @@ class CloudPBFShardControl:
             self.ssh_connect()
         try:
             self.scp.put(localFiles, remoteDirectory)
-        except IOException as error:
-            logger.error("Unable to copy files. {error}")
-            raise error
-        # logger.info("Files: ", localFiles, " uploaded to: ", remoteDirectory)
+        except Exception:
+            finish("Unable to copy files.")
+        logger.debug("Files: ", localFiles, " uploaded to: ", remoteDirectory)
 
     def get_files(self, remoteFiles, localDirectory):
         """Get files from running ec2 instance to local system"""
@@ -292,9 +291,8 @@ class CloudPBFShardControl:
             self.ssh_connect()
         try:
             self.scp.get(remoteFiles, localDirectory)
-        except IOException as error:
-            logger.error("Unable to copy files. {error}")
-            raise error
+        except Exception:
+            finish("Unable to copy files.")
         logger.debug("Files: ", remoteFiles, " downloaded to: ", localDirectory)
 
     def ssh_cmd(self, cmd, quiet=False, verbose=False):
