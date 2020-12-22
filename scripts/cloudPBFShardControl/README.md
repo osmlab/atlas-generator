@@ -62,42 +62,42 @@ sudo pip install -r requirements.txt
 There are four major commands you can use with the cloudPBFShardControl.py script. Each one has its own help. The main help display shows the flags and parameters that work with all the commands. The following parameters apply to all commands and must be used on the command line before the command.
 
 - `-h, --help` - Show help message and exit
-- `-n NAME, --name NAME` - If creating an EC2 instance, this NAME will be used to override the default EC2 instance name: 'PBFShardGenerator'. The script doesn't use the EC2 instance name so this can be set to any value that the user would like to use.
+- `--name NAME` - If creating an EC2 instance, this NAME will be used to override the default EC2 instance name: 'PBFShardGenerator'. The script doesn't use the EC2 instance name so this can be set to any value that the user would like to use.
 - `-t TEMPLATE, --template TEMPLATE` - This parameter sets EC2 template name that will be used to create the EC2 instance from. If used, this parameter will override the default: 'pbf-sharding-ec2-template'. At this time a template MUST be specified to operate properly.
-- `-m MINUTES, --minutes MINUTES` - This parameter will set the timeout, in minutes, that the script will use when waiting for the sharding process to complete. The default is 6000 minutes.
-- `-v, --version` - Display the current version of the script.
-- `-T, --terminate` - This flag indicates that the user would like to terminate the EC2 instance after successful operation. If this flag is not specified then the script will leave any EC2 instance used or created running upon completion of the script. There are a few different scenarios where the script will not terminate even if termination is requested. The script will NOT terminate an EC2 instance if an error is encountered when processing any command. The script will also not terminate an EC2 instance if sharding is performed but the sync command is skipped (see --out parameter).
+- `--minutes MINUTES` - This parameter will set the timeout, in minutes, that the script will use when waiting for the sharding process to complete. The default is 6000 minutes.
+- `--version` - Display the current version of the script.
+- `--terminate` - This flag indicates that the user would like to terminate the EC2 instance after successful operation. If this flag is not specified then the script will leave any EC2 instance used or created running upon completion of the script. There are a few different scenarios where the script will not terminate even if termination is requested. The script will NOT terminate an EC2 instance if an error is encountered when processing any command. The script will also not terminate an EC2 instance if sharding is performed but the sync command is skipped (see --out parameter).
 
 The following parameters are used by one or more of the commands. These parameters may not apply to all command so see the command help file for which of these parameters are accepted, required, or optional for each command.
 
-- `-k KEY, --key KEY` - This parameter is the AWS key pair name created above. This parameter specifies the name of the key as specified in the AWS console. The similarly named pem file must be located in the user's ~/.ssh/ directory. See the following URL for instructions on creating a key: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html. (e.g. `--key=aws-key`)
-- `-i ID, --id ID` - This parameter specifies the ID of an existing VM instance to use. If this parameter is specified then the command that is being executed will NOT create a new EC2 instance and will, instead, attempt to connect to an EC2 instance with the given ID. Please note that this is the ID of the instance and not the name or description of the EC2 instance. The script will indicate the ID of the EC2 instance used in the log whether an EC2 instance is created or a running EC2 instance is used.
-- `-o OUT, --out OUT` - The S3 Output directory to push sharded PBF files upon successful completion of shard processing. If this parameter is not specified when sharding then the output of the sharding process will not be pushed to an external object store and the EC2 instance will not be terminated even if -T is used. (e.g. '--out=atlas-bucket/PBF_Sharding')
-- `-p PBF, --pbf PBF` - This parameter indicates the pointer to the PBF file to shard. (e.g. '--pbf=https://download.geofabrik.de/central-america-latest.osm.pbf')
-- `-P PROCESSES, --processes PROCESSES` - The number of parallel osmium processes to start. Note that when processing a large PBF file each osmium process will use a great deal of memory so small numbers of parallel processes is suggested. (Default: 5)
+- `--key KEY` - This parameter is the AWS key pair name created above. This parameter specifies the name of the key as specified in the AWS console. The similarly named pem file must be located in the user's ~/.ssh/ directory. See the following URL for instructions on creating a key: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html. (e.g. `--key=aws-key`)
+- `--id ID` - This parameter specifies the ID of an existing VM instance to use. If this parameter is specified then the command that is being executed will NOT create a new EC2 instance and will, instead, attempt to connect to an EC2 instance with the given ID. Please note that this is the ID of the instance and not the name or description of the EC2 instance. The script will indicate the ID of the EC2 instance used in the log whether an EC2 instance is created or a running EC2 instance is used.
+- `--out OUT` - The S3 Output directory to push sharded PBF files upon successful completion of shard processing. If this parameter is not specified when sharding then the output of the sharding process will not be pushed to an external object store and the EC2 instance will not be terminated even if -T is used. (e.g. '--out=atlas-bucket/PBF_Sharding')
+- `--pbf PBF` - This parameter indicates the pointer to the PBF file to shard. (e.g. '--pbf=https://download.geofabrik.de/central-america-latest.osm.pbf')
+- `--processes PROCESSES` - The number of parallel osmium processes to start. Note that when processing a large PBF file each osmium process will use a great deal of memory so small numbers of parallel processes is suggested. (Default: 5)
 
 ### prep
 
 The prep command can be used to prepare the remote EC2 system for sharding and/or the creating of an image to create a launch template. This script communicates with a running EC2 instance or creates a new EC2 instance, then installs the necessary environment on the EC2 instance in preparation of running the shard processing. This command can be used to prep a clean EC2 instance or it can be used to update an EC2 instance that was started from a template. It is recommended that an image is created from an EC2 instance after successfully executing the prep command to create or update a launch template.
 
-Required Parameters: `-k` or `--key`
+Required Parameters: `--key`, `--id`
 
 Example: Prepare a running instance using my AWS key located here: ~/.ssh/my-key.pem
 
 ```
-./cloudpbfShardControl.py prep --key=my-key -i i-0d48466b0e91ef786
+./cloudpbfShardControl.py prep --key=my-key --id=i-0d48466b0e91ef786
 ```
 
 ### shard
 
 The shard command is the whole enchilada. You must give a `pbf` URL, and AWS `key`. If final pbf files are to be pushed to an S3 bucket then the `out` parameter indicates the S3 output directory. This command will create an instance, download the pbf file, copy the scripts from this folder to the instance, execute the sharding, and finally, if `out` is specified, push the resulting pbfs to the s3 folder specified. If the global `terminate` flag is provided and the `out` parameter is specified then the instance that is used or created by this operation will be terminated upon successful completion. If the `out` parameter is NOT specified or if there are any errors during processing the pbf then the instance will NOT be terminated.
 
-Required Parameters: `-k` or `--key`, `-p` or `--pbf`
+Required Parameters: `--key`, `--pbf`
 
 Example: Shard the Central American pbf from GeoFabric.de using a new EC2 instance and my key located here: ~/.ssh/my-key.pem. Once sharding is complete, push the results to the S3 bucket indicated. And finally, is all goes well, terminate the EC2 instance that was created.
 
 ```
-./cloudPBFShardControl.py --terminate shard --key=my-key --pbf=https://download.geofabrik.de/central-america-latest.osm.pbf --out=my-s3-bucket/PBF_Sharding/output/
+./cloudPBFShardControl.py --terminate shard --key=my-key --pbf=https://download.geofabrik.de/central-america-latest.osm.pbf --out=s3://my-s3-bucket/PBF_Sharding/output/
 ```
 
 Example: Shard the Central American pbf from GeoFabric.de using a running EC2 instance and my key located here: ~/.ssh/my-key.pem. This example will not push results to an S3 bucket when sharding is complete. This example also shows how to specify a number of parallel processes to use.
@@ -110,19 +110,19 @@ Example: Shard the Central American pbf from GeoFabric.de using a running EC2 in
 
 The sync command can be used to connect to an instance that is running and sync the resulting pbf files from a previous run to S3. This command is generally used after a successful `shard` completion when the `out` parameter was not provided during the sharding. It may also be used to re-sync pbf files from a running instance to the S3 bucket.
 
-Required Parameters: `-i` or `--id`, `-k` or `--key`, `-o` or `--out`
+Required Parameters: `--id`, `--key`, `--out`
 
 Example: Push shard results that were produced on a running instance to the S3 bucket indicated.
 
 ```
-./cloudPBFShardControl.py sync --key=my-key --out=my-s3-bucket/PBF_Sharding/output/ --id=i-0d48466b0e91ef786
+./cloudPBFShardControl.py sync --key=my-key --out=s3://my-s3-bucket/PBF_Sharding/output/ --id=i-0d48466b0e91ef786
 ```
 
 ### clean
 
 Clean can be used to clean up a running instance to prep it for a fresh sharding. It can also be used to terminate a running instance without doing anything else by specifying the global `--terminate` flag.
 
-Required Parameters: `-i` or `--id`, `-k` or `--key`
+Required Parameters: `--id`, `--key`
 
 Example: Clean up a running EC2 instance to prep for a new shard run.
 

@@ -4,20 +4,21 @@
 Control the pbf sharding process on a remote EC2 instance
 """
 import argparse
+import json
 import logging
 import os
-import sys
+import ssl
 import time
-
-import boto3.ec2
+import boto3
 import paramiko
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from paramiko.auth_handler import AuthenticationException
 from scp import SCPClient
 
 
-VERSION = "0.4.0"
-ec2 = boto3.client("ec2")
+VERSION = "1.0.0"
+AWS_REGION = 'us-west-1'
 
 
 def setup_logging(default_level=logging.INFO):
@@ -43,7 +44,7 @@ def finish(error_message=None, status=0):
     if error_message:
         logger.error(error_message)
     else:
-        logger.critical("Done")
+        logger.info("Done")
     exit(status)
 
 
@@ -61,6 +62,7 @@ class CloudPBFShardControl:
         s3Folder=None,
         terminate=False,
         templateName="pbf-sharding-ec2-template",
+        awsRegion=AWS_REGION,
     ):
         self.timeoutMinutes = timeoutMinutes
         self.key = key
@@ -77,8 +79,16 @@ class CloudPBFShardControl:
         self.shardGenName = "pbfShardGenerator.py"
         self.shardGen = os.path.join(self.shardDir, self.shardGenName)
 
-        self.client = None
+        self.sshClient = None
         self.instanceName = "PBFShardGenerator"
+        self.ec2 = boto3.client(
+            'ec2',
+            region_name = awsRegion,
+        )
+        self.ssmClient = boto3.client(
+            'ssm',
+            region_name = awsRegion,
+        )
 
     def prep(self):
         """Prep an EC2 instance to be able to shard a pbf
@@ -97,11 +107,7 @@ class CloudPBFShardControl:
             finish("Unable to create directory", -1)
 
         # fetch scripts to complete sharding
-        localFiles = [
-            self.shardGenName,
-            "sharding_quadtree.txt",
-        ]
-        self.put_files(localFiles, self.shardDir)
+        self.put_files([self.shardGenName], self.shardDir)
 
         if self.ssh_cmd("chmod u+x {}*.py".format(self.shardDir)):
             finish("Unable to set permissions", -1)
@@ -124,7 +130,6 @@ class CloudPBFShardControl:
           - self.pbfURL - indicates the pbfURL to download the pbf from
           - self.processes - number of parallel osmium processes
         """
-        logger.info("Start Sharding Process...")
         if self.instanceId == "":
             self.create_instance()
             self.get_instance_info()
@@ -156,9 +161,6 @@ class CloudPBFShardControl:
                 "Timeout waiting for script to complete. TODO - instructions to reconnect.",
                 -1,
             )
-
-        # download log
-        self.get_files(self.shardLog, "./")
 
         self.sync()
 
@@ -213,8 +215,7 @@ class CloudPBFShardControl:
         """
         logger.info("Creating PBFShardGenerator EC2 instance from template.")
         try:
-            logger.info("Create instance without dry run...")
-            response = ec2.run_instances(
+            response = self.ec2.run_instances(
                 LaunchTemplate={"LaunchTemplateName": self.templateName},
                 TagSpecifications=[
                     {
@@ -241,7 +242,7 @@ class CloudPBFShardControl:
             "Terminating PBFShardGenerator EC2 instance {}".format(self.instanceId)
         )
         try:
-            response = ec2.terminate_instances(InstanceIds=[self.instanceId])
+            self.ec2.terminate_instances(InstanceIds=[self.instanceId])
             logger.info("Instance {} was terminated".format(self.instanceId))
         except ClientError as e:
             finish(e, -1)
@@ -252,18 +253,18 @@ class CloudPBFShardControl:
             try:
                 keyFile = "{}/.ssh/{}.pem".format(os.environ.get("HOME"), self.key)
                 key = paramiko.RSAKey.from_private_key_file(keyFile)
-                self.client = paramiko.SSHClient()
-                self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                self.sshClient = paramiko.SSHClient()
+                self.sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 logger.debug(
                     "Connecting to {} ... ".format(self.instance["PublicDnsName"])
                 )
-                self.client.connect(
+                self.sshClient.connect(
                     self.instance["PublicDnsName"], username="ubuntu", pkey=key
                 )
                 logger.info(
                     "Connected to {} ... ".format(self.instance["PublicDnsName"])
                 )
-                self.scp = SCPClient(self.client.get_transport())
+                self.scp = SCPClient(self.sshClient.get_transport())
                 break
             except AuthenticationException as error:
                 logger.error(
@@ -296,23 +297,56 @@ class CloudPBFShardControl:
             raise error
         logger.debug("Files: ", remoteFiles, " downloaded to: ", localDirectory)
 
-    def ssh_cmd(self, cmd, quiet=False):
+    def ssh_cmd(self, cmd, quiet=False, verbose=False):
         """Issue an ssh command on the remote EC2 instance
 
         :param cmd: the command string to execute on the remote system
         :param quiet: If true, don't display errors on failures
         :returns: Returns the status of the completed ssh command.
         """
-        if self.client is None:
-            self.ssh_connect()
+        if self.key is not None:
+            if self.sshClient is None:
+                self.ssh_connect()
+            logger.debug("Issuing remote command: {} ... ".format(cmd))
+            ssh_stdin, ssh_stdout, ssh_stderr = self.sshClient.exec_command(cmd)
+            if ssh_stdout.channel.recv_exit_status() and not quiet:
+                logger.error(
+                    " Remote command output:\n\t"
+                    "\t".join(map(str, ssh_stderr.readlines()))
+                )
+            return ssh_stdout.channel.recv_exit_status()
+
+        # if key was not specified then try to use ssm
         logger.debug("Issuing remote command: {} ... ".format(cmd))
-        ssh_stdin, ssh_stdout, ssh_stderr = self.client.exec_command(cmd)
-        if ssh_stdout.channel.recv_exit_status() and not quiet:
-            logger.error(
-                " Remote command output:\n\t"
-                "\t".join(map(str, ssh_stderr.readlines()))
-            )
-        return ssh_stdout.channel.recv_exit_status()
+        while True:
+            try:
+                response = self.ssmClient.send_command(
+                    InstanceIds=[self.instanceId],
+                    DocumentName='AWS-RunShellScript',
+                    Parameters={'commands': [cmd]}
+                )
+                break
+            except ClientError as e:
+                logger.debug(f'{e}')
+                time.sleep(5)
+
+        time.sleep(1)
+        command_id = response['Command']['CommandId']
+        for _timeout in range(self.timeoutMinutes * 60):
+            feedback = self.ssmClient.get_command_invocation(CommandId=command_id, InstanceId=self.instanceId)
+            if feedback['StatusDetails'] != 'InProgress':
+                break
+            time.sleep(1)
+        if feedback['StatusDetails'] != 'Success':
+            if not quiet:
+                logger.error("feedback: " + feedback['StatusDetails'])
+                logger.error(" Remote command stderr:")
+                logger.error(feedback['StandardErrorContent'])
+            return -1
+        if verbose:
+            logger.info(" Remote command stdout:")
+            logger.info(feedback['StandardOutputContent'])
+        return 0
 
     def wait_for_sharding_to_complete(self):
         """Wait for sharding process to complete
@@ -327,21 +361,14 @@ class CloudPBFShardControl:
         """
         logger.info("Waiting for sharding script to complete...")
         # wait for up to TIMEOUT seconds for the VM to be up and ready
-        for timeout in range(self.timeoutMinutes):
+        for _timeout in range(self.timeoutMinutes):
             if not self.is_sharding_script_running():
                 logger.info("Sharding script has completed.")
                 if self.ssh_cmd(
                     "grep 'CRITICAL Done' {}".format(self.shardLog), quiet=True
                 ):
                     logger.error("Sharding script did not complete successfully.")
-                    localLog = (
-                        "./pbfShardGenerator-" + time.strftime("%Y%m%d%H%M%S") + ".log"
-                    )
-                    self.get_files(self.shardLog, localLog)
-                    logger.error(
-                        "---tail of shard log output ({})---\n\t".format(localLog)
-                        + "\t".join(map(str, open(localLog, "r").readlines()[-10:]))
-                    )
+                    # TODO push log to s3
                     finish(status=-1)
                 return 0
             time.sleep(60)
@@ -367,8 +394,8 @@ class CloudPBFShardControl:
 
         try:
             logger.info("Start instance")
-            ec2.start_instances(InstanceIds=[self.instanceId])
-            logger.info(response)
+            response = self.ec2.start_instances(InstanceIds=[self.instanceId])
+            logger.debug(response)
         except ClientError as e:
             logger.info(e)
 
@@ -377,7 +404,7 @@ class CloudPBFShardControl:
         logger.info("Stopping the PBFShardGenerator EC2 instance.")
 
         try:
-            response = ec2.stop_instances(InstanceIds=[self.instanceId])
+            response = self.ec2.stop_instances(InstanceIds=[self.instanceId])
             logger.info(response)
         except ClientError as e:
             logger.error(e)
@@ -390,8 +417,8 @@ class CloudPBFShardControl:
         """
         logger.info("Getting EC2 Instance {} Info...".format(self.instanceId))
         # wait for up to TIMEOUT seconds for the VM to be up and ready
-        for timeout in range(100):
-            response = ec2.describe_instances(InstanceIds=[self.instanceId])
+        for _timeout in range(100):
+            response = self.ec2.describe_instances(InstanceIds=[self.instanceId])
             if not response["Reservations"]:
                 finish("Instance {} not found".format(self.instanceId), -1)
             if (
@@ -401,7 +428,7 @@ class CloudPBFShardControl:
                 logger.debug(
                     "Waiting for EC2 instance {} to boot...".format(self.instanceId)
                 )
-                time.sleep(6)
+                time.sleep(10)
                 continue
             self.instance = response["Reservations"][0]["Instances"][0]
             logger.info(
@@ -409,19 +436,20 @@ class CloudPBFShardControl:
                     self.instanceId, self.instance["PublicDnsName"]
                 )
             )
+            time.sleep(5)
             break
-        for timeout in range(100):
+        for _timeout in range(100):
             if self.ssh_cmd("systemctl is-system-running", quiet=True):
                 logger.debug(
                     "Waiting for systemd on EC2 instance to complete initialization..."
                 )
-                time.sleep(6)
+                time.sleep(5)
                 continue
             return
         finish("Timeout while waiting for EC2 instance to be ready", -1)
 
 
-def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
+def parse_args() -> argparse.ArgumentParser:
     """Parse user parameters
 
     :returns: args
@@ -432,30 +460,28 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         "EC2 controller and an S3 bucket."
     )
     parser.add_argument(
-        "-n",
+        '--zone',
+        default=AWS_REGION,
+        type=str,
+        help="The AWS region to use. e.g. us-west-1",
+    )
+    parser.add_argument(
         "--name",
-        help="Set EC2 instance name. (Default: {})".format(cloudctl.instanceName),
+        help="Set EC2 instance name.",
     )
     parser.add_argument(
-        "-t",
         "--template",
-        help="Set EC2 template name to create instance from. (Default: {})".format(
-            cloudctl.templateName
-        ),
+        help="Set EC2 template name to create instance from.",
     )
     parser.add_argument(
-        "-m",
         "--minutes",
         type=int,
-        help="Set sharding timeout to number of minutes. (Default: {})".format(
-            cloudctl.timeoutMinutes
-        ),
+        help="Set sharding timeout to number of minutes.",
     )
     parser.add_argument(
-        "-v", "--version", help="Display the current version", action="store_true"
+        "--version", help="Display the current version", action="store_true"
     )
     parser.add_argument(
-        "-T",
         "--terminate",
         default=False,
         help="Terminate EC2 instance after successful operation",
@@ -466,13 +492,12 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         description="One of the following commands must be specified when executed. "
         "To see more information about each command and the parameters that "
         "are used for each command then specify the command and "
-        'the --help parameter. (e.g. "{} sync --help")'.format(cloudctl.shardGen),
+        'the --help parameter.',
     )
     parser_prep = subparsers.add_parser(
         "prep", help="Prepare the remote system to execute the sharding process."
     )
     parser_prep.add_argument(
-        "-k",
         "--key",
         required=True,
         help="KEY - Instance key name to use to login to instance. This key "
@@ -484,19 +509,19 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         "(e.g. `--key=aws-key`)",
     )
     parser_prep.add_argument(
-        "-i", "--id", help="ID - Indicates the ID of an existing VM instance to use"
+        "--id", help="ID - Indicates the ID of an existing VM instance to use"
     )
-    parser_prep.set_defaults(func=cloudctl.prep)
+    parser_prep.set_defaults(func=CloudPBFShardControl.prep)
+
 
     parser_shard = subparsers.add_parser(
         "shard",
         help="Shard a pbf and, if '--out' is set, then push shards to S3 folder",
     )
     parser_shard.add_argument(
-        "-i", "--id", help="ID - Indicates the ID of an existing VM instance to use"
+        "--id", help="ID - Indicates the ID of an existing VM instance to use"
     )
     parser_shard.add_argument(
-        "-k",
         "--key",
         required=True,
         help="KEY - Instance key name to use to login to instance. This key "
@@ -508,42 +533,35 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         "(e.g. `--key=aws-key`)",
     )
     parser_shard.add_argument(
-        "-o",
         "--out",
         help="Out - The S3 Output directory. (e.g. '--out=atlas-bucket/PBF_Sharding')",
     )
     parser_shard.add_argument(
-        "-p",
         "--pbf",
         required=True,
-        help="pbf URL - pointer to the pbf to shard. "
+        help="pbf - pointer to the pbf to shard. starting with http:// or s3://"
         "(e.g. '--pbf=https://download.geofabrik.de/central-america-latest.osm.pbf')",
     )
     parser_shard.add_argument(
-        "-P",
         "--processes",
         type=int,
-        help="processes - The number of parallel osmium processes to start "
-        "(Default: {})".format(cloudctl.processes),
+        help="processes - The number of parallel osmium processes to start ",
     )
     parser_shard.add_argument(
-        "-q",
         "--quadtree",
         help="bucket and path to Quadtree on S3. If not specified then local file is used.",
     )
-    parser_shard.set_defaults(func=cloudctl.shard)
+    parser_shard.set_defaults(func=CloudPBFShardControl.shard)
 
     parser_sync = subparsers.add_parser(
         "sync", help="Sync pbf files from instance to S3 folder"
     )
     parser_sync.add_argument(
-        "-i",
         "--id",
         required=True,
         help="ID - Indicates the ID of an existing VM instance to use",
     )
     parser_sync.add_argument(
-        "-k",
         "--key",
         required=True,
         help="KEY - Instance key name to use to login to instance. This key "
@@ -555,19 +573,17 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         "(e.g. `--key=aws-key`)",
     )
     parser_sync.add_argument(
-        "-o", "--out", required=True, help="Out - The S3 Output directory"
+        "--output", required=True, help="Out - The S3 Output directory"
     )
-    parser_sync.set_defaults(func=cloudctl.sync)
+    parser_sync.set_defaults(func=CloudPBFShardControl.sync)
 
     parser_clean = subparsers.add_parser("clean", help="Clean up instance")
     parser_clean.add_argument(
-        "-i",
         "--id",
         required=True,
         help="ID - Indicates the ID of an existing VM instance to use",
     )
     parser_clean.add_argument(
-        "-k",
         "--key",
         required=True,
         help="KEY - Instance key name to use to login to instance. This key "
@@ -578,7 +594,7 @@ def parse_args(cloudctl: CloudPBFShardControl) -> argparse.ArgumentParser:
         "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html. "
         "(e.g. `--key=aws-key`)",
     )
-    parser_clean.set_defaults(func=cloudctl.clean)
+    parser_clean.set_defaults(func=CloudPBFShardControl.clean)
 
     args = parser.parse_args()
     return args
@@ -590,7 +606,6 @@ def evaluate(args, cloudctl):
     :param args: The user's input.
     :param cloudctl: An instance of CloudPBFShardControl to use.
     """
-    cloudctl.terminate = args.terminate
     if args.version is True:
         logger.critical("This is version {0}.".format(VERSION))
         finish()
@@ -615,7 +630,7 @@ def evaluate(args, cloudctl):
         cloudctl.get_instance_info()
 
     if hasattr(args, "func") and args.func is not None:
-        args.func()
+        args.func(cloudctl)
     else:
         finish("A command must be specified. Try '-h' for help.")
 
@@ -623,7 +638,10 @@ def evaluate(args, cloudctl):
 logger = setup_logging()
 
 if __name__ == "__main__":
-    cloudctl = CloudPBFShardControl()
-    args = parse_args(cloudctl)
+    args = parse_args()
+    cloudctl = CloudPBFShardControl(
+        terminate=args.terminate,
+        awsRegion=args.zone,
+    )
     evaluate(args, cloudctl)
     finish()
