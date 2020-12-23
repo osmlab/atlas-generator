@@ -475,7 +475,7 @@ class PBFShardCtl:
         """
         if self.s3Folder is None:
             logger.info(
-                "No S3 output folder specified, skipping s3 sync. Use -o 's3folder/path' to sync to s3"
+                "No S3 output folder specified, skipping s3 sync. Use --out 's3folder/path' to sync to s3"
             )
             return
         if not os.path.exists(self.pbfFinalDir):

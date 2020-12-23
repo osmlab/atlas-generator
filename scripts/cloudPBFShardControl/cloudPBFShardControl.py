@@ -54,7 +54,7 @@ class CloudPBFShardControl:
     def __init__(
         self,
         timeoutMinutes=6000,
-        key="",
+        key=None,
         instanceId="",
         pbfURL="",
         processes=4,
@@ -174,7 +174,7 @@ class CloudPBFShardControl:
         """
         if self.s3Folder is None:
             logger.warning(
-                "No S3 output folder specified, skipping s3 sync. Use -o 's3folder/path' to sync to s3"
+                "No S3 output folder specified, skipping s3 sync. Use --out 's3folder/path' to sync to s3"
             )
             return
         logger.info(
@@ -363,7 +363,7 @@ class CloudPBFShardControl:
             if not self.is_sharding_script_running():
                 logger.info("Sharding script has completed.")
                 if self.ssh_cmd(
-                    "grep 'CRITICAL Done' {}".format(self.shardLog), quiet=True
+                    "grep 'INFO     Done' {}".format(self.shardLog), quiet=True
                 ):
                     logger.error("Sharding script did not complete successfully.")
                     # TODO push log to s3
@@ -461,7 +461,7 @@ def parse_args() -> argparse.ArgumentParser:
         '--zone',
         default=AWS_REGION,
         type=str,
-        help="The AWS region to use. e.g. us-west-1",
+        help=f"The AWS region to use. e.g. {AWS_REGION}",
     )
     parser.add_argument(
         "--name",

@@ -20,7 +20,7 @@ VERSION = "1.0.0"
 AWS_REGION = 'us-west-2'
 
 
-def setup_logging(default_level=logging.WARNING):
+def setup_logging(default_level=logging.INFO):
     """
     Setup logging configuration
     :param default_level
@@ -161,6 +161,10 @@ class DeployAtlasScriptOnAws(object):
         self.s3log = None
         self.s3util = None
 
+        self.emr_client = boto3.client(
+            'emr',
+            region_name=self.args.zone,
+        )
         self.s3_resource = boto3.resource(
             's3',
             region_name=self.args.zone,
@@ -179,6 +183,8 @@ class DeployAtlasScriptOnAws(object):
         self.step_spark_submit()
         # Describe cluster status until terminated
         self.describe_status_until_terminated()
+        # Copy sharding tree file to atlas directory
+        self.copy_sharding_file()
 
     def parse_args(self):
         """
@@ -285,8 +291,18 @@ class DeployAtlasScriptOnAws(object):
                 self.terminate_cluster()
                 terminate(e)
 
-            logger.info(state)
+            logger.debug(state)
             time.sleep(30)  # Prevent ThrottlingException
+
+
+    def copy_sharding_file(self):
+        sourceKey = self.osm_pbf_folder.partition(self.s3bucket + '/')[2] + "/sharding.txt"
+        destKey = self.atlas_destination_folder.partition(self.s3bucket + '/')[2] + "/atlas/sharding.txt"
+        shardingKeySource = {
+            "Bucket": self.s3bucket,
+            "Key": sourceKey
+        }
+        self.s3_resource.Object(self.s3bucket, destKey).copy(shardingKeySource)
 
     def terminate_cluster(self):
         """
