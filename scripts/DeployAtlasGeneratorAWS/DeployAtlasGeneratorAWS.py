@@ -36,6 +36,7 @@ def terminate(error_message=None):
     """
     if error_message:
         logger.error(error_message)
+        exit(-1)
     logger.critical('The script is now terminating')
     exit()
 
