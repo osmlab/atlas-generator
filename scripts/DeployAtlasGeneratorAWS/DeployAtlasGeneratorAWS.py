@@ -16,10 +16,11 @@ import time
 from botocore.exceptions import ClientError
 from datetime import datetime
 
-VERSION = "0.1.3"
+VERSION = "1.0.0"
+AWS_REGION = 'us-west-2'
 
 
-def setup_logging(default_level=logging.WARNING):
+def setup_logging(default_level=logging.INFO):
     """
     Setup logging configuration
     :param default_level
@@ -35,11 +36,12 @@ def terminate(error_message=None):
     """
     if error_message:
         logger.error(error_message)
+        exit(-1)
     logger.critical('The script is now terminating')
     exit()
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args():
     """
     Parse user parameters
     :return: args
@@ -53,7 +55,7 @@ def parse_args() -> argparse.Namespace:
         parser.add_argument('--pbf', help="S3 path to Sharded PBF input folder.", required=True)
         parser.add_argument('--output', help="S3 path to Atlas output folder.", required=True)
         parser.add_argument('--util', help="S3 path to Atlas util files.")
-        parser.add_argument('--zone', help="EMR zone e.g. us-west-1")
+        parser.add_argument('--zone', default=AWS_REGION, help="EMR zone e.g. us-west-2")
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('--country', help="Specify country Alpha-3 ISO codes.")
         group.add_argument('--region', help="Country region e.g. America, Europe.")
@@ -62,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def get_key_val(json_dict: dict, json_key: str):
+def get_key_val(json_dict , json_key):
     """
     Access dictionary elements
     :param json_dict
@@ -78,7 +80,7 @@ def get_key_val(json_dict: dict, json_key: str):
     return value
 
 
-def get_json_local(json_file: str) -> dict:
+def get_json_local(json_file):
     """
     Read local JSON
     :param: json_file
@@ -95,7 +97,7 @@ def get_json_local(json_file: str) -> dict:
     return json_content
 
 
-def get_json_s3(s3bucket: str, s3key: str) -> dict:
+def get_json_s3(s3, s3bucket, s3key):
     """
     Read JSON stored on S3
     :param: s3bucket name
@@ -103,7 +105,6 @@ def get_json_s3(s3bucket: str, s3key: str) -> dict:
     :return: json content
     """
     try:
-        s3 = boto3.resource('s3')
         json_obj = s3.Object(s3bucket, s3key)
         json_content = json.loads(json_obj.get()['Body'].read().decode('utf-8'))
     except ClientError as e:
@@ -111,7 +112,7 @@ def get_json_s3(s3bucket: str, s3key: str) -> dict:
     return json_content
 
 
-def is_key_exist_s3(s3bucket: str, s3key: str) -> bool:
+def is_key_exist_s3(s3, s3bucket, s3key):
     """
     Check file(key) existence on S3
     :param s3bucket:
@@ -119,7 +120,6 @@ def is_key_exist_s3(s3bucket: str, s3key: str) -> bool:
     :return: true if file exist on S3
     """
     try:
-        s3 = boto3.resource('s3')
         s3.Object(s3bucket, s3key).load()
     except ClientError as e:
         if e.response['Error']['Code'] == "404":
@@ -162,6 +162,15 @@ class DeployAtlasScriptOnAws(object):
         self.s3log = None
         self.s3util = None
 
+        self.emr_client = boto3.client(
+            'emr',
+            region_name=self.args.zone,
+        )
+        self.s3_resource = boto3.resource(
+            's3',
+            region_name=self.args.zone,
+        )
+
     def run(self):
         # Process arguments
         self.parse_args()
@@ -169,14 +178,14 @@ class DeployAtlasScriptOnAws(object):
         self.validate_atlas_param()
         # Generate job name
         self.generate_job_name()
-        # Open EMR connection
-        conn = boto3.client('emr', region_name=self.emr_zone)
         # Start Spark EMR cluster
-        self.start_spark_cluster(conn)
+        self.start_spark_cluster()
         # Add step 'spark-submit'
-        self.step_spark_submit(conn)
+        self.step_spark_submit()
         # Describe cluster status until terminated
-        self.describe_status_until_terminated(conn)
+        self.describe_status_until_terminated()
+        # Copy sharding tree file to atlas directory
+        self.copy_sharding_file()
 
     def parse_args(self):
         """
@@ -203,13 +212,13 @@ class DeployAtlasScriptOnAws(object):
         for section in self.app['parameters'].values():
             for param in section.values():
                 key = self.s3util.partition(self.s3bucket + '/')[2] + '/' + param
-                if not is_key_exist_s3(self.s3bucket, key):
+                if not is_key_exist_s3(self.s3_resource, self.s3bucket, key):
                     terminate("{}/{} doesn't exist".format(self.s3util, param))
-        if not is_key_exist_s3(self.s3bucket, self.osm_pbf_folder.partition(
+        if not is_key_exist_s3(self.s3_resource, self.s3bucket, self.osm_pbf_folder.partition(
                 self.s3bucket + '/')[2] + '/' + 'sharding.txt'):
-            terminate("{}/sharding.txt doesn't exist".format(self.s3util))
+            terminate("{}/sharding.txt doesn't exist".format(self.osm_pbf_folder))
 
-    def generate_atlas_param(self) -> list:
+    def generate_atlas_param(self):
         """
         Build Atlas-Generator parameter list from configuration file
         :return: parameters list
@@ -221,21 +230,21 @@ class DeployAtlasScriptOnAws(object):
                 param_list.append('-{}={}/{}'.format(param, self.s3util, value))
         return param_list
 
-    def get_region(self, region: str) -> list:
+    def get_region(self, region):
         """
         :param: region
         :return: region iso codes list
         """
         return self.region_config[region.lower()]['iso']
 
-    def start_spark_cluster(self, conn: boto3) -> None:
+    def start_spark_cluster(self) -> None:
         """
         :param: EMR client
         :return:
         """
         response = None
         try:
-            response = conn.run_job_flow(
+            response = self.emr_client.run_job_flow(
                 Name=self.job_name,
                 LogUri=self.s3log,
                 ReleaseLabel=get_key_val(self.aws['emr'], 'version'),
@@ -256,7 +265,7 @@ class DeployAtlasScriptOnAws(object):
                 VisibleToAllUsers=True,
             )
         except ClientError as e:
-            self.terminate_cluster(conn)
+            self.terminate_cluster()
             terminate(e)
 
         # Process response to determine if Spark cluster was started
@@ -268,36 +277,44 @@ class DeployAtlasScriptOnAws(object):
 
         logger.info("Created Spark {} cluster with JobFlowId {}".format(self.aws['emr']['software'], self.job_flow_id))
 
-    def describe_status_until_terminated(self, c: boto3) -> None:
+    def describe_status_until_terminated(self):
         """
         Describe cluster status
-        :param c:
         """
         stop = False
         while stop is False:
             try:
-                description = c.describe_cluster(ClusterId=self.job_flow_id)
+                description = self.emr_client.describe_cluster(ClusterId=self.job_flow_id)
                 state = description['Cluster']['Status']['State']
                 if state == 'TERMINATED' or state == 'TERMINATED_WITH_ERRORS':
                     stop = True
             except ClientError as e:
-                self.terminate_cluster(c)
+                self.terminate_cluster()
                 terminate(e)
 
-            logger.info(state)
+            logger.debug(state)
             time.sleep(30)  # Prevent ThrottlingException
 
-    def terminate_cluster(self, c: boto3) -> None:
+
+    def copy_sharding_file(self):
+        sourceKey = self.osm_pbf_folder.partition(self.s3bucket + '/')[2] + "/sharding.txt"
+        destKey = self.atlas_destination_folder.partition(self.s3bucket + '/')[2] + "/atlas/sharding.txt"
+        shardingKeySource = {
+            "Bucket": self.s3bucket,
+            "Key": sourceKey
+        }
+        self.s3_resource.Object(self.s3bucket, destKey).copy(shardingKeySource)
+
+    def terminate_cluster(self):
         """
         Terminate cluster
-        :param c:
         """
-        description = c.describe_cluster(ClusterId=self.job_flow_id)
+        description = self.emr_client.describe_cluster(ClusterId=self.job_flow_id)
         state = description['Cluster']['Status']['State']
         if state == 'STARTING' or state == 'WAITING':
             try:
                 logger.info('Terminating cluster: {}'.format(self.job_flow_id))
-                response = c.terminate_job_flows(
+                response = self.emr_clent.terminate_job_flows(
                     JobFlowIds=[
                         self.job_flow_id
                     ]
@@ -309,20 +326,20 @@ class DeployAtlasScriptOnAws(object):
         logger.info(response)
         time.sleep(30)  # Prevent ThrottlingException
 
-    def step_spark_submit(self, c: boto3) -> None:
+    def step_spark_submit(self):
         try:
-            response = c.add_job_flow_steps(
+            self.emr_client.add_job_flow_steps(
                 JobFlowId=self.job_flow_id,
                 Steps=self.generate_emr_step(),
             )
         except ClientError as e:
-            self.terminate_cluster(c)
+            self.terminate_cluster()
             terminate(e)
 
         logger.info("Added step 'spark-submit' with argument '{}'".format(self.args))
         time.sleep(1)  # Prevent ThrottlingException
 
-    def generate_emr_step(self) -> list:
+    def generate_emr_step(self):
         """
         Generate EMR job steps based on region list
         :return: list of EMR steps
@@ -340,7 +357,7 @@ class DeployAtlasScriptOnAws(object):
             terminate(e)
         return steps
 
-    def emr_step_template(self, action_on_failure: str, country_list: str) -> dict:
+    def emr_step_template(self, action_on_failure, country_list):
         """
         :param action_on_failure: Continue or Terminate
         :param country_list: country iso codes
@@ -355,7 +372,7 @@ class DeployAtlasScriptOnAws(object):
             },
         }
 
-    def hadoop_jar_step_args(self, country_list: str) -> list:
+    def hadoop_jar_step_args(self, country_list):
         """
         Generate hadoop step.
         :param country_list:
@@ -374,7 +391,7 @@ class DeployAtlasScriptOnAws(object):
                 '-sharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
                 ] + self.generate_atlas_param()
 
-    def instance_group_template(self, name: str, market: str, role: str) -> dict:
+    def instance_group_template(self, name, market, role):
         """
         Generate EMR instance group template
         :param name:
@@ -390,14 +407,14 @@ class DeployAtlasScriptOnAws(object):
             'InstanceCount': self.get_instance_count(role),
         }
 
-    def get_instance_type(self, role: str) -> str:
+    def get_instance_type(self, role):
         """
         :param role: MASTER (driver) or CORE (worker)
         :return: EC2 Instance Type
         """
         return self.ec2[role.lower()]['type']
 
-    def get_instance_count(self, role: str) -> int:
+    def get_instance_count(self, role):
         """
         :param role: MASTER (driver) or CORE (worker)
         :return: EC2 instances for EMR cluster

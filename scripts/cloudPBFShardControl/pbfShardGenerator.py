@@ -16,7 +16,7 @@ import time
 from typing import List, TextIO, Tuple
 
 
-VERSION = "0.4.0"
+VERSION = "0.6.0"
 
 
 def setup_logging(default_level=logging.INFO):
@@ -39,7 +39,7 @@ def finish(error_message=None, status=0):
     if error_message:
         logger.error(error_message)
     else:
-        logger.critical("Done")
+        logger.info("Done")
     exit(status)
 
 
@@ -161,19 +161,19 @@ class PBFShardCtl:
         )
         with open(tree_file) as f:
             lines = f.readlines()
-            leaf_lines = {l[:-1] for l in lines if len(l) > 1 and not l.endswith("+\n")}
+            leaf_lines = {line[:-1] for line in lines if len(line) > 1 and not line.endswith("+\n")}
             logger.info("Number of leaves in file: %d", len(leaf_lines))
 
-            leaf_strs = {l.to_str() for l in leaves}
+            leaf_strs = {leaf.to_str() for leaf in leaves}
             logger.info("Number of leaves in deserialized quadtree: %d", len(leaf_strs))
 
-            for l in leaf_lines:
-                if l not in leaf_strs:
-                    logger.info("line from file not in quadtree: %s", l)
+            for line in leaf_lines:
+                if line not in leaf_strs:
+                    logger.info("line from file not in quadtree: %s", line)
 
-            for s in leaf_strs:
-                if s not in leaf_lines:
-                    logger.info("line from quadtree not in file: %s", s)
+            for lstr in leaf_strs:
+                if lstr not in leaf_lines:
+                    logger.info("line from quadtree not in file: %s", lstr)
 
             logger.info("Done with comparison")
 
@@ -204,8 +204,8 @@ class PBFShardCtl:
             )
             leaves = []
             tree.leaves(leaves)
-            for l in leaves:
-                logger.info("  -> %s", l.to_str())
+            for leaf in leaves:
+                logger.info("  -> %s", leaf.to_str())
             osmium_config_file_names = self.gen_osmium_extract_config(
                 tree.pbf_file_name(), leaves
             )
@@ -308,57 +308,62 @@ class PBFShardCtl:
         Execute osmium extract pass based on a batch file given as input parameter
         """
         batchFile = open(batchFilePath, "r")
-        procList = []
-        for line in batchFile.readlines():
-            # extract file names from batch file line
-            pbfFile = line.strip().split(" ", 1)[0]
-            configFile = line.strip().split(" ", 1)[1]
+        try:
+            procList = []
+            for line in batchFile.readlines():
+                # extract file names from batch file line
+                pbfFile = line.strip().split(" ", 1)[0]
+                configFile = line.strip().split(" ", 1)[1]
 
-            pbfSize = os.path.getsize(os.path.join(self.tmpDir, pbfFile))
-            # only start a maximum number of processes in parallel
-            while len(procList) >= self.maxOsmiumProcesses:
-                logger.debug(
-                    "waiting to spawn more. processes: {} ....".format(len(procList))
-                )
-                time.sleep(1)
-                for p in procList:
-                    r = p.poll()
-                    if r == 0:
-                        logger.debug(
-                            "removing completed process {} ....".format(p.args)
-                        )
-                        procList.remove(p)
-                    elif r != None:
-                        finish(
-                            "ERROR: osmium process {} completed: {}".format(p.args, r),
-                            r,
-                        )
+                # only start a maximum number of processes in parallel
+                while len(procList) >= self.maxOsmiumProcesses:
+                    logger.debug(
+                        "waiting to spawn more. processes: {} ....".format(len(procList))
+                    )
+                    time.sleep(1)
+                    for p in procList:
+                        r = p.poll()
+                        if r == 0:
+                            logger.debug(
+                                "removing completed process {} ....".format(p.args)
+                            )
+                            procList.remove(p)
+                        elif r is not None:
+                            finish(
+                                "ERROR: osmium process {} completed: {}".format(p.args, r),
+                                r,
+                            )
 
-            # create a log file from the config file
-            logFile = open(
-                os.path.join(self.logDir, os.path.splitext(configFile)[0] + ".log"),
-                "wb",
-            )
-            logger.info(
-                "osmium extract processing {} using cfg file: {} ....".format(
-                    pbfFile, configFile
+                # create a log file from the config file
+                logFile = open(
+                    os.path.join(self.logDir, os.path.splitext(configFile)[0] + ".log"),
+                    "wb",
                 )
-            )
-            p = subprocess.Popen(
-                [
-                    "osmium",
-                    "extract",
-                    "-vO",
-                    "-c{}".format(os.path.join(self.osmiumCfgDir, configFile)),
-                    "-d{}".format(self.tmpDir),
-                    "-scomplete_ways",
-                    os.path.join(self.tmpDir, pbfFile),
-                ],
-                stdout=logFile,
-                stderr=logFile,
-            )
-            logger.debug("adding process {} ....".format(p.args))
-            procList.append(p)
+                try:
+                    logger.info(
+                        "osmium extract processing {} using cfg file: {} ....".format(
+                            pbfFile, configFile
+                        )
+                    )
+                    p = subprocess.Popen(
+                        [
+                            "osmium",
+                            "extract",
+                            "-vO",
+                            "-c{}".format(os.path.join(self.osmiumCfgDir, configFile)),
+                            "-d{}".format(self.tmpDir),
+                            "-scomplete_ways",
+                            os.path.join(self.tmpDir, pbfFile),
+                        ],
+                        stdout=logFile,
+                        stderr=logFile,
+                    )
+                    logger.debug("adding process {} ....".format(p.args))
+                    procList.append(p)
+                finally:
+                    logFile.close()
+        finally:
+            batchFile.close()
 
         for p in procList:
             r = p.wait()
@@ -397,7 +402,7 @@ class PBFShardCtl:
         os.makedirs(self.tmpDir)
 
         if self.s3QuadTree is not None:
-            cmd = "aws s3 cp s3://{} {} ".format(self.s3QuadTree, self.quadtreeFileName)
+            cmd = "aws s3 cp {} {} ".format(self.s3QuadTree, self.quadtreeFileName)
             if self.ssh_cmd(cmd):
                 finish("Unable to get {}".format(self.s3QuadTree), -1)
 
@@ -441,9 +446,12 @@ class PBFShardCtl:
         logger.info("Generate osmium batch files...")
         self.genOsmiumBatchFiles()
 
-        # use wget to fetch the pbf URL because it will figure out if the latest needs to be downloaded
-        if subprocess.run(["wget", "-NP", self.scriptDir, self.pbfURL]).returncode:
-            finish("Error Downloading PBF...", -1)
+        if "http" in self.pbfURL:
+            cp_cmd = ["wget", "-NP", self.scriptDir, self.pbfURL]
+        else:
+            cp_cmd = ["aws", "s3", "cp", "--quiet", self.pbfURL, self.scriptDir]
+        if subprocess.run(cp_cmd).returncode:
+            finish(f"ERROR: Unable to get {self.pbfURL}", -1)
 
         # create a link to the main pbf as the first intermediate pbf in the temp folder
         primarypbf = os.path.join(self.tmpDir, "0-0-0-intermediate.osm.pbf")
@@ -467,7 +475,7 @@ class PBFShardCtl:
         """
         if self.s3Folder is None:
             logger.info(
-                "No S3 output folder specified, skipping s3 sync. Use -o 's3folder/path' to sync to s3"
+                "No S3 output folder specified, skipping s3 sync. Use --out 's3folder/path' to sync to s3"
             )
             return
         if not os.path.exists(self.pbfFinalDir):
@@ -481,7 +489,7 @@ class PBFShardCtl:
             "sync",
             "--quiet",
             self.pbfFinalDir,
-            "s3://{}".format(self.s3Folder),
+            self.s3Folder,
         ]
         if subprocess.run(aws_cmd).returncode:
             finish("ERROR: Unable to sync with S3", -1)
@@ -526,7 +534,7 @@ class SlippyTileQuadTreeNode:
         x, y, z = SlippyTileQuadTreeNode.tile_xyz_from_line(line)
         children = []
         if line.endswith("+"):
-            for i in range(SlippyTileQuadTreeNode.MAXIMUM_CHILDREN):
+            for _i in range(SlippyTileQuadTreeNode.MAXIMUM_CHILDREN):
                 children.append(SlippyTileQuadTreeNode.read(tree_dump_file))
 
         return SlippyTileQuadTreeNode(x, y, z, children)
@@ -579,9 +587,9 @@ class SlippyTileQuadTreeNode:
             self.num_leaves = 1
         else:
             children_stats = [c.scan_meta_data() for c in self.children]
-            self.max_leaf_level = 1 + max([t[0] for t in children_stats])
-            self.min_leaf_level = 1 + min([t[1] for t in children_stats])
-            self.num_leaves = sum([t[2] for t in children_stats])
+            self.max_leaf_level = 1 + max((t[0] for t in children_stats))
+            self.min_leaf_level = 1 + min((t[1] for t in children_stats))
+            self.num_leaves = sum((t[2] for t in children_stats))
 
         return (self.max_leaf_level, self.min_leaf_level, self.num_leaves)
 
