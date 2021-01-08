@@ -31,7 +31,7 @@ import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
 import org.openstreetmap.atlas.geography.atlas.items.ItemType;
 import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
-import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
+import org.openstreetmap.atlas.geography.atlas.raw.sectioning.AtlasSectionProcessor;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasSlicer;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.statistics.Counter;
@@ -407,6 +407,7 @@ public final class AtlasGeneratorHelper implements Serializable
             final Time start = Time.now();
             final AtlasLoadingOption atlasLoadingOption = AtlasGeneratorParameters
                     .buildAtlasLoadingOption(boundaries.getValue(), loadingOptions.getValue());
+            atlasLoadingOption.setCountryCode(countryShard.getCountry());
             // Instantiate the caches
             final HadoopAtlasFileCache atlasCache = new HadoopAtlasFileCache(slicedAtlasPath,
                     atlasScheme, sparkContext);
@@ -421,7 +422,7 @@ public final class AtlasGeneratorHelper implements Serializable
             try
             {
                 // Section the Atlas
-                atlas = new WaySectionProcessor(countryShard.getShard(), atlasLoadingOption,
+                atlas = new AtlasSectionProcessor(countryShard.getShard(), atlasLoadingOption,
                         sharding.getValue(), slicedRawAtlasFetcher).run();
             }
             catch (final Throwable e) // NOSONAR

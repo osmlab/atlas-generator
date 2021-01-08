@@ -11,7 +11,7 @@ import org.openstreetmap.atlas.geography.atlas.AtlasMetaData;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.pbf.BridgeConfiguredFilter;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
-import org.openstreetmap.atlas.geography.atlas.raw.sectioning.WaySectionProcessor;
+import org.openstreetmap.atlas.geography.atlas.raw.sectioning.AtlasSectionProcessor;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasSlicer;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.statistics.Counter;
@@ -39,9 +39,6 @@ import org.slf4j.LoggerFactory;
  */
 public class WorldAtlasGenerator extends Command
 {
-    private static final Logger logger = LoggerFactory.getLogger(WorldAtlasGenerator.class);
-    private static final Switch<File> STATISTICS = new Switch<>("statistics",
-            "The file that will contain the statistics", File::new, Optionality.OPTIONAL);
     // the default boundary is a bounding box of the world
     public static final Switch<CountryBoundaryMap> BOUNDARIES = new Switch<>("boundaries",
             "The boundary map to use", value -> CountryBoundaryMap.fromPlainText(new File(value)),
@@ -70,6 +67,9 @@ public class WorldAtlasGenerator extends Command
             "osmPbfRelationConfiguration",
             "The path to the configuration file that defines which PBF Relations becomes an Atlas Entity",
             File::new, Optionality.OPTIONAL);
+    private static final Logger logger = LoggerFactory.getLogger(WorldAtlasGenerator.class);
+    private static final Switch<File> STATISTICS = new Switch<>("statistics",
+            "The file that will contain the statistics", File::new, Optionality.OPTIONAL);
     // filter that does no filtering
     private static final ConfiguredTaggableFilter PBF_NO_FILTER_CONFIGURATION = new ConfiguredTaggableFilter(
             new StandardConfiguration(new StringResource("{\"filters\": []}")));
@@ -179,7 +179,7 @@ public class WorldAtlasGenerator extends Command
         }
         if (loadingOptions.isWaySectioning())
         {
-            atlas = new WaySectionProcessor(atlas, loadingOptions).run();
+            atlas = new AtlasSectionProcessor(atlas, loadingOptions).run();
         }
 
         if (atlas == null)
