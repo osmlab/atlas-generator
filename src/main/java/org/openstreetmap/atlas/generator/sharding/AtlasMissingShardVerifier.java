@@ -2,6 +2,7 @@ package org.openstreetmap.atlas.generator.sharding;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import java.util.stream.Collectors;
 import org.apache.http.HttpHost;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.index.strtree.STRtree;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
@@ -18,6 +20,7 @@ import org.openstreetmap.atlas.geography.Rectangle;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.clipping.Clip;
 import org.openstreetmap.atlas.geography.clipping.Clip.ClipType;
+import org.openstreetmap.atlas.geography.converters.jts.JtsMultiPolygonConverter;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
@@ -172,8 +175,10 @@ public class AtlasMissingShardVerifier extends Command
     private static Clip intersectionClip(final CountryShard countryShard,
             final CountryBoundaryMap boundaries)
     {
+        final Set<Polygon> boundaryPolygons = new HashSet<>();
+        boundaryPolygons.add(boundaries.countryBoundary(countryShard.getCountry()).get(0));
         return new Clip(ClipType.AND, countryShard.bounds(),
-                boundaries.countryBoundary(countryShard.getCountry()).get(0).getBoundary());
+                new JtsMultiPolygonConverter().backwardConvert(boundaryPolygons));
     }
 
     private static Set<CountryShard> removeShardsWithZeroIntersection(
