@@ -17,7 +17,7 @@ then
         -Dsonar.pullrequest.branch="$GITHUB_HEAD_REF" \
         -Dsonar.pullrequest.base="$GITHUB_BASE_REF" \
         -Dsonar.pullrequest.provider=github \
-        -Dsonar.pullrequest.github.repository=osmlab/atlas \
+        -Dsonar.pullrequest.github.repository=osmlab/atlas-generator \
         -Dsonar.pullrequest.github.endpoint=https://api.github.com/ \
         -Dsonar.pullrequest.github.token.secured="$SONAR_PR_DECORATION_GITHUB_TOKEN"
 else
