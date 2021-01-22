@@ -8,12 +8,13 @@ import java.util.Set;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
-import org.openstreetmap.atlas.geography.Polygon;
-import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMapArchiver;
+import org.openstreetmap.atlas.geography.converters.jts.JtsPolygonConverter;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
@@ -51,7 +52,8 @@ public abstract class ShardedSparkJob extends SparkJob
         return countryName ->
         {
             // For each country boundary
-            final List<CountryBoundary> boundaries = worldBoundaries.countryBoundary(countryName);
+            final List<PreparedPolygon> boundaries = worldBoundaries.getCountryNameToBoundaryMap()
+                    .get(countryName);
 
             // Handle missing boundaries case
             if (boundaries == null)
@@ -62,11 +64,13 @@ public abstract class ShardedSparkJob extends SparkJob
 
             logger.info("Generating shards for country {}", countryName);
             final Set<Shard> shards = new HashSet<>();
-            for (final CountryBoundary boundary : boundaries)
+            for (final PreparedPolygon boundary : boundaries)
             {
-                // Identify all the shards in the country's bounding box and filter out
-                // those that do not intersect
-                shards.addAll(shards(sharding, boundary));
+                final JtsPolygonConverter converter = new JtsPolygonConverter();
+                shards.addAll(Iterables.asList(Iterables.filter(
+                        sharding.shards(
+                                converter.backwardConvert((Polygon) boundary.getGeometry())),
+                        shard -> boundary.overlaps(converter.convert(shard.bounds())))));
             }
             // Assign the country name / shard couples to the countryShards list to be
             // parallelized
@@ -74,20 +78,6 @@ public abstract class ShardedSparkJob extends SparkJob
             shards.forEach(shard -> countryShards.add(new Tuple2<>(countryName, shard)));
             return countryShards.iterator();
         };
-    }
-
-    /**
-     * Iterate through outers of country boundary to avoid unnecessary overlap checks.
-     */
-    private static Set<Shard> shards(final Sharding sharding, final CountryBoundary countryBoundary)
-    {
-        final Set<Shard> shards = new HashSet<>();
-        for (final Polygon subBoundary : countryBoundary.getBoundary().outers())
-        {
-            shards.addAll(Iterables.asList(Iterables.filter(sharding.shards(subBoundary.bounds()),
-                    shard -> subBoundary.overlaps(shard.bounds()))));
-        }
-        return shards;
     }
 
     @Override
