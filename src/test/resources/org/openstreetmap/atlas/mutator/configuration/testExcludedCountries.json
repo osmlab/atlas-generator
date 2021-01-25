@@ -1,0 +1,12 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true,
+        "countries": ["XYZ", "ABC"],
+        "excludedCountries": ["DEF", "GHI"]
+    }
+}

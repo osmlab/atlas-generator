@@ -1,0 +1,27 @@
+{
+    "global":
+    {
+        "filters":
+        {
+            "junctionRoundaboutFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge",
+                },
+                "taggableFilter": "junction->roundabout"
+            }
+        },
+        "subAtlases":
+        {
+            "junctionRoundaboutSoftCutSubAtlas":
+            {
+                "filter": "junctionRoundaboutFilter",
+                "cutType": "SOFT_CUT"
+            }
+        }
+    }
+}

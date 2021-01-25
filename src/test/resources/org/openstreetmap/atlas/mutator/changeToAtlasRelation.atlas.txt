@@ -1,0 +1,14 @@
+# Nodes
+# Edges
+# Areas
+250338000000 && 38.8226867,4.2167837:38.8224831,4.2167899:38.8224907,4.2171991:38.8226943,4.2171929 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || last_edit_version -> 1 || building -> yes
+250383000000 && 38.8216348,4.2177447:38.8215446,4.2178046:38.8215633,4.2179842:38.8216348,4.2179882:38.8217157,4.2178765 && last_edit_user_name -> myself || last_edit_changeset -> 1 || natural -> water || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || last_edit_version -> 1 || water -> pond
+250312000000 && 38.8219769,4.2168866:38.8221852,4.2168068:38.8222785,4.2170622:38.8221541,4.2173536:38.821924,4.2174254:38.8218432,4.217174 && last_edit_user_name -> myself || last_edit_changeset -> 1 || natural -> water || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || last_edit_version -> 1 || water -> lake
+250354000000 && 38.8234166,4.2171101:38.8233358,4.2168028:38.823115,4.2168866:38.823059,4.2173696:38.8233295,4.2175452 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || landuse -> forest || last_edit_version -> 1
+# Lines
+250491000000 && 38.8223749,4.2181119:38.8224962,4.2183434:38.8224806,4.2186548:38.8225553,4.2189621:38.8227885,4.219006 && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || waterway -> river || last_edit_version -> 1
+# Points
+# Relations
+250375000000 && 250312000000 -> lake -> A || 250338000000 -> building -> A || 250354000000 -> forest -> A && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || type -> group || last_edit_version -> 1
+7585456629725215238 && 250312000000 -> lake -> A || 250338000000 -> building -> A && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || mutator:FromJosm -> 1 || type -> group || last_edit_version -> 1
+250410000000 && 250312000000 -> lake -> A || 250383000000 -> pond -> A || 250491000000 -> river -> L && last_edit_user_name -> myself || last_edit_changeset -> 1 || last_edit_time -> 1513719782000 || last_edit_user_id -> 1 || type -> water || last_edit_version -> 1

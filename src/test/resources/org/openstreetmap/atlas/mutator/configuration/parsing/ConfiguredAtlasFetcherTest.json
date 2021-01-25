@@ -1,0 +1,57 @@
+{
+    "global":
+    {
+        "filters":
+        {
+            "junctionRoundaboutFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge",
+                },
+                "taggableFilter": "junction->roundabout"
+            },
+            "highwayPrimaryFilter":
+            {
+                "taggableFilter": "highway->primary"
+            }
+        },
+        "subAtlases":
+        {
+            "junctionRoundaboutSoftCutSubAtlas":
+            {
+                "filter": "junctionRoundaboutFilter",
+                "cutType": "SOFT_CUT"
+            },
+            "highwayPrimarySoftCutSubAtlas":
+            {
+                "filter": "highwayPrimaryFilter",
+                "cutType": "SOFT_CUT"
+            }
+        },
+        "inputDependencies":
+        {
+            "junctionRoundaboutInputDependency": "junctionRoundaboutSoftCutSubAtlas"
+        },
+        "fetchers":
+        {
+            "junctionRoundaboutFetcher":
+            {
+                "inputDependency": "junctionRoundaboutInputDependency",
+                "subAtlas": "junctionRoundaboutSoftCutSubAtlas"
+            },
+            "missingInputDependencyFetcher":
+            {
+                "inputDependency": "missingInputDependency",
+                "subAtlas": "junctionRoundaboutSoftCutSubAtlas"
+            },
+            "justSubAtlasFetcher":
+            {
+                "subAtlas": "highwayPrimarySoftCutSubAtlas"
+            }
+        }
+    }
+}

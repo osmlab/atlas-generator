@@ -1,0 +1,4 @@
+Level information for AIA (AIA)
+    AIA_0: FS,AddSlippyName,AddSomeOtherTag
+    AIA_1: FS,AddTurnRestrictions
+    AIA_2: FS,AddYetSomeOtherTag

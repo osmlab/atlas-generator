@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+<node id='-1' action='modify' visible='true' lat='2' lon='3' >
+    <tag k='key' v='value' />
+</node>
+<node id='-2' action='modify' visible='true' lat='2.5' lon='3' >
+    <tag k='key' v='value' />
+</node>
+<node id='-3' action='modify' visible='true' lat='4' lon='4'>
+    <tag k='removeme' v='removeme' />
+</node>
+<node id='-4' action='modify' visible='true' lat='4.9' lon='6.9' >
+    <tag k='key' v='value' />
+</node>
+<node id='-5' action='modify' visible='true' lat='1.1' lon='6.9' >
+    <tag k='key' v='value' />
+</node>
+<way id='-1' action='modify' visible='true'>
+    <nd ref='-1' />
+    <nd ref='-2' />
+    <tag k='oneway' v='yes' />
+    <tag k='route' v='ferry' />
+  </way>
+</osm>

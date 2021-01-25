@@ -1,0 +1,87 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <node id='-250310' action='modify' visible='true' lat='38.82197691682' lon='4.2168866504' />
+  <node id='-250311' action='modify' visible='true' lat='38.82218526261' lon='4.2168068236' />
+  <node id='-250313' action='modify' visible='true' lat='38.82227855158' lon='4.21706226936' />
+  <node id='-250315' action='modify' visible='true' lat='38.82215416626' lon='4.21735363718' />
+  <node id='-250317' action='modify' visible='true' lat='38.82192405286' lon='4.2174254813' />
+  <node id='-250319' action='modify' visible='true' lat='38.82184320203' lon='4.21717402688' />
+  <node id='-250336' action='modify' visible='true' lat='38.82268674177' lon='4.21678370549' />
+  <node id='-250337' action='modify' visible='true' lat='38.82248314028' lon='4.21678992768' />
+  <node id='-250339' action='modify' visible='true' lat='38.8224907311' lon='4.21719914066' />
+  <node id='-250341' action='modify' visible='true' lat='38.82269433257' lon='4.21719291847' />
+  <node id='-250352' action='modify' visible='true' lat='38.8234166671' lon='4.21711016544' />
+  <node id='-250353' action='modify' visible='true' lat='38.82333581796' lon='4.21680283226' />
+  <node id='-250355' action='modify' visible='true' lat='38.82311503716' lon='4.2168866504' />
+  <node id='-250357' action='modify' visible='true' lat='38.82305906446' lon='4.21736960254' />
+  <node id='-250359' action='modify' visible='true' lat='38.82332959879' lon='4.2175452215' />
+  <node id='-250381' action='modify' visible='true' lat='38.82163485524' lon='4.2177447885' />
+  <node id='-250382' action='modify' visible='true' lat='38.82154467509' lon='4.2178046586' />
+  <node id='-250384' action='modify' visible='true' lat='38.82156333306' lon='4.2179842689' />
+  <node id='-250386' action='modify' visible='true' lat='38.82163485524' lon='4.21798826024' />
+  <node id='-250388' action='modify' visible='true' lat='38.8217157063' lon='4.21787650272' />
+  <node id='-250461' action='modify' visible='true' lat='38.82163485524' lon='4.2177447885' />
+  <node id='-250489' action='modify' visible='true' lat='38.82249622535' lon='4.21834348951' />
+  <node id='-250490' action='modify' visible='true' lat='38.82248067725' lon='4.21865481403' />
+  <node id='-250492' action='modify' visible='true' lat='38.82255530812' lon='4.21896214721' />
+  <node id='-250494' action='modify' visible='true' lat='38.82278852909' lon='4.21900605195' />
+  <node id='-250502' action='modify' visible='true' lat='38.82237495004' lon='4.21811199179' />
+  <way id='-250312' action='modify' visible='true'>
+    <nd ref='-250310' />
+    <nd ref='-250311' />
+    <nd ref='-250313' />
+    <nd ref='-250315' />
+    <nd ref='-250317' />
+    <nd ref='-250319' />
+    <nd ref='-250310' />
+    <tag k='natural' v='water' />
+    <tag k='water' v='lake' />
+  </way>
+  <way id='-250338' action='modify' visible='true'>
+    <nd ref='-250336' />
+    <nd ref='-250337' />
+    <nd ref='-250339' />
+    <nd ref='-250341' />
+    <nd ref='-250336' />
+    <tag k='building' v='yes' />
+  </way>
+  <way id='-250354' action='modify' visible='true'>
+    <nd ref='-250352' />
+    <nd ref='-250353' />
+    <nd ref='-250355' />
+    <nd ref='-250357' />
+    <nd ref='-250359' />
+    <nd ref='-250352' />
+    <tag k='landuse' v='forest' />
+  </way>
+  <way id='-250383' action='modify' visible='true'>
+    <nd ref='-250381' />
+    <nd ref='-250382' />
+    <nd ref='-250384' />
+    <nd ref='-250386' />
+    <nd ref='-250388' />
+    <nd ref='-250461' />
+    <tag k='natural' v='water' />
+    <tag k='water' v='pond' />
+  </way>
+  <way id='-250491' action='modify' visible='true'>
+    <nd ref='-250502' />
+    <nd ref='-250489' />
+    <nd ref='-250490' />
+    <nd ref='-250492' />
+    <nd ref='-250494' />
+    <tag k='waterway' v='river' />
+  </way>
+  <relation id='-250375' action='modify' visible='true'>
+    <member type='way' ref='-250338' role='building' />
+    <member type='way' ref='-250354' role='forest' />
+    <member type='way' ref='-250312' role='lake' />
+    <tag k='type' v='group' />
+  </relation>
+  <relation id='-250410' action='modify' visible='true'>
+    <member type='way' ref='-250491' role='river' />
+    <member type='way' ref='-250383' role='pond' />
+    <member type='way' ref='-250312' role='lake' />
+    <tag k='type' v='water' />
+  </relation>
+</osm>
