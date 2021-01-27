@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <node id='-124726' action='modify' visible='true' lat='43.45371767036' lon='-1.58430685607' />
+  <node id='-124727' action='modify' visible='true' lat='43.4542872031' lon='-1.58303661685' />
+  <node id='-124728' action='modify' visible='true' lat='43.45346002283' lon='-1.58118729798' />
+  <node id='-124729' action='modify' visible='true' lat='43.45415160055' lon='-1.57978629884' />
+  <node id='-124723' action='modify' visible='true' lat='43.45325333992' lon='-1.58055353743' />
+  <node id='-124724' action='modify' visible='true' lat='43.4534725306' lon='-1.57908695807' />
+  <node id='-124725' action='modify' visible='true' lat='43.45319966045' lon='-1.57837215468' />
+  <node id='-152246' action='modify' visible='true' lat='43.45487378041' lon='-1.57880188107' />
+  <node id='-152247' action='modify' visible='true' lat='43.4542818715' lon='-1.57761098027' />
+  <node id='-152248' action='modify' visible='true' lat='43.4541416817' lon='-1.57573343396' />
+  <node id='-152249' action='modify' visible='true' lat='43.45366659163' lon='-1.57739640355'>
+    <tag k='natural' v='tree' />
+  </node>
+  <node id='-152273' action='modify' visible='true' lat='43.45354549376' lon='-1.57777992447'>
+    <tag k='man_made' v='lighthouse' />
+  </node>
+  <way id='-116154' action='modify' visible='true'>
+    <nd ref='-124726' />
+    <nd ref='-124727' />
+    <nd ref='-124728' />
+    <nd ref='-124729' />
+    <tag k='highway' v='motorway' />
+    <tag k='oneway' v='yes' />
+  </way>
+  <way id='-116122' action='modify' visible='true'>
+    <nd ref='-124728' />
+    <nd ref='-124723' />
+    <nd ref='-124724' />
+    <nd ref='-124725' />
+    <tag k='highway' v='trunk' />
+    <tag k='oneway' v='yes' />
+  </way>
+  <way id='-116155' action='modify' visible='true'>
+    <nd ref='-152246' />
+    <nd ref='-152247' />
+    <nd ref='-152248' />
+    <tag k='waterway' v='river' />
+  </way>
+</osm>

@@ -1,0 +1,55 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "validate": true,
+        "mergeForgivenessPolicy":
+        {
+            "resolvableExactSequenceFailures":
+            [
+                {
+                    "exactSequenceFailure": ["FEATURE_CHANGE_INVALID_ADD_REMOVE_MERGE", "HIGHEST_LEVEL_MERGE_FAILURE"],
+                    "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.PickRemoveOverAddStrategy",
+                }
+            ]
+        }
+    },
+    "AtlasChangeGeneratorRemovePointsWithRemoveMeTag":
+    {
+        "className": "AtlasChangeGeneratorRemovePointsWithRemoveMeTag",
+        "enabled": true,
+        "countries": ["AAA"]
+    },
+    "AtlasChangeGeneratorSelfConflicting":
+    {
+        "className": "AtlasChangeGeneratorSelfConflicting",
+        "enabled": true,
+        "mergeForgivenessPolicy":
+        {
+            "resolvableExactSequenceFailures":
+            [
+                {
+                    "exactSequenceFailure": ["FEATURE_CHANGE_INVALID_ADD_REMOVE_MERGE", "HIGHEST_LEVEL_MERGE_FAILURE"],
+                    "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.PrioritizeTagStrategy",
+                    "strategyConfiguration":
+                    {
+                        "rules":
+                        [
+                            {
+                                "name": "foobar",
+                                "filter": "foo->bar"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "countries": ["AAA"]
+    },
+    "AtlasChangeGeneratorRemoveMeTag":
+    {
+        "className": "AtlasChangeGeneratorRemoveMeTag",
+        "enabled": true,
+        "countries": ["AAA"]
+    }
+}

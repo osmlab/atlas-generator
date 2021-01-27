@@ -1,0 +1,120 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "validate": true,
+        "filters":
+        {
+            "junctionRoundaboutFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                },
+                "taggableFilter": "junction->roundabout"
+            },
+            "edgeNodeFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                }
+            }
+        },
+        "subAtlases":
+        {
+            "edgeNodeSoftCutSubAtlas":
+            {
+                "filter": "edgeNodeFilter",
+                "cutType": "SOFT_CUT"
+            }
+        },
+        "inputDependencies":
+        {
+            "edgeNodeInputDependency": "edgeNodeSoftCutSubAtlas"
+        },
+        "fetchers":
+        {
+            "edgeNodeFetcher":
+            {
+                "inputDependency": "edgeNodeInputDependency"
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "junctionRoundaboutDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "aggressivelyExploreRelations": false,
+                "entitiesToConsiderForExpansion": "junctionRoundaboutFilter",
+                "fetcher": "edgeNodeFetcher"
+            }
+        }
+    },
+    "AddMutatedAgainEqualsYes":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "countries": ["XYZ"],
+        "tag":
+        {
+            "key": "mutatedAgain",
+            "value": "yes"
+        },
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AddTurnRestrictions":
+    {
+        "className": "ConfiguredAtlasChangeGeneratorAddTurnRestrictions",
+        "enabled": true,
+        "countries": ["DEF"],
+        "node.valence": "2",
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+        "enabled": true,
+        "countries": ["ABC"],
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true,
+        "countries": ["XYZ", "ABC"],
+        "inputDependencies": ["edgeNodeInputDependency"],
+        "dynamicAtlas":
+        {
+            "generation": "junctionRoundaboutDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AddMutatedEqualsYes"]
+    },
+    "AddMutatedEqualsYes":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "countries": ["XYZ"],
+        "tag":
+        {
+            "key": "mutated",
+            "value": "yes"
+        }
+    },
+    "AddSparkConfigurationTag":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "countries": ["XYZ"],
+        "tag":
+        {
+            "key": "sparkConfiguration",
+            "value": "yes"
+        }
+    }
+}

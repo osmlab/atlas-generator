@@ -1,0 +1,10 @@
+An example of each mode (print, details, interactive) is included below. Note that the mode is
+supplied as a regular argument.
+
+Print mode: print basic info for DMA from a DMA-AIA-CYM configuration, given a local config file:
+#$ config-info --countries DMA,AIA,CYM --config-resource /Users/foo/config.json print DMA
+Details mode: Assuming <WORLD> is a comma separated list of world countries, print details containing the both strings
+"ATA" and "9" (e.g. to show ATA level 9) for a web-based configuration:
+#$ config-info --countries <WORLD> --config-resource "https://www.config.com/config.json" details ATA 9
+Interactive mode: assuming <JSON> is a string of configuration JSON, launch an interactive explorer shell for a DMA configuration
+#$ config-info --countries DMA --config-json <JSON> interactive

@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <node id='-177163' action='modify' visible='true' lat='38.82737849407' lon='4.20388964988' />
+  <node id='-177164' action='modify' visible='true' lat='38.83300314164' lon='4.21325648962' />
+  <node id='-177166' action='modify' visible='true' lat='38.83376319507' lon='4.23088436164' />
+  <node id='-177168' action='modify' visible='true' lat='38.82058778688' lon='4.24519481125' />
+  <node id='-177170' action='modify' visible='true' lat='38.81176903645' lon='4.24226767383' />
+  <node id='-177172' action='modify' visible='true' lat='38.80725787418' lon='4.22639608426' />
+  <node id='-177174' action='modify' visible='true' lat='38.80827164339' lon='4.21026430471' />
+  <node id='-177176' action='modify' visible='true' lat='38.81764832474' lon='4.20213336743' />
+  <way id='-177165' action='modify' visible='true'>
+    <nd ref='-177163' />
+    <nd ref='-177164' />
+    <nd ref='-177166' />
+    <nd ref='-177168' />
+    <nd ref='-177170' />
+    <nd ref='-177172' />
+    <nd ref='-177174' />
+    <nd ref='-177176' />
+    <nd ref='-177163' />
+    <tag k='boundary' v='administrative' />
+  </way>
+</osm>

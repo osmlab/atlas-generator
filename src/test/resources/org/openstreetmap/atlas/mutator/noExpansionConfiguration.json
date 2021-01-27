@@ -1,0 +1,31 @@
+{
+    "global":
+    {
+        "filters":
+        {
+            "nothingGoesThroughFilter":
+            {
+                "predicate":
+                {
+                    "command": "false"
+                },
+                "hint.noExpansion": true
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "noExpansionDynamicAtlasPolicy":
+            {
+                "entitiesToConsiderForExpansion": "nothingGoesThroughFilter"
+            }
+        }
+    },
+    "testMutator":
+    {
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        }
+    }
+}

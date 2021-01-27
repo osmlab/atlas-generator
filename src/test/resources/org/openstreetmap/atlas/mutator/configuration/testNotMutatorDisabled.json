@@ -1,0 +1,10 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"]
+    },
+    "ClassThatIsNotAtlasChangeGenerator":
+    {
+        "enabled": false
+    }
+}

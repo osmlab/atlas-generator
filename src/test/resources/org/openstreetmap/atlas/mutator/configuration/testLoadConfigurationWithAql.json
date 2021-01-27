@@ -1,0 +1,67 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"]
+    },
+    "TestAqlChangeGenerator1": {
+      "_comment": "This Atlas Mutator uses embedded AQL style.",
+      "className": "SecureAqlChangeGenerator",
+      "enabled": true,
+      "countries": ["XYZ"],
+      "dependsOn": ["AtlasChangeGeneratorAddTurnRestrictions"],
+      "aql": {
+        "queries": [
+          {
+            "query": "update atlas.edge set edge.addTag(foot: 'no'), edge.deleteTag('fixme') where edge.hasId(123456)",
+            "signature": "XBh8d/kA/BsIeKpZhl+ReYLGFpq6cBd2n/B/ZmSytcaWk6nA6hpN2AD7jDiBBb9x68ygYdV/NVKWpMMGS2N14w=="
+          }
+        ]
+      }
+    },
+    "TestAqlChangeGenerator2": {
+      "_comment": "This Atlas Mutator uses external AQL style, and expects the .sig file to be available in the same classpath directory as the query file.",
+      "className": "SecureAqlChangeGenerator",
+      "enabled": true,
+      "countries": ["XYZ"],
+      "dependsOn": ["TestAqlChangeGenerator1"],
+      "aql": {
+        "queries": [
+          {
+            "queryClasspath": "/aql-files/testUpdate.aql"
+          }
+        ]
+      }
+    },
+    "TestAqlChangeGenerator3": {
+      "_comment": "This Atlas Mutator uses external AQL style, uses both embedded and external AQL styles.",
+      "className": "SecureAqlChangeGenerator",
+      "enabled": true,
+      "countries": ["XYZ"],
+      "dependsOn": ["TestAqlChangeGenerator2"],
+      "aql": {
+        "queries": [
+          {
+            "query": "update atlas.edge set edge.addTag(foot: 'no'), edge.deleteTag('fixme') where edge.hasId(123456)",
+            "signature": "XBh8d/kA/BsIeKpZhl+ReYLGFpq6cBd2n/B/ZmSytcaWk6nA6hpN2AD7jDiBBb9x68ygYdV/NVKWpMMGS2N14w=="
+          },
+          {
+            "queryClasspath": "/aql-files/testUpdate.aql"
+          }
+        ]
+      }
+    },
+    "AtlasChangeGeneratorAddTurnRestrictions":
+    {
+      "_comment": "Non-AQL Change Generator 1.",
+
+        "enabled": true,
+        "dependsOn": ["AtlasChangeGeneratorRemoveReverseEdges"]
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+      "_comment": "Non-AQL Change Generator 2.",
+
+      "enabled": true,
+      "countries": ["XYZ"]
+    }
+}

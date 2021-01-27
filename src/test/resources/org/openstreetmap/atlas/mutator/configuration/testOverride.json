@@ -1,0 +1,16 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"]
+    },
+    "AtlasChangeGeneratorAddTag":
+    {
+        "enabled": true,
+        "tag":
+        {
+            "key": "key",
+            "value": "value"
+        },
+        "override.ABC.tag.key": "ABCkey"
+    }
+}

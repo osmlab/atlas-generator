@@ -71,6 +71,7 @@ dependencies
     compile packages.atlas
     compile packages.spark.core
     compile packages.spark.sql
+    compile packages.jline
 
     checkstyle packages.checkstyle
     checkstyle packages.atlas_checkstyle

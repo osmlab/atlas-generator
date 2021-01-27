@@ -1,0 +1,75 @@
+
+-------- Atlas Mutator Configuration Interactive Exploration --------
+Please enter search terms separated by spaces.
+
+--- Controls ---
+CTRL-D: exit
+CTRL-C: exit
+search terms> {
+  "type": "_mutator",
+  "name": "AddSlippyName",
+  "className": "AtlasChangeGeneratorAddShard",
+  "enabled": true,
+  "dynamicAtlasPolicyGeneration": "noExpansionDynamicAtlasPolicy",
+  "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+  "countries": "AIA,JKL",
+  "declaredMergeForgivenessPolicy": false,
+  "broadcastVariablesNeeded": [
+    "slippyshardings"
+  ]
+}
+{
+  "type": "_level",
+  "countryOrGroup": "AIA",
+  "groupContents": "AIA",
+  "levelIndex": 0,
+  "levelSourceType": "FS",
+  "mutators": [
+    "AddSlippyName",
+    "AddSomeOtherTag"
+  ],
+  "dynamicAtlasPolicyGeneration": "noExpansionDynamicAtlasPolicy",
+  "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+  "parentNeedsRDDInput": false,
+  "childNeedsRDDInput": false,
+  "childCanPreloadRDDInput": false,
+  "maximumLevelIndex": 2,
+  "addMutationTags": true
+}
+{
+  "type": "_level",
+  "countryOrGroup": "AIA",
+  "groupContents": "AIA",
+  "levelIndex": 1,
+  "levelSourceType": "FS",
+  "mutators": [
+    "AddTurnRestrictions"
+  ],
+  "inputDependenciesToProvide": "InputDependency_edgeNodeInputDependency",
+  "dynamicAtlasPolicyGeneration": "default",
+  "dynamicAtlasPolicyApplication": "default",
+  "parentNeedsRDDInput": false,
+  "childNeedsRDDInput": false,
+  "childCanPreloadRDDInput": false,
+  "maximumLevelIndex": 2,
+  "addMutationTags": true
+}
+{
+  "type": "_level",
+  "countryOrGroup": "AIA",
+  "groupContents": "AIA",
+  "levelIndex": 2,
+  "levelSourceType": "FS",
+  "mutators": [
+    "AddYetSomeOtherTag"
+  ],
+  "inputDependenciesToRequest": "InputDependency_edgeNodeInputDependency",
+  "dynamicAtlasPolicyGeneration": "requestInputDependencyForNothingDynamicAtlasPolicy",
+  "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+  "parentNeedsRDDInput": false,
+  "childNeedsRDDInput": false,
+  "childCanPreloadRDDInput": false,
+  "maximumLevelIndex": 2,
+  "addMutationTags": true
+}
+search terms> 

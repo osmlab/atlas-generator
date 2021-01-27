@@ -1,0 +1,28 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "broadcast":
+        {
+            "geohash4":
+            {
+                "className": "ConfiguredBroadcastableAtlasSharding",
+                "definition": "geohash@4"
+            },
+            "geohash6":
+            {
+                "className": "ConfiguredBroadcastableAtlasSharding",
+                "definition": "geohash@6"
+            }
+        }
+    },
+    "AtlasChangeGeneratorAddShard":
+    {
+        "enabled": true,
+        "broadcast": [
+            "geohash4",
+            "geohash6"
+        ],
+        "tag.key": "shard"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "key1":
+    {
+        "key11": ["value11_1", "value_11_2"],
+        "key12":
+        {
+            "key123": "value123"
+        },
+        "override.XYZ.key12.key123": "123value"
+    },
+    "key2": [],
+    "override.ABC.key2": ["value2_1", "value2_2"]
+}
