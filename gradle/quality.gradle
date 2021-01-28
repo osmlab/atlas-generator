@@ -50,6 +50,14 @@ tasks.withType(Test) {
     reports.html.destination = file("${reporting.baseDir}/${name}")
 }
 
+task aqlLint(type: JavaExec, dependsOn: []) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = "org.openstreetmap.atlas.geography.atlas.dsl.engine.lint.gradle.LinterGradlePluginHelper"
+    args "${projectDir}", "org.openstreetmap.atlas.geography.atlas.dsl.engine.lint.lintlet.impl.InsecureWellFormednessLintlet"
+ }
+
+check.dependsOn(aqlLint)
+
 configurations
 {
     integrationTestCompile.extendsFrom testCompile

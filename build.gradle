@@ -64,6 +64,7 @@ configurations
         exclude group: 'org.apache.hadoop'
         exclude group: 'org.apache.spark'
     }
+	aqlLintTask
 }
 
 dependencies
@@ -77,6 +78,8 @@ dependencies
     checkstyle packages.atlas_checkstyle
 
     shaded project.configurations.getByName('compile')
+
+	aqlLintTask packages.atlas
 }
 
 task shaded(type: Jar){
