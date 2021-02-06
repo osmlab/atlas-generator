@@ -4,10 +4,13 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
+import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.mutator.configuration.AtlasMutatorConfiguration;
 import org.openstreetmap.atlas.mutator.configuration.InputDependency;
@@ -15,6 +18,7 @@ import org.openstreetmap.atlas.mutator.configuration.parsing.provider.AtlasProvi
 import org.openstreetmap.atlas.mutator.configuration.parsing.provider.ConfiguredAtlasProvider;
 import org.openstreetmap.atlas.utilities.configuration.Configuration;
 import org.openstreetmap.atlas.utilities.configuration.ConfigurationReader;
+import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +45,18 @@ public final class ConfiguredAtlasFetcher implements Serializable
     private static final String CONFIGURATION_INPUT_DEPENDENCY = "inputDependency";
     private static final String CONFIGURATION_SUBATLAS = "subAtlas";
     private static final String CONFIGURATION_ATLAS_PROVIDER = "atlasProvider";
+    // Countryvore means a fetcher will explore all other countries (and multi-atlas them together
+    // before returning) for any shard it wants to expand to. Defaults to false.
+    private static final String CONFIGURATION_COUNTRYVORE = "countryvore";
+
     private final String name;
     private final String inputDependencyName;
     private final String inputDependencyPath;
     private final ConfiguredSubAtlas subAtlas;
     private final AtlasProvider atlasProvider;
+    private final boolean countryvore;
+
+    private transient MultiMapWithSet<Shard, String> shardsToCountries;
 
     public static ConfiguredAtlasFetcher direct()
     {
@@ -75,6 +86,7 @@ public final class ConfiguredAtlasFetcher implements Serializable
         this.inputDependencyPath = "";
         this.subAtlas = ConfiguredSubAtlas.UNCHANGED;
         this.atlasProvider = AtlasProvider.defaultProvider();
+        this.countryvore = false;
     }
 
     private ConfiguredAtlasFetcher(final String name, final Configuration configuration)
@@ -107,6 +119,8 @@ public final class ConfiguredAtlasFetcher implements Serializable
         {
             this.atlasProvider = AtlasProvider.defaultProvider();
         }
+        this.countryvore = Boolean.parseBoolean(
+                reader.configurationValue(configuration, CONFIGURATION_COUNTRYVORE, "false"));
     }
 
     public Function<Shard, Optional<Atlas>> getFetcher(final String atlasPath, final String country,
@@ -119,15 +133,14 @@ public final class ConfiguredAtlasFetcher implements Serializable
                 sparkConfiguration);
         this.atlasProvider.setAtlasProviderContext(atlasProviderContext);
 
-        return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
+        if (this.countryvore)
         {
-            final Optional<Atlas> atlasOption = this.atlasProvider.apply(country, shardSource);
-            if (atlasOption.isPresent())
-            {
-                return this.subAtlas.apply(atlasOption.get());
-            }
-            return Optional.empty();
-        };
+            return getCountryvoreFetcher(atlasPath, country);
+        }
+        else
+        {
+            return getSingleCountryFetcher(atlasPath, country);
+        }
     }
 
     public Optional<String> getInputDependencyName()
@@ -173,5 +186,78 @@ public final class ConfiguredAtlasFetcher implements Serializable
     public String toString()
     {
         return this.name;
+    }
+
+    public ConfiguredAtlasFetcher withShardsToCountries(
+            final MultiMapWithSet<Shard, String> shardsToCountries)
+    {
+        if (this.countryvore)
+        {
+            this.shardsToCountries = shardsToCountries;
+        }
+        return this;
+    }
+
+    private Function<Shard, Optional<Atlas>> getCountryvoreFetcher(final String atlasPath,
+            final String country)
+    {
+        if (!this.countryvore)
+        {
+            throw new CoreException(
+                    "Should not request countryvore fetcher for a non-countryvore configured fetcher."
+                            + " Request happened for country {} at {}.",
+                    country, atlasPath);
+        }
+        if (this.shardsToCountries == null || this.shardsToCountries.isEmpty())
+        {
+            throw new CoreException(
+                    "Countryvore fetcher for {} at {} needs to have a full shard to country list. "
+                            + "This exception means it was not propagated properly.",
+                    country, atlasPath);
+        }
+        return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
+        {
+            final Set<Atlas> preCountryvoreAtlases = this.shardsToCountries.get(shardSource)
+                    .stream().map(subCountry ->
+                    {
+                        final Function<Shard, Optional<Atlas>> singleCountryFetcher = getSingleCountryFetcher(
+                                atlasPath, subCountry);
+                        return singleCountryFetcher.apply(shardSource);
+                    }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
+            if (preCountryvoreAtlases.isEmpty())
+            {
+                return Optional.empty();
+            }
+            else if (preCountryvoreAtlases.size() == 1)
+            {
+                return Optional.ofNullable(preCountryvoreAtlases.iterator().next());
+            }
+            else
+            {
+                return Optional
+                        .ofNullable(new MultiAtlas(preCountryvoreAtlases).cloneToPackedAtlas());
+            }
+        };
+    }
+
+    private Function<Shard, Optional<Atlas>> getSingleCountryFetcher(final String atlasPath,
+            final String country)
+    {
+        if (this.countryvore)
+        {
+            throw new CoreException(
+                    "Should request countryvore fetcher for a countryvore configured fetcher."
+                            + " Request happened for country {} at {}.",
+                    country, atlasPath);
+        }
+        return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
+        {
+            final Optional<Atlas> atlasOption = this.atlasProvider.apply(country, shardSource);
+            if (atlasOption.isPresent())
+            {
+                return this.subAtlas.apply(atlasOption.get());
+            }
+            return Optional.empty();
+        };
     }
 }

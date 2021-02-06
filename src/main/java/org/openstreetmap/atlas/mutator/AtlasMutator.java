@@ -388,6 +388,8 @@ public class AtlasMutator extends SparkJob
             return getContext().parallelizePairs(new ArrayList<>(), 0);
         }
 
+        level.setShardsToCountries(shards);
+
         JavaRDD<CountryShard> shardsRDD = null;
         final int size = shards.size();
         JavaPairRDD<CountryShard, PackedAtlas> sourceAtlasRDD = null;
