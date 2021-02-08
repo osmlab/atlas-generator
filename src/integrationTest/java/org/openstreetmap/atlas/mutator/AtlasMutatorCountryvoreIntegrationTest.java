@@ -3,10 +3,12 @@ package org.openstreetmap.atlas.mutator;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
+import org.openstreetmap.atlas.geography.atlas.Atlas;
 
 /**
  * @author matthieun
@@ -58,6 +60,28 @@ public class AtlasMutatorCountryvoreIntegrationTest extends AbstractAtlasMutator
         try
         {
             runWithoutQuitting();
+
+            final String expectedArea = "483.4 m^2";
+
+            final Atlas atlasXYZZ10X507Y343 = atlasForPath(
+                    OUTPUT + "/" + XYZ + "/" + XYZ + "_" + Z_10_X_507_Y_343);
+            atlasXYZZ10X507Y343.lines().forEach(line -> Assert.assertEquals(expectedArea,
+                    line.tag(AtlasMutatorCountryvoreIntegrationTestAddMultiPolygonArea.AREA_KEY)));
+
+            final Atlas atlasXYZZ11X1016Y687 = atlasForPath(
+                    OUTPUT + "/" + XYZ + "/" + XYZ + "_" + Z_11_X_1016_Y_687);
+            atlasXYZZ11X1016Y687.lines().forEach(line -> Assert.assertEquals(expectedArea,
+                    line.tag(AtlasMutatorCountryvoreIntegrationTestAddMultiPolygonArea.AREA_KEY)));
+
+            final Atlas atlasABCZ8X126Y86 = atlasForPath(
+                    OUTPUT + "/" + ABC + "/" + ABC + "_" + Z_8_X_126_Y_86);
+            atlasABCZ8X126Y86.lines().forEach(line -> Assert.assertEquals(expectedArea,
+                    line.tag(AtlasMutatorCountryvoreIntegrationTestAddMultiPolygonArea.AREA_KEY)));
+
+            final Atlas atlasABCZ8X127Y86 = atlasForPath(
+                    OUTPUT + "/" + ABC + "/" + ABC + "_" + Z_8_X_127_Y_86);
+            atlasABCZ8X127Y86.lines().forEach(line -> Assert.assertEquals(expectedArea,
+                    line.tag(AtlasMutatorCountryvoreIntegrationTestAddMultiPolygonArea.AREA_KEY)));
         }
         finally
         {
