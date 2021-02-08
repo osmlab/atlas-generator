@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
+import org.openstreetmap.atlas.geography.sharding.CountryShard;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.mutator.configuration.parsing.provider.AtlasProvider;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
@@ -35,7 +36,8 @@ public abstract class AbstractFileAtlasProvider implements AtlasProvider
         Optional<Resource> resourceOption = getResourceFromCache(country, shard);
         if (resourceOption.isPresent())
         {
-            Resource namedAtlasResource = namedAtlasResource(shard, resourceOption.get());
+            final CountryShard countryShard = new CountryShard(country, shard);
+            Resource namedAtlasResource = namedAtlasResource(countryShard, resourceOption.get());
             Optional<Atlas> namedAtlas = null;
             try
             {
@@ -61,7 +63,7 @@ public abstract class AbstractFileAtlasProvider implements AtlasProvider
                 resourceOption = getResourceFromCache(country, shard);
                 if (resourceOption.isPresent())
                 {
-                    namedAtlasResource = namedAtlasResource(shard, resourceOption.get());
+                    namedAtlasResource = namedAtlasResource(countryShard, resourceOption.get());
                     namedAtlas = resourceToAtlas(namedAtlasResource, country, shard);
                     if (namedAtlas.isPresent())
                     {
@@ -143,14 +145,15 @@ public abstract class AbstractFileAtlasProvider implements AtlasProvider
     protected abstract Optional<Atlas> resourceToAtlas(Resource resource, String country,
             Shard shard);
 
-    private Resource namedAtlasResource(final Shard shardSource, final Resource atlasResource)
+    private Resource namedAtlasResource(final CountryShard countryShard,
+            final Resource atlasResource)
     {
         return new Resource()
         {
             @Override
             public String getName()
             {
-                return shardSource.getName() + FileSuffix.ATLAS;
+                return countryShard.getName() + FileSuffix.ATLAS;
             }
 
             @Override

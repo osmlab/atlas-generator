@@ -217,6 +217,10 @@ public final class ConfiguredAtlasFetcher implements Serializable
         }
         return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
         {
+            if (!this.shardsToCountries.containsKey(shardSource))
+            {
+                return Optional.empty();
+            }
             final Set<Atlas> preCountryvoreAtlases = this.shardsToCountries.get(shardSource)
                     .stream().map(subCountry ->
                     {
@@ -243,13 +247,6 @@ public final class ConfiguredAtlasFetcher implements Serializable
     private Function<Shard, Optional<Atlas>> getSingleCountryFetcher(final String atlasPath,
             final String country)
     {
-        if (this.countryvore)
-        {
-            throw new CoreException(
-                    "Should request countryvore fetcher for a countryvore configured fetcher."
-                            + " Request happened for country {} at {}.",
-                    country, atlasPath);
-        }
         return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
         {
             final Optional<Atlas> atlasOption = this.atlasProvider.apply(country, shardSource);

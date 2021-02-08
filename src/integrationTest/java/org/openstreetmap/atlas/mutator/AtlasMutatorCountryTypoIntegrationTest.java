@@ -13,6 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.openstreetmap.atlas.exception.CoreException;
+import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
 
 /**
@@ -30,7 +31,7 @@ public class AtlasMutatorCountryTypoIntegrationTest extends AbstractAtlasMutator
     {
         final List<String> arguments = new ArrayList<>();
         // Here use a country that does not have a boundary
-        arguments.add("-countries=AAA");
+        arguments.add("-" + AtlasGeneratorParameters.COUNTRIES.getName() + "=AAA");
         return arguments;
     }
 
