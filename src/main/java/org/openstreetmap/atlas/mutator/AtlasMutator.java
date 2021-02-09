@@ -33,6 +33,7 @@ import org.openstreetmap.atlas.geography.atlas.change.Change;
 import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.sharding.CountryShard;
+import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.mutator.configuration.AtlasMutationLevel;
 import org.openstreetmap.atlas.mutator.configuration.AtlasMutatorConfiguration;
@@ -47,6 +48,7 @@ import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.maps.MultiMap;
+import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.runtime.CommandMap;
 import org.openstreetmap.atlas.utilities.runtime.Retry;
 import org.openstreetmap.atlas.utilities.scalars.Duration;
@@ -183,6 +185,17 @@ public class AtlasMutator extends SparkJob
     private void amendLevels(final Consumer<AtlasMutationLevel> levelConsumer)
     {
         this.countryGroupMutations.values().forEach(levelList -> levelList.forEach(levelConsumer));
+    }
+
+    private void broadcastShardToCountryMap(final AtlasMutationLevel level,
+            final List<CountryShard> countryShards)
+    {
+        final MultiMapWithSet<Shard, String> shardsToCountries = new MultiMapWithSet<>();
+        countryShards.forEach(countryShard -> shardsToCountries.add(countryShard.getShard(),
+                countryShard.getCountry()));
+        final Broadcast<MultiMapWithSet<Shard, String>> shardsToCountriesBroadcast = getContext()
+                .broadcast(shardsToCountries);
+        level.setShardsToCountriesBroadcast(shardsToCountriesBroadcast);
     }
 
     /**
@@ -388,7 +401,7 @@ public class AtlasMutator extends SparkJob
             return getContext().parallelizePairs(new ArrayList<>(), 0);
         }
 
-        level.setShardsToCountries(shards);
+        broadcastShardToCountryMap(level, shards);
 
         JavaRDD<CountryShard> shardsRDD = null;
         final int size = shards.size();

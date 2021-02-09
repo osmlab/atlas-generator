@@ -68,7 +68,7 @@ public class AtlasMutationLevel implements Serializable
     private final AtlasMutatorConfiguration atlasMutatorConfiguration;
     private final String countryGroup;
     private final Set<String> countries;
-    private final MultiMapWithSet<Shard, String> shardsToCountries;
+    private Broadcast<MultiMapWithSet<Shard, String>> shardsToCountriesBroadcast;
     private final Set<ConfiguredAtlasChangeGenerator> mutators;
     private final int levelIndex;
     private final int maximumLevelIndex;
@@ -99,7 +99,7 @@ public class AtlasMutationLevel implements Serializable
         this.atlasMutatorConfiguration = atlasMutatorConfiguration;
         this.countryGroup = countryGroup;
         this.countries = countries;
-        this.shardsToCountries = new MultiMapWithSet<>();
+        this.shardsToCountriesBroadcast = null;
         this.mutators = mutators;
         this.levelIndex = levelIndex;
         this.maximumLevelIndex = maximumLevelIndex;
@@ -345,7 +345,11 @@ public class AtlasMutationLevel implements Serializable
 
     public MultiMapWithSet<Shard, String> getShardsToCountries()
     {
-        return this.shardsToCountries;
+        if (this.shardsToCountriesBroadcast == null)
+        {
+            return new MultiMapWithSet<>();
+        }
+        return this.shardsToCountriesBroadcast.getValue();
     }
 
     public Function<CountryShard, Optional<Atlas>> getSourceFetcher()
@@ -480,10 +484,10 @@ public class AtlasMutationLevel implements Serializable
         this.preloadRDD = preloadRDD;
     }
 
-    public void setShardsToCountries(final List<CountryShard> countryShardsList)
+    public void setShardsToCountriesBroadcast(
+            final Broadcast<MultiMapWithSet<Shard, String>> shardsToCountriesBroadcast)
     {
-        countryShardsList.forEach(countryShard -> this.shardsToCountries
-                .add(countryShard.getShard(), countryShard.getCountry()));
+        this.shardsToCountriesBroadcast = shardsToCountriesBroadcast;
     }
 
     public List<CountryShard> shards()
@@ -629,10 +633,11 @@ public class AtlasMutationLevel implements Serializable
             // locally)
             logger.warn("{} could use {} policy that is RDD Based", this, message);
         }
-        return configuredDynamicAtlasPolicy.withShardsToCountries(this.shardsToCountries).getPolicy(
-                Sets.hashSet(countryShard.getShard()), this.atlasMutatorConfiguration.getSharding(),
-                getParentAtlasPath(), this.atlasMutatorConfiguration.getSparkConfiguration(),
-                countryShard.getCountry());
+        return configuredDynamicAtlasPolicy.withShardsToCountries(this.getShardsToCountries())
+                .getPolicy(Sets.hashSet(countryShard.getShard()),
+                        this.atlasMutatorConfiguration.getSharding(), getParentAtlasPath(),
+                        this.atlasMutatorConfiguration.getSparkConfiguration(),
+                        countryShard.getCountry());
     }
 
     private DynamicAtlasPolicy getRDDBasedPolicy(
