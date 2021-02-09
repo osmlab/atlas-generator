@@ -135,11 +135,11 @@ public final class ConfiguredAtlasFetcher implements Serializable
 
         if (this.countryvore)
         {
-            return getCountryvoreFetcher(atlasPath, country);
+            return getCountryvoreFetcher();
         }
         else
         {
-            return getSingleCountryFetcher(atlasPath, country);
+            return getSingleCountryFetcher(country);
         }
     }
 
@@ -198,22 +198,18 @@ public final class ConfiguredAtlasFetcher implements Serializable
         return this;
     }
 
-    private Function<Shard, Optional<Atlas>> getCountryvoreFetcher(final String atlasPath,
-            final String country)
+    private Function<Shard, Optional<Atlas>> getCountryvoreFetcher()
     {
         if (!this.countryvore)
         {
             throw new CoreException(
-                    "Should not request countryvore fetcher for a non-countryvore configured fetcher."
-                            + " Request happened for country {} at {}.",
-                    country, atlasPath);
+                    "Should not request countryvore fetcher for a non-countryvore configured fetcher.");
         }
         if (this.shardsToCountries == null || this.shardsToCountries.isEmpty())
         {
             throw new CoreException(
-                    "Countryvore fetcher for {} at {} needs to have a full shard to country list. "
-                            + "This exception means it was not propagated properly.",
-                    country, atlasPath);
+                    "Countryvore fetcher needs to have a full shard to country list. "
+                            + "This exception means it was not propagated properly.");
         }
         return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
         {
@@ -225,7 +221,7 @@ public final class ConfiguredAtlasFetcher implements Serializable
                     .stream().map(subCountry ->
                     {
                         final Function<Shard, Optional<Atlas>> singleCountryFetcher = getSingleCountryFetcher(
-                                atlasPath, subCountry);
+                                subCountry);
                         return singleCountryFetcher.apply(shardSource);
                     }).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
             if (preCountryvoreAtlases.isEmpty())
@@ -244,8 +240,7 @@ public final class ConfiguredAtlasFetcher implements Serializable
         };
     }
 
-    private Function<Shard, Optional<Atlas>> getSingleCountryFetcher(final String atlasPath,
-            final String country)
+    private Function<Shard, Optional<Atlas>> getSingleCountryFetcher(final String country)
     {
         return (Serializable & Function<Shard, Optional<Atlas>>) shardSource ->
         {

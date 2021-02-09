@@ -99,7 +99,6 @@ public class AtlasMutationLevel implements Serializable
         this.atlasMutatorConfiguration = atlasMutatorConfiguration;
         this.countryGroup = countryGroup;
         this.countries = countries;
-        this.shardsToCountriesBroadcast = null;
         this.mutators = mutators;
         this.levelIndex = levelIndex;
         this.maximumLevelIndex = maximumLevelIndex;
