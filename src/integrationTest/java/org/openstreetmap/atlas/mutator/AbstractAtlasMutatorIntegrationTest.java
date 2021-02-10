@@ -54,7 +54,7 @@ public abstract class AbstractAtlasMutatorIntegrationTest
 
     public static void addAtlasResource(final String path, final Atlas atlas)
     {
-        final long size = 8192;
+        final long size = 1024 * 8;
         final ByteArrayResource resource = new ByteArrayResource(size);
         atlas.save(resource);
         addResource(path, resource);

@@ -11,6 +11,9 @@ import org.openstreetmap.atlas.generator.AtlasGeneratorParameters;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 
 /**
+ * Integration test for a job with a fetcher which expands across country codes (nicknamed
+ * countryvore)
+ * 
  * @author matthieun
  */
 public class AtlasMutatorCountryvoreIntegrationTest extends AbstractAtlasMutatorIntegrationTest
