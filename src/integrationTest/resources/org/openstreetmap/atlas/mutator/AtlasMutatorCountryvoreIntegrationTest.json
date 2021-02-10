@@ -14,13 +14,21 @@
                 "hint.noExpansion": true
             }
         },
+        "fetchers":
+        {
+            "countryvoreFetcher":
+            {
+                "countryvore": "true"
+            }
+        },
         "dynamicAtlasPolicies":
         {
-            "simpleDynamicAtlasPolicy":
+            "countryvoreDynamicAtlasPolicy":
             {
-                "extendIndefinitely": false,
+                "extendIndefinitely": true,
                 "deferLoading": true,
-                "maximumExpansionDistanceInMeters": "100"
+                "aggressivelyExploreRelations": true,
+                "fetcher": "countryvoreFetcher"
             },
             "noExpansionDynamicAtlasPolicy":
             {
@@ -28,27 +36,14 @@
             }
         }
     },
-    "DeleteFloaters":
+    "AddMultiPolygonArea":
     {
-        "className": "DeleteFloaterMutation",
+        "className": "AtlasMutatorCountryvoreIntegrationTestAddMultiPolygonArea",
         "enabled": true,
-        "countries": ["XYZ"],
         "dynamicAtlas":
         {
-            "generation": "simpleDynamicAtlasPolicy",
-            "application": "simpleDynamicAtlasPolicy"
-        }
-    },
-    "AddTagToBusStops":
-    {
-        "className": "AddTagToBusStopsMutation",
-        "enabled": true,
-        "countries": ["XYZ"],
-        "dynamicAtlas":
-        {
-            "generation": "noExpansionDynamicAtlasPolicy",
+            "generation": "countryvoreDynamicAtlasPolicy",
             "application": "noExpansionDynamicAtlasPolicy"
-        },
-        "dependsOn": ["DeleteFloaters"]
+        }
     }
 }

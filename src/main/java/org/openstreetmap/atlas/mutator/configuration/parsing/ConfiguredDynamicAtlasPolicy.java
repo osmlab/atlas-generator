@@ -22,6 +22,7 @@ import org.openstreetmap.atlas.utilities.configuration.Configuration;
 import org.openstreetmap.atlas.utilities.configuration.ConfigurationReader;
 import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
+import org.openstreetmap.atlas.utilities.maps.MultiMapWithSet;
 import org.openstreetmap.atlas.utilities.scalars.Distance;
 import org.openstreetmap.atlas.utilities.time.Time;
 import org.slf4j.Logger;
@@ -62,6 +63,7 @@ public final class ConfiguredDynamicAtlasPolicy implements Serializable
     private static final String CONFIGURATION_ENTITIES_TO_CONSIDER_FOR_EXPANSION = "entitiesToConsiderForExpansion";
     private static final String CONFIGURATION_MAXIMUM_EXPANSION_DISTANCE = "maximumExpansionDistanceInMeters";
     private static final String CONFIGURATION_MAXIMUM_EXPANSION_DISTANCE_DEFAULT = "N/A";
+
     private final String name;
     private final boolean extendIndefinitely;
     private final boolean deferLoading;
@@ -71,6 +73,8 @@ public final class ConfiguredDynamicAtlasPolicy implements Serializable
     private final ConfiguredAtlasFetcher directFetcher;
     private final ConfiguredAtlasFetcher fetcher;
     private final InputDependency inputDependency;
+
+    private transient MultiMapWithSet<Shard, String> shardsToCountries;
 
     public static ConfiguredDynamicAtlasPolicy from(final String name,
             final Configuration configuration)
@@ -122,6 +126,7 @@ public final class ConfiguredDynamicAtlasPolicy implements Serializable
                     .map(inputDependencyName -> new InputDependency(null, inputDependencyName,
                             configuration))
                     .orElse(null);
+            this.shardsToCountries = new MultiMapWithSet<>();
         }
         catch (final Exception e)
         {
@@ -269,6 +274,13 @@ public final class ConfiguredDynamicAtlasPolicy implements Serializable
         return this.name;
     }
 
+    public ConfiguredDynamicAtlasPolicy withShardsToCountries(
+            final MultiMapWithSet<Shard, String> shardsToCountries)
+    {
+        this.shardsToCountries = shardsToCountries;
+        return this;
+    }
+
     private Rectangle computeMaximumBounds(final Set<Shard> initialShards)
     {
         final Rectangle maximumBounds;
@@ -307,9 +319,11 @@ public final class ConfiguredDynamicAtlasPolicy implements Serializable
             final Map<String, String> sparkConfiguration)
     {
         final Function<Shard, Optional<Atlas>> initialShardAtlasFetcher = this.directFetcher
+                .withShardsToCountries(this.shardsToCountries)
                 .getFetcher(atlasPath, country, sparkConfiguration);
-        final Function<Shard, Optional<Atlas>> subAtlasFetcher = this.fetcher.getFetcher(atlasPath,
-                country, sparkConfiguration);
+        final Function<Shard, Optional<Atlas>> subAtlasFetcher = this.fetcher
+                .withShardsToCountries(this.shardsToCountries)
+                .getFetcher(atlasPath, country, sparkConfiguration);
         return shardSource ->
         {
             final Time start = Time.now();

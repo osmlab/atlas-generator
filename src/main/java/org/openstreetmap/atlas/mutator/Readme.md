@@ -237,6 +237,29 @@ In case the input folder contains something that is not an Atlas object but can 
 }
 ```
 
+### Countryvore fetcher
+
+In some cases, mutations need to dynamically expand across shards even when the neighboring shards are in a different country code. This is allowed using the `countryvore` key for a fetcher:
+
+```json
+{
+    "global":
+    {
+        ...
+        "fetchers":
+        {
+            "myCountryvoreFetcher":
+            {
+                "countryvore": "true"
+            },
+            ...
+        }
+        ...
+    }
+    ...
+}
+```
+
 ## Results
 
 ### Output folder

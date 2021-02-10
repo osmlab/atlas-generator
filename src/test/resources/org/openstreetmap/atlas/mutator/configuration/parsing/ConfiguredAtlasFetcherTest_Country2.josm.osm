@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <node id='-103481' action='modify' visible='true' lat='24.56057524813' lon='-81.75663531068' />
+  <node id='-106468' action='modify' visible='true' lat='24.56111216426' lon='-81.75653636992' />
+  <node id='-106469' action='modify' visible='true' lat='24.56151712368' lon='-81.75566196978' />
+  <way id='-103482' action='modify' visible='true'>
+    <nd ref='-103481' />
+    <nd ref='-106468' />
+    <nd ref='-106469' />
+    <tag k='highway' v='motorway' />
+    <tag k='oneway' v='yes' />
+  </way>
+</osm>

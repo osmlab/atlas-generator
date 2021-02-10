@@ -52,9 +52,12 @@ public abstract class AbstractAtlasMutatorIntegrationTest
     public static final String OUTPUT_BOUNDARIES_META = OUTPUT + "/" + BOUNDARY_META_NAME;
     public static final String OUTPUT_COUNTRY_LIST = OUTPUT + "/" + AtlasMutator.COUNTRY_AND_LEVELS;
 
-    public static void addResource(final String path, final String name)
+    public static void addAtlasResource(final String path, final Atlas atlas)
     {
-        addResource(path, name, false);
+        final long size = 1024 * 8;
+        final ByteArrayResource resource = new ByteArrayResource(size);
+        atlas.save(resource);
+        addResource(path, resource);
     }
 
     public static void addResource(final String path, final Resource resource)
@@ -73,7 +76,12 @@ public abstract class AbstractAtlasMutatorIntegrationTest
             input.copyTo(newInput);
             input = newInput;
         }
-        ResourceFileSystem.addResource(path, input);
+        addResource(path, input);
+    }
+
+    public static void addResource(final String path, final String name)
+    {
+        addResource(path, name, false);
     }
 
     public static List<String> listPaths(final String prefix)

@@ -10,7 +10,7 @@
                     "imports": [
                         "org.openstreetmap.atlas.geography.atlas.items"
                     ],
-                    "command": "e instanceof Node || e instanceof Edge",
+                    "command": "e instanceof Node || e instanceof Edge"
                 },
                 "taggableFilter": "junction->roundabout"
             },
@@ -51,6 +51,10 @@
             "justSubAtlasFetcher":
             {
                 "subAtlas": "highwayPrimarySoftCutSubAtlas"
+            },
+            "countryvoreFetcher":
+            {
+                "countryvore": "true"
             }
         }
     }

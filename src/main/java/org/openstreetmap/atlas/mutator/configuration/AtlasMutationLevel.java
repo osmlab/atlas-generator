@@ -68,6 +68,7 @@ public class AtlasMutationLevel implements Serializable
     private final AtlasMutatorConfiguration atlasMutatorConfiguration;
     private final String countryGroup;
     private final Set<String> countries;
+    private Broadcast<MultiMapWithSet<Shard, String>> shardsToCountriesBroadcast;
     private final Set<ConfiguredAtlasChangeGenerator> mutators;
     private final int levelIndex;
     private final int maximumLevelIndex;
@@ -341,6 +342,15 @@ public class AtlasMutationLevel implements Serializable
                 "a generation");
     }
 
+    public MultiMapWithSet<Shard, String> getShardsToCountries()
+    {
+        if (this.shardsToCountriesBroadcast == null)
+        {
+            return new MultiMapWithSet<>();
+        }
+        return this.shardsToCountriesBroadcast.getValue();
+    }
+
     public Function<CountryShard, Optional<Atlas>> getSourceFetcher()
     {
         return countryShard -> ConfiguredAtlasFetcher.direct()
@@ -471,6 +481,12 @@ public class AtlasMutationLevel implements Serializable
     public void setPreloadRDD(final boolean preloadRDD)
     {
         this.preloadRDD = preloadRDD;
+    }
+
+    public void setShardsToCountriesBroadcast(
+            final Broadcast<MultiMapWithSet<Shard, String>> shardsToCountriesBroadcast)
+    {
+        this.shardsToCountriesBroadcast = shardsToCountriesBroadcast;
     }
 
     public List<CountryShard> shards()
@@ -616,9 +632,11 @@ public class AtlasMutationLevel implements Serializable
             // locally)
             logger.warn("{} could use {} policy that is RDD Based", this, message);
         }
-        return configuredDynamicAtlasPolicy.getPolicy(Sets.hashSet(countryShard.getShard()),
-                this.atlasMutatorConfiguration.getSharding(), getParentAtlasPath(),
-                this.atlasMutatorConfiguration.getSparkConfiguration(), countryShard.getCountry());
+        return configuredDynamicAtlasPolicy.withShardsToCountries(this.getShardsToCountries())
+                .getPolicy(Sets.hashSet(countryShard.getShard()),
+                        this.atlasMutatorConfiguration.getSharding(), getParentAtlasPath(),
+                        this.atlasMutatorConfiguration.getSparkConfiguration(),
+                        countryShard.getCountry());
     }
 
     private DynamicAtlasPolicy getRDDBasedPolicy(
