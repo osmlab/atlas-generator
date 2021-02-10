@@ -94,12 +94,14 @@ public abstract class SparkJob extends Command implements Serializable
         {
             return new GetResource(path);
         }
-        // This is closed by the ResourceCloseable class
+        // This is closed by the ResourceCloseable class or is closed when an exception is thrown or
+        // when there is no object
         final FileSystem fileSystem = new FileSystemCreator().get(path, configurationMap);
         try
         {
             if (!fileSystem.exists(new Path(path)))
             {
+                fileSystem.close();
                 return null;
             }
             final InputStreamResourceCloseable resource = new InputStreamResourceCloseable(() ->
@@ -122,6 +124,15 @@ public abstract class SparkJob extends Command implements Serializable
         }
         catch (final Exception e)
         {
+            try
+            {
+                fileSystem.close();
+            }
+            catch (final IOException ioException)
+            {
+                // don't throw, since we are already throwing an exception
+                logger.error("FileSystem failed to close", ioException);
+            }
             throw new CoreException("Could not open resource {}", path, e);
         }
     }
