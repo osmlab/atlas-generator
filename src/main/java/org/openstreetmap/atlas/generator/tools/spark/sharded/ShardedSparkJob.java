@@ -97,7 +97,7 @@ public abstract class ShardedSparkJob extends SparkJob
         }
         catch (final Exception e)
         {
-            throw new CoreException(e.getMessage());
+            throw new CoreException("Could not read {}", countryShapes, e);
         }
         logger.info("Done Reading {} country boundaries from {}", worldBoundaries.size(),
                 countryShapes);
