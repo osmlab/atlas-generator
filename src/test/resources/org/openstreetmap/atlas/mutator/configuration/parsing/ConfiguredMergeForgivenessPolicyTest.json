@@ -1,0 +1,39 @@
+{
+  "global": {
+    "mergeForgivenessPolicy": {
+      "resolvableRootLevelFailures": [
+        {
+          "rootLevelFailure": "FEATURE_CHANGE_INVALID_ADD_REMOVE_MERGE",
+          "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.ConfiguredMergeForgivenessPolicyTest$TestStrategy",
+          "strategyConfiguration": {
+            "foo": "bar"
+          }
+        }
+      ],
+      "resolvableSubSequenceFailures": [
+        {
+          "subSequenceFailure": [
+            "AUTOFAIL_POLYLINE_MERGE",
+            "BEFORE_VIEW_MERGE_STRATEGY_FAILED"
+          ],
+          "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.ConfiguredMergeForgivenessPolicyTest$TestStrategy"
+        }
+      ],
+      "resolvableExactSequenceFailures": [
+        {
+          "exactSequenceFailure": [
+            "AUTOFAIL_POLYLINE_MERGE",
+            "BEFORE_VIEW_MERGE_STRATEGY_FAILED",
+            "HIGHEST_LEVEL_MERGE_FAILURE"
+          ],
+          "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.ConfiguredMergeForgivenessPolicyTest$TestStrategy",
+          "strategyConfiguration": {
+            "baz": {
+              "foo": "bar"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

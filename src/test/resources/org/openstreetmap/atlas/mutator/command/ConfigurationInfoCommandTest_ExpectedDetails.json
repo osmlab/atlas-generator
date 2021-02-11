@@ -1,0 +1,232 @@
+{
+  "mutators": [
+    {
+      "type": "_mutator",
+      "name": "AddSlippyName",
+      "className": "AtlasChangeGeneratorAddShard",
+      "enabled": true,
+      "dynamicAtlasPolicyGeneration": "noExpansionDynamicAtlasPolicy",
+      "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+      "countries": "AIA,JKL",
+      "declaredMergeForgivenessPolicy": false,
+      "broadcastVariablesNeeded": [
+        "slippyshardings"
+      ]
+    },
+    {
+      "type": "_mutator",
+      "name": "AddSomeOtherTag",
+      "className": "AtlasChangeGeneratorAddTag",
+      "enabled": true,
+      "dynamicAtlasPolicyGeneration": "noExpansionDynamicAtlasPolicy",
+      "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+      "dependencies": [
+        "AddMutatedAgainEqualsYes"
+      ],
+      "declaredMergeForgivenessPolicy": false
+    },
+    {
+      "type": "_mutator",
+      "name": "AddTurnRestrictions",
+      "className": "ConfiguredAtlasChangeGeneratorAddTurnRestrictions",
+      "enabled": true,
+      "dynamicAtlasPolicyGeneration": "default",
+      "dynamicAtlasPolicyApplication": "default",
+      "excludedCountries": "DEF",
+      "dependencies": [
+        "AtlasChangeGeneratorSplitRoundabout"
+      ],
+      "declaredMergeForgivenessPolicy": false
+    },
+    {
+      "type": "_mutator",
+      "name": "AddYetSomeOtherTag",
+      "className": "AtlasChangeGeneratorAddTag",
+      "enabled": true,
+      "dynamicAtlasPolicyGeneration": "requestInputDependencyForNothingDynamicAtlasPolicy",
+      "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+      "dependencies": [
+        "AddSomeOtherTag"
+      ],
+      "inputDependencies": [
+        "edgeNodeInputDependency"
+      ],
+      "declaredMergeForgivenessPolicy": false
+    }
+  ],
+  "levels": [
+    {
+      "type": "_level",
+      "countryOrGroup": "AIA",
+      "groupContents": "AIA",
+      "levelIndex": 0,
+      "levelSourceType": "FS",
+      "mutators": [
+        "AddSlippyName",
+        "AddSomeOtherTag"
+      ],
+      "dynamicAtlasPolicyGeneration": "noExpansionDynamicAtlasPolicy",
+      "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+      "parentNeedsRDDInput": false,
+      "childNeedsRDDInput": false,
+      "childCanPreloadRDDInput": false,
+      "maximumLevelIndex": 2,
+      "addMutationTags": true
+    },
+    {
+      "type": "_level",
+      "countryOrGroup": "AIA",
+      "groupContents": "AIA",
+      "levelIndex": 1,
+      "levelSourceType": "FS",
+      "mutators": [
+        "AddTurnRestrictions"
+      ],
+      "inputDependenciesToProvide": "InputDependency_edgeNodeInputDependency",
+      "dynamicAtlasPolicyGeneration": "default",
+      "dynamicAtlasPolicyApplication": "default",
+      "parentNeedsRDDInput": false,
+      "childNeedsRDDInput": false,
+      "childCanPreloadRDDInput": false,
+      "maximumLevelIndex": 2,
+      "addMutationTags": true
+    },
+    {
+      "type": "_level",
+      "countryOrGroup": "AIA",
+      "groupContents": "AIA",
+      "levelIndex": 2,
+      "levelSourceType": "FS",
+      "mutators": [
+        "AddYetSomeOtherTag"
+      ],
+      "inputDependenciesToRequest": "InputDependency_edgeNodeInputDependency",
+      "dynamicAtlasPolicyGeneration": "requestInputDependencyForNothingDynamicAtlasPolicy",
+      "dynamicAtlasPolicyApplication": "noExpansionDynamicAtlasPolicy",
+      "parentNeedsRDDInput": false,
+      "childNeedsRDDInput": false,
+      "childCanPreloadRDDInput": false,
+      "maximumLevelIndex": 2,
+      "addMutationTags": true
+    }
+  ],
+  "dynamicAtlasPolicies": [
+    {
+      "type": "_dynamicAtlasPolicy",
+      "name": "default",
+      "extendIndefinitely": false,
+      "deferLoading": true,
+      "aggressivelyExploreRelations": false,
+      "entitiesToConsiderForExpansion": "NO_FILTER",
+      "maximumExpansionDistanceInMeters": "N/A",
+      "directFetcher": "default",
+      "fetcher": "default",
+      "isPreDetermined": false
+    },
+    {
+      "type": "_dynamicAtlasPolicy",
+      "name": "noExpansionDynamicAtlasPolicy",
+      "extendIndefinitely": false,
+      "deferLoading": true,
+      "aggressivelyExploreRelations": false,
+      "entitiesToConsiderForExpansion": "nothingGoesThroughFilter",
+      "maximumExpansionDistanceInMeters": "N/A",
+      "directFetcher": "default",
+      "fetcher": "default",
+      "isPreDetermined": true
+    },
+    {
+      "type": "_dynamicAtlasPolicy",
+      "name": "requestInputDependencyForNothingDynamicAtlasPolicy",
+      "extendIndefinitely": false,
+      "deferLoading": true,
+      "aggressivelyExploreRelations": true,
+      "entitiesToConsiderForExpansion": "junctionRoundaboutFilter",
+      "maximumExpansionDistanceInMeters": "10000",
+      "directFetcher": "default",
+      "fetcher": "edgeNodeFetcher",
+      "isPreDetermined": false,
+      "inputDependency": "edgeNodeInputDependency"
+    }
+  ],
+  "filters": [
+    {
+      "type": "_filter",
+      "name": "NO_FILTER",
+      "noExpansion": false
+    },
+    {
+      "type": "_filter",
+      "name": "junctionRoundaboutFilter",
+      "predicate": "e instanceof Node || e instanceof Edge",
+      "imports": [
+        "org.openstreetmap.atlas.geography.atlas.items"
+      ],
+      "taggableFilter": "junction->roundabout",
+      "noExpansion": false
+    },
+    {
+      "type": "_filter",
+      "name": "nothingGoesThroughFilter",
+      "predicate": "false",
+      "noExpansion": true
+    }
+  ],
+  "inputDependencies": [
+    {
+      "type": "_inputDependency",
+      "pathName": "edgeNodeInputDependency",
+      "subAtlas": "edgeNodeSoftCutSubAtlas"
+    }
+  ],
+  "fetchers": [
+    {
+      "type": "_fetcher",
+      "name": "default",
+      "subAtlas": "default"
+    },
+    {
+      "type": "_fetcher",
+      "name": "edgeNodeFetcher",
+      "inputDependencyName": "edgeNodeInputDependency",
+      "inputDependencyPath": "_inputDependency_edgeNodeInputDependency",
+      "subAtlas": "default"
+    }
+  ],
+  "subAtlases": [
+    {
+      "type": "_subAtlas",
+      "name": "default",
+      "filter": "NO_FILTER",
+      "cutType": "SOFT_CUT"
+    },
+    {
+      "type": "_subAtlas",
+      "name": "edgeNodeSoftCutSubAtlas",
+      "filter": "edgeNodeFilter",
+      "cutType": "SOFT_CUT"
+    }
+  ],
+  "mergeForgivenessPolicies": [
+    {
+      "type": "_mergeForgivenessPolicy",
+      "owner": "global",
+      "rootLevelPolicy": [
+        "RootLevelPolicyElement{rootLevelFailureType=FEATURE_CHANGE_INVALID_ADD_REMOVE_MERGE, strategy=org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.PickRemoveOverAddStrategy, config={}}"
+      ],
+      "subSequenceFailurePolicy": [
+        "FailureSequencePolicyElement{failureSubSequence=[AUTOFAIL_TAG_MERGE, BEFORE_VIEW_MERGE_STRATEGY_FAILED], strategy=org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.AlwaysPickLeftStrategy, config={}, exact=false}"
+      ],
+      "exactSequenceFailurePolicy": [
+        "FailureSequencePolicyElement{failureSubSequence=[AUTOFAIL_POLYGON_MERGE, BEFORE_VIEW_MERGE_STRATEGY_FAILED, HIGHEST_LEVEL_MERGE_FAILURE], strategy=org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.AlwaysPickLeftStrategy, config={}, exact=true}"
+      ]
+    }
+  ],
+  "broadcastables": [
+    {
+      "type": "_broadcastable",
+      "name": "slippyshardings",
+      "definition": "slippy@4,slippy@6"
+    }
+  ]
+}

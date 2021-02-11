@@ -1,0 +1,73 @@
+{
+    "global":
+    {
+        "filters":
+        {
+            "junctionRoundaboutFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge",
+                },
+                "taggableFilter": "junction->roundabout"
+            },
+            "highwayPrimaryFilter":
+            {
+                "taggableFilter": "highway->primary"
+            }
+        },
+        "subAtlases":
+        {
+            "junctionRoundaboutSoftCutSubAtlas":
+            {
+                "filter": "junctionRoundaboutFilter",
+                "cutType": "SOFT_CUT"
+            },
+            "highwayPrimarySoftCutSubAtlas":
+            {
+                "filter": "highwayPrimaryFilter",
+                "cutType": "SOFT_CUT"
+            }
+        },
+        "inputDependencies":
+        {
+            "highwayPrimaryInputDependency": "highwayPrimarySoftCutSubAtlas"
+        },
+        "fetchers":
+        {
+            "highwayPrimaryFetcher":
+            {
+                "inputDependency": "highwayPrimaryInputDependency",
+                "subAtlas": "highwayPrimarySoftCutSubAtlas"
+            },
+            "missingInputDependencyFetcher":
+            {
+                "inputDependency": "missingInputDependency",
+                "subAtlas": "junctionRoundaboutSoftCutSubAtlas"
+            },
+            "justSubAtlasFetcher":
+            {
+                "subAtlas": "highwayPrimarySoftCutSubAtlas"
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "junctionRoundaboutDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "aggressivelyExploreRelations": false,
+                "entitiesToConsiderForExpansion": "junctionRoundaboutFilter",
+                "fetcher": "highwayPrimaryFetcher"
+            },
+            "highwayPrimaryDynamicAtlasPolicy":
+            {
+                "entitiesToConsiderForExpansion": "highwayPrimaryFilter",
+                "fetcher": "justSubAtlasFetcher"
+            }
+        }
+    }
+}

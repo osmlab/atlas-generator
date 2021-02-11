@@ -1,0 +1,11 @@
+AtlasMutator country and levels for ABC:
+    ABC_0: RDDFS,AddSomeOtherTag
+    ABC_1: RDDLEVEL,AtlasChangeGeneratorSplitRoundabout
+    ABC_2: FS,AddTurnRestrictions,AtlasChangeGeneratorRemoveReverseEdges
+    ABC_3: FS,AddYetSomeOtherTag
+AtlasMutator group and levels for GROUP0 (XYZ, JKL):
+    GROUP0_0: RDDFS,AddGeoHashName,AddMutatedEqualsYes,AddSlippyName,AddSparkConfigurationTag
+    GROUP0_1: RDDLEVEL,AtlasChangeGeneratorSplitRoundabout
+    GROUP0_2: FS,AddMutatedAgainEqualsYes,AddTurnRestrictions
+    GROUP0_3: RDDLEVEL,AddSomeOtherTag
+    GROUP0_4: FS,AddYetSomeOtherTag

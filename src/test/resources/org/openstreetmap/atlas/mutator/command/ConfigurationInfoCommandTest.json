@@ -1,0 +1,273 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "broadcast":
+        {
+            "geohash4":
+            {
+                "className": "ConfiguredBroadcastableAtlasSharding",
+                "definition": "geohash@4"
+            },
+            "geohash6":
+            {
+                "className": "ConfiguredBroadcastableAtlasSharding",
+                "definition": "geohash@6"
+            },
+            "slippyshardings":
+            {
+                "className": "ConfiguredBroadcastableAtlasShardingGroup",
+                "definition": "slippy@4,slippy@6"
+            }
+        },
+        "filters":
+        {
+            "junctionRoundaboutFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                },
+                "taggableFilter": "junction->roundabout"
+            },
+            "edgeNodeFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                }
+            },
+            "nothingGoesThroughFilter":
+            {
+                "predicate":
+                {
+                    "command": "false"
+                },
+                "hint.noExpansion": true
+            }
+        },
+        "subAtlases":
+        {
+            "edgeNodeSoftCutSubAtlas":
+            {
+                "filter": "edgeNodeFilter",
+                "cutType": "SOFT_CUT"
+            }
+        },
+        "inputDependencies":
+        {
+            "edgeNodeInputDependency": "edgeNodeSoftCutSubAtlas"
+        },
+        "fetchers":
+        {
+            "edgeNodeFetcher":
+            {
+                "inputDependency": "edgeNodeInputDependency"
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "junctionRoundaboutDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "aggressivelyExploreRelations": false,
+                "maximumExpansionDistanceInMeters": "10000",
+                "entitiesToConsiderForExpansion": "junctionRoundaboutFilter",
+                "fetcher": "edgeNodeFetcher"
+            },
+            "noExpansionDynamicAtlasPolicy":
+            {
+                "entitiesToConsiderForExpansion": "nothingGoesThroughFilter"
+            },
+            "requestInputDependencyForNothingDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "comment": "This below is to prevent any level using it from being able to read from RDD",
+                "aggressivelyExploreRelations": true,
+                "maximumExpansionDistanceInMeters": "10000",
+                "entitiesToConsiderForExpansion": "junctionRoundaboutFilter",
+                "fetcher": "edgeNodeFetcher"
+            }
+        },
+        "mergeForgivenessPolicy":
+        {
+            "resolvableRootLevelFailures": [
+            {
+                "rootLevelFailure": "FEATURE_CHANGE_INVALID_ADD_REMOVE_MERGE",
+                "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.PickRemoveOverAddStrategy"
+            }],
+            "resolvableSubSequenceFailures": [
+            {
+                "subSequenceFailure": ["AUTOFAIL_TAG_MERGE", "BEFORE_VIEW_MERGE_STRATEGY_FAILED"],
+                "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.AlwaysPickLeftStrategy"
+            }],
+            "resolvableExactSequenceFailures": [
+            {
+                "exactSequenceFailure": ["AUTOFAIL_POLYGON_MERGE", "BEFORE_VIEW_MERGE_STRATEGY_FAILED", "HIGHEST_LEVEL_MERGE_FAILURE"],
+                "strategyClassName": "org.openstreetmap.atlas.mutator.configuration.parsing.mergeforgiveness.strategies.AlwaysPickLeftStrategy"
+            }]
+        }
+    },
+    "AddMutatedAgainEqualsYes":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "countries": ["XYZ", "JKL"],
+        "shallow": true,
+        "tag":
+        {
+            "key": "mutatedAgain",
+            "value": "yes"
+        },
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AddTurnRestrictions":
+    {
+        "className": "ConfiguredAtlasChangeGeneratorAddTurnRestrictions",
+        "enabled": true,
+        "excludedCountries": ["DEF"],
+        "node.valence": "2",
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+        "enabled": true,
+        "countries": ["ABC"],
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true,
+        "countries": ["XYZ", "ABC", "JKL"],
+        "dynamicAtlas":
+        {
+            "generation": "junctionRoundaboutDynamicAtlasPolicy",
+            "application": "junctionRoundaboutDynamicAtlasPolicy"
+        },
+        "dependsOn": [
+            "AddMutatedEqualsYes",
+            "AddSparkConfigurationTag",
+            "AddSlippyName",
+            "AddGeoHashName"
+        ]
+    },
+    "AddGeoHashName":
+    {
+        "className": "AtlasChangeGeneratorAddShard",
+        "enabled": true,
+        "countries": ["XYZ", "JKL"],
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "broadcast": [
+            "geohash4",
+            "geohash6"
+        ],
+        "tag.key": "geohashes"
+    },
+    "AddSlippyName":
+    {
+        "className": "AtlasChangeGeneratorAddShard",
+        "enabled": true,
+        "countries": ["AIA", "JKL"],
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "broadcast": [
+            "slippyshardings"
+        ],
+        "tag.key": "slippytiles"
+    },
+    "AddMutatedEqualsYes":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "countries": ["XYZ", "JKL", "DEF"],
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "tag":
+        {
+            "key": "mutated",
+            "value": "to_be_overriden"
+        },
+        "override.XYZ":
+        {
+            "tag":
+            {
+                "key": "mutated",
+                "value": "yes"
+            }
+        },
+        "override.JKL":
+        {
+            "tag":
+            {
+                "key": "mutated",
+                "value": "yes"
+            }
+        }
+    },
+    "AddSparkConfigurationTag":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "countries": ["XYZ", "JKL"],
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "tag":
+        {
+            "key": "sparkConfiguration",
+            "value": "yes"
+        }
+    },
+    "AddSomeOtherTag":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "tag":
+        {
+            "key": "someOtherTag",
+            "value": "someOtherValue"
+        },
+        "dependsOn": ["AddMutatedAgainEqualsYes"]
+    },
+    "AddYetSomeOtherTag":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "dynamicAtlas":
+        {
+            "generation": "requestInputDependencyForNothingDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "tag":
+        {
+            "key": "yetSomeOtherTag",
+            "value": "yetSomeOtherValue"
+        },
+        "dependsOn": ["AddSomeOtherTag"]
+    }
+}

@@ -1,0 +1,1 @@
+update atlas.edge set edge.addTag(foot: 'no'), edge.deleteTag('fixme') where edge.hasId(123456)

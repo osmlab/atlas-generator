@@ -1,0 +1,54 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "validate": true,
+        "filters":
+        {
+            "nothingGoesThroughFilter":
+            {
+                "predicate":
+                {
+                    "command": "false"
+                },
+                "hint.noExpansion": true
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "simpleDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "maximumExpansionDistanceInMeters": "100"
+            },
+            "noExpansionDynamicAtlasPolicy":
+            {
+                "entitiesToConsiderForExpansion": "nothingGoesThroughFilter"
+            }
+        }
+    },
+    "DeleteFloaters":
+    {
+        "className": "DeleteFloaterMutation",
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dynamicAtlas":
+        {
+            "generation": "simpleDynamicAtlasPolicy",
+            "application": "simpleDynamicAtlasPolicy"
+        }
+    },
+    "AddTagToBusStops":
+    {
+        "className": "AddTagToBusStopsMutation",
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dynamicAtlas":
+        {
+            "generation": "noExpansionDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        },
+        "dependsOn": ["DeleteFloaters"]
+    }
+}

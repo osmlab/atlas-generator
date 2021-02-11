@@ -1,0 +1,5 @@
+AtlasMutator group and levels for GROUP0 (ABC, DEF):
+    GROUP0_0: FS,AtlasChangeGeneratorAddTurnRestrictions
+AtlasMutator country and levels for XYZ:
+    XYZ_0: FS,AtlasChangeGeneratorSplitRoundabout
+    XYZ_1: FS,AtlasChangeGeneratorAddTurnRestrictions,AtlasChangeGeneratorRemoveReverseEdges

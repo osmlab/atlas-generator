@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osm version="0.6" generator="CGImap 0.6.1 (11414 thorn-02.openstreetmap.org)" copyright="OpenStreetMap and contributors" attribution="http://www.openstreetmap.org/copyright" license="http://opendatacommons.org/licenses/odbl/1-0/">
+ <bounds minlat="37.3363600" minlon="-121.8889000" maxlat="37.3389400" maxlon="-121.8829800"/>
+ <node id="3458835612" visible="true" version="3" changeset="67474293" timestamp="2019-02-22T17:38:05Z" user="b-jazz-bot" uid="9451067" lat="37.3368262" lon="-121.8885061">
+  <tag k="name" v="Hank Coca’s Downtown Furniture"/>
+  <tag k="shop" v="furniture"/>
+  <tag k="website" v="https://cocasfurniture.com/"/>
+ </node>
+ <node id="3524576505" visible="true" version="2" changeset="31681536" timestamp="2015-06-03T02:16:17Z" user="Minh Nguyen" uid="33757" lat="37.3378097" lon="-121.8878459">
+  <tag k="amenity" v="fuel"/>
+  <tag k="name" v="Chevron"/>
+ </node>
+ <node id="3532016688" visible="true" version="3" changeset="48243677" timestamp="2017-04-29T01:28:48Z" user="njaard" uid="173918" lat="37.3374224" lon="-121.8883414">
+  <tag k="addr:housenumber" v="103"/>
+  <tag k="addr:street" v="East Santa Clara Street"/>
+  <tag k="amenity" v="fast_food"/>
+  <tag k="cuisine" v="sandwich"/>
+  <tag k="name" v="Subway"/>
+ </node>
+ <node id="3537422690" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3367123" lon="-121.8894245">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469702" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3386379" lon="-121.8892850"/>
+ <node id="3537469704" visible="true" version="2" changeset="43436349" timestamp="2016-11-06T08:27:48Z" user="Minh Nguyen" uid="33757" lat="37.3386031" lon="-121.8885646"/>
+ <node id="3537469709" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3385285" lon="-121.8883165"/>
+ <node id="3537469710" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3385444" lon="-121.8882798"/>
+ <node id="3537469711" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3386034" lon="-121.8883204"/>
+ <node id="3537469712" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3386246" lon="-121.8883928"/>
+ <node id="3537469713" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3379009" lon="-121.8879858"/>
+ <node id="3537469714" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:17Z" user="Minh Nguyen" uid="33757" lat="37.3378463" lon="-121.8879440"/>
+ <node id="3537469715" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:18Z" user="Minh Nguyen" uid="33757" lat="37.3379090" lon="-121.8878144"/>
+ <node id="3537469716" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:18Z" user="Minh Nguyen" uid="33757" lat="37.3379636" lon="-121.8878561"/>
+ <node id="3537469717" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3377743" lon="-121.8874825">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469718" visible="true" version="3" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3375906" lon="-121.8873434">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469719" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3376211" lon="-121.8875217">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469720" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3377139" lon="-121.8873181">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469721" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3372177" lon="-121.8883677">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469722" visible="true" version="3" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3372802" lon="-121.8885455">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469723" visible="true" version="3" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3370756" lon="-121.8883909">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469724" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3371211" lon="-121.8885634">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469725" visible="true" version="2" changeset="32487685" timestamp="2015-07-08T05:53:20Z" user="Minh Nguyen" uid="33757" lat="37.3373784" lon="-121.8889909"/>
+ <node id="3537469726" visible="true" version="3" changeset="32487685" timestamp="2015-07-08T05:53:20Z" user="Minh Nguyen" uid="33757" lat="37.3371655" lon="-121.8888338"/>
+ <node id="3537469727" visible="true" version="2" changeset="32487685" timestamp="2015-07-08T05:53:20Z" user="Minh Nguyen" uid="33757" lat="37.3372435" lon="-121.8886665"/>
+ <node id="3537469728" visible="true" version="2" changeset="32487685" timestamp="2015-07-08T05:53:20Z" user="Minh Nguyen" uid="33757" lat="37.3374564" lon="-121.8888237"/>
+ <node id="3537469741" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:18Z" user="Minh Nguyen" uid="33757" lat="37.3366917" lon="-121.8879506"/>
+ <node id="3537469742" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:18Z" user="Minh Nguyen" uid="33757" lat="37.3366241" lon="-121.8878999"/>
+ <node id="3537469743" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:18Z" user="Minh Nguyen" uid="33757" lat="37.3368138" lon="-121.8875000"/>
+ <node id="3537469744" visible="true" version="1" changeset="31389384" timestamp="2015-05-23T05:38:18Z" user="Minh Nguyen" uid="33757" lat="37.3368815" lon="-121.8875507"/>
+ <node id="3537469745" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3366401" lon="-121.8878514"/>
+ <node id="3537469746" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3356864" lon="-121.8871437"/>
+ <node id="3537469747" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3356750" lon="-121.8871741"/>
+ <node id="3537469748" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3355483" lon="-121.8870789"/>
+ <node id="3537469749" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:31Z" user="kahrens" uid="1728285" lat="37.3355333" lon="-121.8870521"/>
+
+ <node id="3537469823" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:41Z" user="kahrens" uid="1728285" lat="37.3386500" lon="-121.8853383">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469825" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:41Z" user="kahrens" uid="1728285" lat="37.3386068" lon="-121.8851862">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469826" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3382349" lon="-121.8862085">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469827" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3381389" lon="-121.8864097">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469828" visible="true" version="3" changeset="62012438" timestamp="2018-08-26T17:57:40Z" user="kahrens" uid="1728285" lat="37.3383079" lon="-121.8863992">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3537469829" visible="true" version="3" changeset="67726545" timestamp="2019-03-03T00:57:02Z" user="clay_c" uid="119881" lat="37.3367916" lon="-121.8895657">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3555373051" visible="true" version="1" changeset="31553920" timestamp="2015-05-29T05:23:12Z" user="Minh Nguyen" uid="33757" lat="37.3375638" lon="-121.8886087"/>
+ <node id="3555373052" visible="true" version="1" changeset="31553920" timestamp="2015-05-29T05:23:12Z" user="Minh Nguyen" uid="33757" lat="37.3377060" lon="-121.8883058"/>
+ <node id="3555373053" visible="true" version="1" changeset="31553920" timestamp="2015-05-29T05:23:12Z" user="Minh Nguyen" uid="33757" lat="37.3378940" lon="-121.8884455"/>
+ <node id="3555373054" visible="true" version="1" changeset="31553920" timestamp="2015-05-29T05:23:12Z" user="Minh Nguyen" uid="33757" lat="37.3373369" lon="-121.8884403"/>
+ <node id="3555373055" visible="true" version="1" changeset="31553920" timestamp="2015-05-29T05:23:12Z" user="Minh Nguyen" uid="33757" lat="37.3374792" lon="-121.8881374"/>
+ <node id="3557258019" visible="true" version="3" changeset="61014655" timestamp="2018-07-24T09:24:49Z" user="Adamant1" uid="4540953" lat="37.3375407" lon="-121.8885123">
+  <tag k="addr:city" v="San Jose"/>
+  <tag k="addr:housenumber" v="16"/>
+  <tag k="addr:postcode" v="95113"/>
+  <tag k="addr:state" v="CA"/>
+  <tag k="addr:street" v="North 3rd Street"/>
+  <tag k="name" v="La Casa de la Salud"/>
+  <tag k="name:es" v="La Casa de la Salud"/>
+  <tag k="shop" v="health_food"/>
+ </node>
+ <node id="3567492323" visible="true" version="3" changeset="32253080" timestamp="2015-06-27T22:51:30Z" user="Minh Nguyen" uid="33757" lat="37.3373838" lon="-121.8874681">
+  <tag k="alt_name" v="Fourth Street Pizza Company"/>
+  <tag k="amenity" v="restaurant"/>
+  <tag k="name" v="4th Street Pizza Company"/>
+  <tag k="short_name" v="4th St. Pizza Co."/>
+  <tag k="website" v="http://4thstpizzaco.com/"/>
+ </node>
+ <node id="3573968508" visible="true" version="2" changeset="32162075" timestamp="2015-06-23T13:51:41Z" user="Minh Nguyen" uid="33757" lat="37.3372390" lon="-121.8888296">
+  <tag k="amenity" v="restaurant"/>
+  <tag k="cuisine" v="burger"/>
+  <tag k="name" v="The Joint"/>
+ </node>
+ <node id="3573968509" visible="true" version="2" changeset="49264621" timestamp="2017-06-05T09:57:25Z" user="Minh Nguyen" uid="33757" lat="37.3372668" lon="-121.8887679">
+  <tag k="alt_name" v="ENSO"/>
+  <tag k="amenity" v="nightclub"/>
+  <tag k="disused:amenity" v="bar"/>
+  <tag k="disused:website" v="http://www.freddiejs.com/"/>
+  <tag k="name" v="ENSŌ"/>
+  <tag k="old_name" v="Freddie J’s"/>
+ </node>
+ <node id="3573968510" visible="true" version="2" changeset="48243677" timestamp="2017-04-29T01:29:04Z" user="njaard" uid="173918" lat="37.3374651" lon="-121.8882663">
+  <tag k="addr:housenumber" v="105"/>
+  <tag k="name" v="Ngan’s Tailoring"/>
+  <tag k="opening_hours" v="Mo-Sa 10:00-18:00"/>
+  <tag k="shop" v="tailor"/>
+ </node>
+ <node id="3595854518" visible="true" version="2" changeset="32418167" timestamp="2015-07-05T05:26:26Z" user="Minh Nguyen" uid="33757" lat="37.3381111" lon="-121.8845459">
+  <tag k="alt_name" v="Luu Noodle"/>
+  <tag k="amenity" v="restaurant"/>
+  <tag k="cuisine" v="chinese"/>
+  <tag k="name" v="New Tung Kee"/>
+ </node>
+ <node id="3595854519" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:25Z" user="Minh Nguyen" uid="33757" lat="37.3388625" lon="-121.8855439"/>
+ <node id="3595854520" visible="true" version="2" changeset="59667667" timestamp="2018-06-08T12:21:02Z" user="Minh Nguyen" uid="33757" lat="37.3387124" lon="-121.8858611"/>
+ <node id="3595854521" visible="true" version="2" changeset="59667667" timestamp="2018-06-08T12:21:02Z" user="Minh Nguyen" uid="33757" lat="37.3386122" lon="-121.8857881"/>
+ <node id="3595854522" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:25Z" user="Minh Nguyen" uid="33757" lat="37.3387628" lon="-121.8854692"/>
+ <node id="3595854523" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:25Z" user="Minh Nguyen" uid="33757" lat="37.3388738" lon="-121.8860829"/>
+ <node id="3595854524" visible="true" version="2" changeset="59667667" timestamp="2018-06-08T12:21:02Z" user="Minh Nguyen" uid="33757" lat="37.3385787" lon="-121.8858607"/>
+ <node id="3595854525" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:25Z" user="Minh Nguyen" uid="33757" lat="37.3383832" lon="-121.8862726"/>
+ <node id="3595854526" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:26Z" user="Minh Nguyen" uid="33757" lat="37.3386042" lon="-121.8864340"/>
+ <node id="3595854527" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:26Z" user="Minh Nguyen" uid="33757" lat="37.3386948" lon="-121.8862376"/>
+ <node id="3595854528" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:26Z" user="Minh Nguyen" uid="33757" lat="37.3387752" lon="-121.8862963"/>
+ <node id="3595854529" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:41Z" user="kahrens" uid="1728285" lat="37.3387335" lon="-121.8851560">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3595854530" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:26Z" user="Minh Nguyen" uid="33757" lat="37.3388546" lon="-121.8849019"/>
+ <node id="3595854531" visible="true" version="1" changeset="31976618" timestamp="2015-06-15T07:09:26Z" user="Minh Nguyen" uid="33757" lat="37.3399571" lon="-121.8861855"/>
+ <node id="3595854532" visible="true" version="2" changeset="62012438" timestamp="2018-08-26T17:57:41Z" user="kahrens" uid="1728285" lat="37.3387956" lon="-121.8853278">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3595854533" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3398077" lon="-121.8859251"/>
+ <node id="3595854534" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3388747" lon="-121.8852291"/>
+ <node id="3595854535" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3392451" lon="-121.8849789"/>
+ <node id="3595854542" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3398883" lon="-121.8854588"/>
+ <node id="3595854543" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3398973" lon="-121.8854398"/>
+ <node id="3595854544" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3398783" lon="-121.8854257"/>
+ <node id="3595854545" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3399181" lon="-121.8853412"/>
+ <node id="3595854546" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3399710" lon="-121.8853807"/>
+ <node id="3595854547" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3399593" lon="-121.8854055"/>
+ <node id="3595854548" visible="true" version="2" changeset="67033385" timestamp="2019-02-08T18:41:05Z" user="Minh Nguyen" uid="33757" lat="37.3400284" lon="-121.8854571"/>
+ <node id="3602707753" visible="true" version="1" changeset="32051631" timestamp="2015-06-18T13:51:54Z" user="Minh Nguyen" uid="33757" lat="37.3391585" lon="-121.8883598"/>
+ <node id="3602707754" visible="true" version="1" changeset="32051631" timestamp="2015-06-18T13:51:54Z" user="Minh Nguyen" uid="33757" lat="37.3388358" lon="-121.8881215"/>
+ <node id="3602707755" visible="true" version="1" changeset="32051631" timestamp="2015-06-18T13:51:54Z" user="Minh Nguyen" uid="33757" lat="37.3390195" lon="-121.8877280"/>
+ <node id="3602707756" visible="true" version="1" changeset="32051631" timestamp="2015-06-18T13:51:54Z" user="Minh Nguyen" uid="33757" lat="37.3393422" lon="-121.8879663"/>
+ <node id="3602707757" visible="true" version="1" changeset="32051631" timestamp="2015-06-18T13:51:54Z" user="Minh Nguyen" uid="33757" lat="37.3387729" lon="-121.8882234"/>
+ <node id="3606791589" visible="true" version="4" changeset="59730092" timestamp="2018-06-11T06:55:01Z" user="Minh Nguyen" uid="33757" lat="37.3367687" lon="-121.8863270">
+  <tag k="amenity" v="events_venue"/>
+  <tag k="name" v="Rotary Summit Center"/>
+  <tag k="operator" v="Rotary Club of San Jose"/>
+  <tag k="website" v="http://sjrotary.org/"/>
+ </node>
+ <node id="3606793031" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3360830" lon="-121.8881405"/>
+ <node id="3606793037" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361539" lon="-121.8879843"/>
+ <node id="3606793038" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361774" lon="-121.8880029"/>
+ <node id="3606793039" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3362194" lon="-121.8879165"/>
+ <node id="3606793040" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3363636" lon="-121.8880244"/>
+ <node id="3606793042" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361062" lon="-121.8881524"/>
+ <node id="3606793043" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3360242" lon="-121.8883223"/>
+ <node id="3606793085" visible="true" version="2" changeset="32418167" timestamp="2015-07-05T05:26:26Z" user="Minh Nguyen" uid="33757" lat="37.3381581" lon="-121.8844305">
+  <tag k="name" v="Miskarie"/>
+  <tag k="shop" v="hairdresser"/>
+ </node>
+ <node id="3606793091" visible="true" version="1" changeset="32093487" timestamp="2015-06-20T09:33:15Z" user="Minh Nguyen" uid="33757" lat="37.3391044" lon="-121.8834240"/>
+ <node id="3606793092" visible="true" version="1" changeset="32093487" timestamp="2015-06-20T09:33:15Z" user="Minh Nguyen" uid="33757" lat="37.3391741" lon="-121.8834744"/>
+ <node id="3606793293" visible="true" version="1" changeset="32093487" timestamp="2015-06-20T09:33:15Z" user="Minh Nguyen" uid="33757" lat="37.3391115" lon="-121.8836114"/>
+ <node id="3606793294" visible="true" version="1" changeset="32093487" timestamp="2015-06-20T09:33:15Z" user="Minh Nguyen" uid="33757" lat="37.3390437" lon="-121.8835624"/>
+ <node id="3606793500" visible="true" version="4" changeset="59667667" timestamp="2018-06-08T12:21:02Z" user="Minh Nguyen" uid="33757" lat="37.3386711" lon="-121.8857866">
+  <tag k="alt_name" v="Hà Alteration &amp; Cleaner"/>
+  <tag k="level" v="0"/>
+  <tag k="name" v="Ha Alteration &amp; Cleaner"/>
+  <tag k="shop" v="tailor;dry_cleaning"/>
+ </node>
+ <node id="3606793501" visible="true" version="3" changeset="59667667" timestamp="2018-06-08T12:21:02Z" user="Minh Nguyen" uid="33757" lat="37.3387850" lon="-121.8855410">
+  <tag k="amenity" v="construction"/>
+  <tag k="construction" v="restaurant"/>
+  <tag k="cuisine" v="indian"/>
+  <tag k="disused:amenity" v="fast_food"/>
+  <tag k="disused:cuisine" v="mexican"/>
+  <tag k="level" v="0"/>
+  <tag k="name" v="Curry On"/>
+  <tag k="old_name" v="San Jose Taqueria"/>
+ </node>
+ <node id="3606793502" visible="true" version="4" changeset="59667667" timestamp="2018-06-08T12:21:02Z" user="Minh Nguyen" uid="33757" lat="37.3386996" lon="-121.8857156">
+  <tag k="level" v="0"/>
+  <tag k="name" v="Van’s Beauty Salon"/>
+  <tag k="shop" v="hairdresser"/>
+ </node>
+ <node id="3606793503" visible="true" version="5" changeset="47310737" timestamp="2017-03-31T02:11:32Z" user="njaard" uid="173918" lat="37.3372598" lon="-121.8878037">
+  <tag k="name" v="Game Shop"/>
+  <tag k="shop" v="video_games"/>
+  <tag k="website" v="http://www.gameshopdownstairs.com/"/>
+ </node>
+ <node id="3606793504" visible="true" version="5" changeset="47310737" timestamp="2017-03-31T02:11:33Z" user="njaard" uid="173918" lat="37.3372401" lon="-121.8878481">
+  <tag k="name" v="FixLaptop.com"/>
+  <tag k="repair" v="yes"/>
+  <tag k="shop" v="computer"/>
+  <tag k="website" v="http://www.fixlaptop.com/"/>
+ </node>
+ <node id="3606793505" visible="true" version="4" changeset="32418167" timestamp="2015-07-05T05:26:25Z" user="Minh Nguyen" uid="33757" lat="37.3372256" lon="-121.8878838">
+  <tag k="name" v="A &amp; A Gift Shop"/>
+  <tag k="shop" v="gift"/>
+ </node>
+ <node id="3606793506" visible="true" version="4" changeset="32418167" timestamp="2015-07-05T05:26:25Z" user="Minh Nguyen" uid="33757" lat="37.3371928" lon="-121.8879529">
+  <tag k="name" v="Black Lagoon Tattoo"/>
+  <tag k="shop" v="tattoo"/>
+ </node>
+ <node id="3608593479" visible="true" version="3" changeset="62326320" timestamp="2018-09-05T22:58:42Z" user="kahrens" uid="1728285" lat="37.3400498" lon="-121.8906012">
+  <tag k="crossing" v="traffic_signals"/>
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3608593497" visible="true" version="2" changeset="62358155" timestamp="2018-09-07T00:06:42Z" user="kahrens" uid="1728285" lat="37.3431569" lon="-121.8885752">
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3608593498" visible="true" version="2" changeset="62358155" timestamp="2018-09-07T00:06:42Z" user="kahrens" uid="1728285" lat="37.3430277" lon="-121.8884790">
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3608593499" visible="true" version="3" changeset="62350670" timestamp="2018-09-06T17:28:52Z" user="kahrens" uid="1728285" lat="37.3417003" lon="-121.8874835">
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3608593500" visible="true" version="3" changeset="62350670" timestamp="2018-09-06T17:28:52Z" user="kahrens" uid="1728285" lat="37.3415836" lon="-121.8873985">
+  <tag k="highway" v="crossing"/>
+ </node>
+ <node id="3608593538" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3363706" lon="-121.8891381"/>
+ <node id="3608593539" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3360367" lon="-121.8888489"/>
+ <node id="3608593540" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361250" lon="-121.8887176"/>
+ <node id="3608593541" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361758" lon="-121.8887562"/>
+ <node id="3608593542" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361642" lon="-121.8887819"/>
+ <node id="3608593543" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3363796" lon="-121.8889442"/>
+ <node id="3608593544" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3364021" lon="-121.8888926"/>
+ <node id="3608593545" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3364276" lon="-121.8889787"/>
+ <node id="3608593546" visible="true" version="3" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3367128" lon="-121.8891525"/>
+ <node id="3608593547" visible="true" version="3" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365574" lon="-121.8890351"/>
+ <node id="3608593548" visible="true" version="3" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365959" lon="-121.8889479"/>
+ <node id="3608593549" visible="true" version="3" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365001" lon="-121.8888756"/>
+ <node id="3608593550" visible="true" version="3" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365938" lon="-121.8886429"/>
+ <node id="3608593551" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3364155" lon="-121.8880503"/>
+ <node id="3608593552" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3363215" lon="-121.8882518"/>
+ <node id="3608593553" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365473" lon="-121.8884184"/>
+ <node id="3608593554" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3364460" lon="-121.8886350"/>
+ <node id="3608593555" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3363426" lon="-121.8885593"/>
+ <node id="3608593556" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3364165" lon="-121.8884034"/>
+ <node id="3608593557" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3362838" lon="-121.8883083"/>
+ <node id="3608593558" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3362329" lon="-121.8884131"/>
+ <node id="3608593559" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3362155" lon="-121.8884674"/>
+ <node id="3608593560" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3361609" lon="-121.8885839"/>
+ <node id="3608593561" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3362197" lon="-121.8886370"/>
+ <node id="3608593562" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3362650" lon="-121.8885404"/>
+ <node id="3608593563" visible="true" version="1" changeset="32113219" timestamp="2015-06-21T09:52:52Z" user="Minh Nguyen" uid="33757" lat="37.3363084" lon="-121.8885693"/>
+ <node id="3608593564" visible="true" version="1" changeset="32113219" timestamp="2015-06-21T09:52:52Z" user="Minh Nguyen" uid="33757" lat="37.3362278" lon="-121.8887428"/>
+ <node id="3608593565" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3363701" lon="-121.8888506"/>
+ <node id="3608593566" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3364696" lon="-121.8886482"/>
+ <node id="3608593567" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365319" lon="-121.8886961"/>
+ <node id="3608593568" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365636" lon="-121.8886262"/>
+ <node id="3608593569" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3365694" lon="-121.8885756"/>
+ <node id="3608593570" visible="true" version="2" changeset="64915648" timestamp="2018-11-26T23:50:30Z" user="kahrens" uid="1728285" lat="37.3366371" lon="-121.8884367"/>
+ <node id="3608593577" visible="true" version="4" changeset="49233346" timestamp="2017-06-04T04:50:24Z" user="Minh Nguyen" uid="33757" lat="37.3367611" lon="-121.8888843">
+  <tag k="amenity" v="restaurant"/>
+  <tag k="cuisine" v="korean"/>
+  <tag k="disused:amenity" v="fast_food"/>
+  <tag k="disused:cuisine" v="sandwich"/>
+  <tag k="name" v="HōM Korean Kitchen"/>
+  <tag k="old_name" v="The Cheese Steak Shop"/>
+  <tag k="website" v="http://homkoreankitchen.com/"/>
+ </node>
+ <node id="3608593578" visible="true" version="2" changeset="32418167" timestamp="2015-07-05T05:26:25Z" user="Minh Nguyen" uid="33757" lat="37.3371080" lon="-121.8882669"/>
+ <node id="3608593579" visible="true" version="2" changeset="32418167" timestamp="2015-07-05T05:26:25Z" user="Minh Nguyen" uid="33757" lat="37.3368821" lon="-121.8881061"/>
+ <node id="3608593580" visible="true" version="2" changeset="32418167" timestamp="2015-07-05T05:26:25Z" user="Minh Nguyen" uid="33757" lat="37.3369695" lon="-121.8879117"/>
+ <node id="3608593581" visible="true" version="4" changeset="49071649" timestamp="2017-05-29T12:14:22Z" user="Minh Nguyen" uid="33757" lat="37.3373711" lon="-121.8875633">
+  <tag k="amenity" v="psychic"/>
+  <tag k="craft" v="palmistry"/>
+ </node>
+ <node id="3608593582" visible="true" version="7" changeset="67365678" timestamp="2019-02-19T19:59:49Z" user="b-jazz-bot" uid="9451067" lat="37.3367953" lon="-121.8887462">
+  <tag k="amenity" v="bar"/>
+  <tag k="name" v="Dive Bar"/>
+  <tag k="website" v="https://www.sjdivebar.com/"/>
+ </node>
+ <node id="3612914348" visible="true" version="2" changeset="32253080" timestamp="2015-06-27T22:51:29Z" user="Minh Nguyen" uid="33757" lat="37.3367910" lon="-121.8888199">
+  <tag k="amenity" v="restaurant"/>
+  <tag k="cuisine" v="japanese"/>
+  <tag k="name" v="Seven Seas Sushi"/>
+  <tag k="website" v="http://sevenseassushi.net/"/>
+ </node>
+ <node id="3614216318" visible="true" version="2" changeset="54671912" timestamp="2017-12-16T06:02:34Z" user="kahrens" uid="1728285" lat="37.3363494" lon="-121.8849535"/>
+ <node id="3614216319" visible="true" version="2" changeset="54671912" timestamp="2017-12-16T06:02:34Z" user="kahrens" uid="1728285" lat="37.3364828" lon="-121.8843665"/>
+ <node id="3614216320" visible="true" version="2" changeset="51130292" timestamp="2017-08-15T07:11:17Z" user="Crysss" uid="6479726" lat="37.3368481" lon="-121.8838856"/>
+ <node id="3614216321" visible="true" version="3" changeset="64917572" timestamp="2018-11-27T01:24:57Z" user="kahrens" uid="1728285" lat="37.3368324" lon="-121.8836437"/>
+ <node id="3614216322" visible="true" version="3" changeset="64917572" timestamp="2018-11-27T01:24:57Z" user="kahrens" uid="1728285" lat="37.3368718" lon="-121.8835669"/>
+ <node id="3614216323" visible="true" version="3" changeset="51133316" timestamp="2017-08-15T08:54:51Z" user="Crysss" uid="6479726" lat="37.3373421" lon="-121.8828186">
+  <tag k="highway" v="traffic_signals"/>
+ </node>
+ <node id="3614216346" visible="true" version="4" changeset="59730092" timestamp="2018-06-11T06:54:59Z" user="Minh Nguyen" uid="33757" lat="37.3338722" lon="-121.8843899"/>
+ <node id="3622610703" visible="true" version="3" changeset="61014655" timestamp="2018-07-24T09:24:49Z" user="Adamant1" uid="4540953" lat="37.3375308" lon="-121.8881757">
+  <tag k="addr:housenumber" v="109"/>
+  <tag k="name" v="San Jose Copies &amp; More"/>
+  <tag k="opening_hours" v="Mo-Fr 10:00-18:00"/>
+  <tag k="phone" v="4082976698"/>
+  <tag k="shop" v="copyshop"/>
+  <tag k="website" v="http://www.sanjosecopies.com/"/>
+ </node>
+ <node id="3622758810" visible="true" version="2" changeset="68823522" timestamp="2019-04-03T05:53:28Z" user="Minh Nguyen" uid="33757" lat="37.3378380" lon="-121.8866178">
+  <tag k="country" v="US"/>
+  <tag k="flag:name" v="United States"/>
+  <tag k="flag:type" v="national"/>
+  <tag k="flag:wikidata" v="Q42537"/>
+  <tag k="man_made" v="flagpole"/>
+  <tag k="subject" v="United States"/>
+  <tag k="subject:wikidata" v="Q30"/>
+ </node>
+ <node id="3622758811" visible="true" version="2" changeset="68823522" timestamp="2019-04-03T05:53:28Z" user="Minh Nguyen" uid="33757" lat="37.3378252" lon="-121.8866486">
+  <tag k="flag:name" v="California"/>
+  <tag k="flag:type" v="regional"/>
+  <tag k="flag:wikidata" v="Q330517"/>
+  <tag k="man_made" v="flagpole"/>
+  <tag k="subject" v="California"/>
+  <tag k="subject:wikidata" v="Q99"/>
+ </node>
+ <node id="3622758812" visible="true" version="2" changeset="68823522" timestamp="2019-04-03T05:53:28Z" user="Minh Nguyen" uid="33757" lat="37.3378092" lon="-121.8866768">
+  <tag k="flag:name" v="San José"/>
+  <tag k="flag:type" v="city"/>
+  <tag k="flag:wikidata" v="Q62673928"/>
+  <tag k="man_made" v="flagpole"/>
+  <tag k="subject" v="San Jose"/>
+  <tag k="subject:wikidata" v="Q16553"/>
+ </node>
+ <node id="3622758813" visible="true" version="2" changeset="32255127" timestamp="2015-06-28T04:18:48Z" user="Minh Nguyen" uid="33757" lat="37.3377954" lon="-121.8867076">
+  <tag k="flag:name" v="San Jose City Hall"/>
+  <tag k="flag:type" v="governmental"/>
+  <tag k="man_made" v="flagpole"/>
+  <tag k="note" v="Sometimes another flag is substituted in, such as the LGBT rainbow flag"/>
+ </node>
+ <node id="3622785423" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373817" lon="-121.8868163"/>
+ <node id="3622785424" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373198" lon="-121.8867747"/>
+ <node id="3622785425" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373550" lon="-121.8866956"/>
+ <node id="3622785426" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373806" lon="-121.8866808"/>
+ <node id="3622785427" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374200" lon="-121.8867854"/>
+ <node id="3622785428" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374744" lon="-121.8868726"/>
+ <node id="3622785429" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3375171" lon="-121.8868565"/>
+ <node id="3622785430" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374563" lon="-121.8867760"/>
+ <node id="3622785431" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374275" lon="-121.8867170"/>
+ <node id="3622785432" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373912" lon="-121.8865856"/>
+ <node id="3622785433" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373699" lon="-121.8864622"/>
+ <node id="3622785434" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373635" lon="-121.8863871"/>
+ <node id="3622785435" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373657" lon="-121.8862450"/>
+ <node id="3622785436" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3373731" lon="-121.8861725"/>
+ <node id="3622785437" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374019" lon="-121.8860264"/>
+ <node id="3622785438" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374200" lon="-121.8859660"/>
+ <node id="3622785439" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374328" lon="-121.8859258"/>
+ <node id="3622785440" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3374467" lon="-121.8858882"/>
+ <node id="3622785441" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3375455" lon="-121.8860193"/>
+ <node id="3622785442" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3375749" lon="-121.8860914"/>
+ <node id="3622785443" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:43Z" user="Minh Nguyen" uid="33757" lat="37.3375980" lon="-121.8861201"/>
+
+ <node id="3622788187" visible="true" version="4" changeset="49233346" timestamp="2017-06-04T04:50:24Z" user="Minh Nguyen" uid="33757" lat="37.3389058" lon="-121.8837295">
+  <tag k="brand:wikidata" v="Q1925685"/>
+  <tag k="name" v="MetroPCS"/>
+  <tag k="shop" v="mobile_phone"/>
+ </node>
+ <node id="3622788293" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3377378" lon="-121.8850031"/>
+ <node id="3622788294" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3377900" lon="-121.8850366"/>
+ <node id="3622788295" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3378220" lon="-121.8849655"/>
+ <node id="3622788296" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3378519" lon="-121.8849883"/>
+ <node id="3622788297" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3378945" lon="-121.8848958"/>
+ <node id="3622788298" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3383530" lon="-121.8852324"/>
+ <node id="3622788299" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3382805" lon="-121.8853826"/>
+ <node id="3622788300" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3383520" lon="-121.8854403"/>
+ <node id="3622788301" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3383381" lon="-121.8854698"/>
+ <node id="3622788302" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3376823" lon="-121.8867841"/>
+ <node id="3622788303" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3376578" lon="-121.8867827"/>
+ <node id="3622788304" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3376248" lon="-121.8867693"/>
+ <node id="3622788305" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3375917" lon="-121.8867532"/>
+ <node id="3622788306" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3375608" lon="-121.8867264"/>
+ <node id="3622788307" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3375320" lon="-121.8866916"/>
+ <node id="3622788308" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3375053" lon="-121.8866527"/>
+ <node id="3622788309" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374861" lon="-121.8866138"/>
+ <node id="3622788310" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374712" lon="-121.8865722"/>
+ <node id="3622788311" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374574" lon="-121.8865266"/>
+ <node id="3622788312" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374488" lon="-121.8864904"/>
+ <node id="3622788313" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374414" lon="-121.8864502"/>
+ <node id="3622788314" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374360" lon="-121.8864072"/>
+ <node id="3622788315" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374328" lon="-121.8863670"/>
+ <node id="3622788316" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3374318" lon="-121.8863134"/>
+ <node id="3622788317" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3376418" lon="-121.8851627">
+  <tag k="amenity" v="parking_entrance"/>
+  <tag k="name" v="San Jose City Hall Garage"/>
+  <tag k="parking" v="underground"/>
+ </node>
+ <node id="3622788318" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3378908" lon="-121.8846354"/>
+ <node id="3622788327" visible="true" version="1" changeset="32255127" timestamp="2015-06-28T04:18:44Z" user="Minh Nguyen" uid="33757" lat="37.3375810" lon="-121.8868176"/>
+</osm>

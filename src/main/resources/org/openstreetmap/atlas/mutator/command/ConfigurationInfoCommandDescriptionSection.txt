@@ -1,0 +1,45 @@
+Get information about an atlas-mutator configuration. This command provides modes
+for printing basic configuration information, searching through derived data for key terms,
+as well as an interactive shell for displaying configuration details. See the following paragraphs
+for more information on the modes. After the discussion of the various modes, we include some brief
+explanations of the various options.
+
+The 'print' mode displays basic level information about each country given in the
+'--countries' parameter. Providing optional country arguments to the 'print' mode will filter the
+output to the given countries. For example, to filter the printout to just 'AIA' and 'GROUP0', one
+could supply 'print AIA GROUP0' on the command line.
+
+The 'details' mode displays a JSON object containing all the various derived details about the given
+configuration. These details include a full account of all present mutators, levels,
+DynamicAtlas policies, fetchers, filters, broadcast variables, merge forgiveness policies, sub-atlases,
+and input dependencies. Providing optional arguments to the 'details' mode will filter the output
+using string matching, displaying only the JSON sub-objects that contain the matching string(s). For
+example, to only show details relating to AIA level 9, one could supply 'details AIA 9 _level',
+which will match only the AIA level 9 JSON object.
+
+The 'interactive' mode is arguably the most useful. It launches an interactive shell that behaves
+just like the details mode, except it can perform repeated queries much more quickly (since it does
+not need to re-download and re-parse the configuration every time). The shell features history and
+line navigation, reverse-history search, and a robust <TAB> complete that attempts to suggest
+relevant keywords from the underlying configuration JSON object. 'interactive' is the suggested
+usage mode for almost all use-cases of this command.
+
+'config-info' provides options '--preloadRDD', '--allowRDD', and '--group-countries' to simulate
+the effect of those atlas-mutator options with the same names. Supplying these options will change
+various parts of the resulting configuration, such as whether certain levels can use an RDDFS (among
+other things).
+
+The '--countries' option specifies which countries should be considered for the configuration. This
+option is crucial because it can have subtle effects on the resulting configuration, such as changes
+in the country-group composition or even changes in which mutators are run (some mutators
+explicitly declare or exclude countries).
+
+'--config-resource' allows you to specify a comma separated list of resources from which to source
+the configuration. These resources could be simple paths like "/foo/bar/config.json", or they could
+be URLs like "https://www.config.com/config.json".
+
+'--config-json' should specify the configuration as a JSON string. This can be done at the command
+line directly or through shell file input redirection (for e.g. if your shell supports syntax
+like "$(<config.json)"). '--config-json' can also be used to supply a quick override to a
+configuration parameter contained in one of the config-resources, since the atlas-mutator
+configuration parser prioritizes direct JSON over the contents of configuration resources.
