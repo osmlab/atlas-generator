@@ -1,0 +1,54 @@
+{
+    "something":
+    {
+        "blah": ["blah"],
+        "blah2": "blah2"
+    },
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "dynamicAtlasPolicies":
+        {
+            "firstDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "aggressivelyExploreRelations": false,
+                "maximumExpansionDistanceInMeters": "16094"
+            },
+            "secondDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "aggressivelyExploreRelations": true,
+                "maximumExpansionDistanceInMeters": "16094"
+            }
+        }
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dynamicAtlas":
+        {
+            "generation": "firstDynamicAtlasPolicy",
+            "application": "firstDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorAddTurnRestrictions":
+    {
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dynamicAtlas":
+        {
+            "generation": "secondDynamicAtlasPolicy",
+            "application": "secondDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true
+    }
+}

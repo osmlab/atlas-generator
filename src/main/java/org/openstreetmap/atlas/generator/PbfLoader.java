@@ -3,12 +3,15 @@ package org.openstreetmap.atlas.generator;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.prep.PreparedPolygon;
 import org.openstreetmap.atlas.generator.PbfLocator.LocatedPbf;
 import org.openstreetmap.atlas.geography.MultiPolygon;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
@@ -17,9 +20,9 @@ import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
-import org.openstreetmap.atlas.geography.boundary.CountryBoundary;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.clipping.Clip.ClipType;
+import org.openstreetmap.atlas.geography.converters.jts.JtsMultiPolygonConverter;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.Resource;
@@ -183,19 +186,21 @@ public class PbfLoader implements AutoCloseable, Serializable
      */
     private Optional<MultiPolygon> calculateLoadingArea(final String countryName, final Shard shard)
     {
-        final List<CountryBoundary> countryBoundaries = this.boundaries
-                .countryBoundary(countryName);
-        MultiPolygon boundary = null;
-        for (final CountryBoundary countryBoundary : countryBoundaries)
+        final List<PreparedPolygon> countryBoundaries = this.boundaries
+                .getCountryNameToBoundaryMap().get(countryName);
+        final Set<Polygon> boundaryPolygons = new HashSet<>();
+        for (final PreparedPolygon countryBoundary : countryBoundaries)
         {
-            if (countryBoundary.covers(shard.bounds()))
+            if (countryBoundary.intersects(countryBoundary.getGeometry().getFactory()
+                    .toGeometry(shard.bounds().asEnvelope())))
             {
-                boundary = countryBoundary.getBoundary();
-                break;
+                boundaryPolygons.add((Polygon) countryBoundary.getGeometry());
             }
         }
-        if (boundary != null)
+        if (!boundaryPolygons.isEmpty())
         {
+            final MultiPolygon boundary = new JtsMultiPolygonConverter()
+                    .backwardConvert(boundaryPolygons);
             return Optional.of(shard.bounds().clip(boundary, ClipType.AND).getClipMultiPolygon());
         }
         else

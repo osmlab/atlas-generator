@@ -1,10 +1,11 @@
 project.ext.versions = [
     checkstyle: '8.18',
     jacoco: '0.8.3',
-    atlas: '6.3.6',
+    atlas: '6.4.0',
     spark: '3.0.1',
     snappy: '1.1.1.6',
     atlas_checkstyle: '5.6.9',
+    jline: '3.7.0'
 ]
 
 project.ext.packages = [
@@ -16,4 +17,5 @@ project.ext.packages = [
     snappy: "org.xerial.snappy:snappy-java:${versions.snappy}",
     checkstyle: "com.puppycrawl.tools:checkstyle:${versions.checkstyle}",
     atlas_checkstyle: "org.openstreetmap.atlas:atlas:${versions.atlas_checkstyle}",
+    jline: "org.jline:jline:${versions.jline}"
 ]

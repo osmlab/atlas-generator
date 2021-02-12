@@ -1,7 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -375,13 +374,6 @@ public class AtlasGenerator extends SparkJob
         else
         {
             boundaries = new CountryBoundaryMapArchiver().read(resource(countryShapes));
-        }
-        if (!boundaries.hasGridIndex())
-        {
-            logger.warn(
-                    "Given country boundary file didn't have grid index. Initializing grid index for {}.",
-                    countries);
-            boundaries.initializeGridIndex(new HashSet<>(countries));
         }
         return boundaries;
     }

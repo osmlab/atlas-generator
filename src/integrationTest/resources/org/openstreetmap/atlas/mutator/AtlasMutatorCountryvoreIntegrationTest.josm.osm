@@ -1,0 +1,72 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version='0.6' generator='JOSM'>
+  <node id='-127933' action='modify' visible='true' lat='50.73649455632' lon='-1.40639686474' />
+  <node id='-127934' action='modify' visible='true' lat='50.73653767465' lon='-1.40630396084' />
+  <node id='-127935' action='modify' visible='true' lat='50.73649231641' lon='-1.40617743459' />
+  <node id='-127936' action='modify' visible='true' lat='50.73650071609' lon='-1.40609514828' />
+  <node id='-127938' action='modify' visible='true' lat='50.73634168194' lon='-1.40611372906' />
+  <node id='-127939' action='modify' visible='true' lat='50.73641503931' lon='-1.40604736913' />
+  <node id='-127941' action='modify' visible='true' lat='50.73636632106' lon='-1.40637828396' />
+  <node id='-127942' action='modify' visible='true' lat='50.73638816028' lon='-1.40630750004' />
+  <node id='-127943' action='modify' visible='true' lat='50.73634448184' lon='-1.40620220896' />
+  <node id='-127945' action='modify' visible='true' lat='50.7364178392' lon='-1.40638801675' />
+  <node id='-127946' action='modify' visible='true' lat='50.73646039762' lon='-1.40641809991' />
+  <node id='-127948' action='modify' visible='true' lat='50.73642455896' lon='-1.40630661524' />
+  <node id='-127949' action='modify' visible='true' lat='50.73647495707' lon='-1.40630838484' />
+  <node id='-127950' action='modify' visible='true' lat='50.73648615665' lon='-1.40621813534' />
+  <node id='-127951' action='modify' visible='true' lat='50.73647495707' lon='-1.40615708421' />
+  <node id='-127953' action='modify' visible='true' lat='50.73643631852' lon='-1.406162393' />
+  <node id='-127954' action='modify' visible='true' lat='50.73640775957' lon='-1.40622078974' />
+  <way id='-117833' action='modify' visible='true'>
+    <nd ref='-127933' />
+    <nd ref='-127934' />
+    <nd ref='-127935' />
+    <nd ref='-127936' />
+    <tag k='name' v='1' />
+  </way>
+  <way id='-117836' action='modify' visible='true'>
+    <nd ref='-127936' />
+    <nd ref='-127939' />
+    <nd ref='-127938' />
+    <tag k='name' v='2' />
+  </way>
+  <way id='-117839' action='modify' visible='true'>
+    <nd ref='-127938' />
+    <nd ref='-127943' />
+    <nd ref='-127942' />
+    <nd ref='-127941' />
+    <tag k='name' v='3' />
+  </way>
+  <way id='-117843' action='modify' visible='true'>
+    <nd ref='-127941' />
+    <nd ref='-127945' />
+    <nd ref='-127946' />
+    <nd ref='-127933' />
+    <tag k='name' v='4' />
+  </way>
+  <way id='-117911' action='modify' visible='true'>
+    <nd ref='-127948' />
+    <nd ref='-127949' />
+    <nd ref='-127950' />
+    <nd ref='-127951' />
+    <tag k='name' v='5' />
+  </way>
+  <way id='-117927' action='modify' visible='true'>
+    <nd ref='-127951' />
+    <nd ref='-127953' />
+    <nd ref='-127954' />
+    <nd ref='-127948' />
+    <tag k='name' v='6' />
+  </way>
+  <relation id='-99756' action='modify' visible='true'>
+    <member type='way' ref='-117927' role='inner' />
+    <member type='way' ref='-117911' role='inner' />
+    <member type='way' ref='-117836' role='outer' />
+    <member type='way' ref='-117839' role='outer' />
+    <member type='way' ref='-117843' role='outer' />
+    <member type='way' ref='-117833' role='outer' />
+    <tag k='natural' v='water' />
+    <tag k='type' v='multipolygon' />
+    <tag k='water' v='lake' />
+  </relation>
+</osm>

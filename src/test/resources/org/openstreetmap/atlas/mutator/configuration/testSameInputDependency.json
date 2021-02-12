@@ -1,0 +1,69 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "filters":
+        {
+            "edgeNodeOnlyFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                }
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "edgeNodeOnlyDynamicAtlasPolicy":
+            {
+                "fetcher": "edgeNodeOnlyFetcher"
+            }
+        },
+        "subAtlases":
+        {
+            "edgeNodeOnlySubAtlas":
+            {
+                "filter": "edgeNodeOnlyFilter",
+                "cutType": "SOFT_CUT"
+            }
+        },
+        "inputDependencies":
+        {
+            "edgeNodeOnly": "edgeNodeOnlySubAtlas"
+        },
+        "fetchers":
+        {
+            "edgeNodeOnlyFetcher":
+            {
+                "inputDependency": "edgeNodeOnly"
+            }
+        }
+    },
+    "AtlasChangeGeneratorAddTurnRestrictions":
+    {
+        "enabled": true,
+        "dynamicAtlas":
+        {
+            "generation": "edgeNodeOnlyDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AtlasChangeGeneratorRemoveReverseEdges"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dynamicAtlas":
+        {
+            "generation": "edgeNodeOnlyDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AtlasChangeGeneratorRemoveReverseEdges"]
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+        "enabled": true,
+        "countries": ["XYZ"]
+    }
+}

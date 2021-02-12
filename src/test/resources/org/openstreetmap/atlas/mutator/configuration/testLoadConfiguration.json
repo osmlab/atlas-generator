@@ -1,0 +1,27 @@
+{
+    "something":
+    {
+        "blah": ["blah"],
+        "blah2": "blah2"
+    },
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"]
+    },
+    "AtlasChangeGeneratorAddTurnRestrictions":
+    {
+        "enabled": true,
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dependsOn": ["AtlasChangeGeneratorSplitRoundabout"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true,
+        "countries": ["XYZ"]
+    }
+}

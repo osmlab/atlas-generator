@@ -1,0 +1,94 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "filters":
+        {
+            "roundaboutsOnlyFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                },
+                "taggableFilter": "junction->roundabout"
+            },
+            "edgeNodeOnlyFilter":
+            {
+                "predicate":
+                {
+                    "imports": [
+                        "org.openstreetmap.atlas.geography.atlas.items"
+                    ],
+                    "command": "e instanceof Node || e instanceof Edge"
+                }
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "roundaboutsOnlyDynamicAtlasPolicy":
+            {
+                "fetcher": "roundaboutsOnlyFetcher"
+            },
+            "edgeNodeOnlyDynamicAtlasPolicy":
+            {
+                "fetcher": "edgeNodeOnlyFetcher"
+            }
+        },
+        "subAtlases":
+        {
+            "roundaboutsOnlySubAtlas":
+            {
+                "filter": "roundaboutsOnlyFilter",
+                "cutType": "SOFT_CUT"
+            },
+            "edgeNodeOnlySubAtlas":
+            {
+                "filter": "edgeNodeOnlyFilter",
+                "cutType": "SOFT_CUT"
+            }
+        },
+        "inputDependencies":
+        {
+            "roundaboutsOnly": "roundaboutsOnlySubAtlas",
+            "edgeNodeOnly": "edgeNodeOnlySubAtlas"
+        },
+        "fetchers":
+        {
+            "roundaboutsOnlyFetcher":
+            {
+                "inputDependency": "roundaboutsOnly"
+            },
+            "edgeNodeOnlyFetcher":
+            {
+                "inputDependency": "edgeNodeOnly"
+            }
+        }
+    },
+    "AtlasChangeGeneratorAddTurnRestrictions":
+    {
+        "enabled": true,
+        "dynamicAtlas":
+        {
+            "generation": "edgeNodeOnlyDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AtlasChangeGeneratorRemoveReverseEdges"]
+    },
+    "AtlasChangeGeneratorSplitRoundabout":
+    {
+        "enabled": true,
+        "countries": ["XYZ"],
+        "dynamicAtlas":
+        {
+            "generation": "roundaboutsOnlyDynamicAtlasPolicy"
+        },
+        "dependsOn": ["AtlasChangeGeneratorRemoveReverseEdges"]
+    },
+    "AtlasChangeGeneratorRemoveReverseEdges":
+    {
+        "enabled": true,
+        "countries": ["XYZ"]
+    }
+}

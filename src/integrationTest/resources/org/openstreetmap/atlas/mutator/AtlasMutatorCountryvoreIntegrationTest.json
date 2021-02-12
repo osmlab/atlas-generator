@@ -1,0 +1,49 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "validate": true,
+        "filters":
+        {
+            "nothingGoesThroughFilter":
+            {
+                "predicate":
+                {
+                    "command": "false"
+                },
+                "hint.noExpansion": true
+            }
+        },
+        "fetchers":
+        {
+            "countryvoreFetcher":
+            {
+                "countryvore": "true"
+            }
+        },
+        "dynamicAtlasPolicies":
+        {
+            "countryvoreDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": true,
+                "deferLoading": true,
+                "aggressivelyExploreRelations": true,
+                "fetcher": "countryvoreFetcher"
+            },
+            "noExpansionDynamicAtlasPolicy":
+            {
+                "entitiesToConsiderForExpansion": "nothingGoesThroughFilter"
+            }
+        }
+    },
+    "AddMultiPolygonArea":
+    {
+        "className": "AtlasMutatorCountryvoreIntegrationTestAddMultiPolygonArea",
+        "enabled": true,
+        "dynamicAtlas":
+        {
+            "generation": "countryvoreDynamicAtlasPolicy",
+            "application": "noExpansionDynamicAtlasPolicy"
+        }
+    }
+}

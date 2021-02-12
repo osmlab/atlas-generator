@@ -1,0 +1,54 @@
+{
+    "global":
+    {
+        "scanUrls": ["org.openstreetmap.atlas"],
+        "validate": true,
+        "dynamicAtlasPolicies":
+        {
+            "simpleDynamicAtlasPolicy":
+            {
+                "extendIndefinitely": false,
+                "deferLoading": true,
+                "maximumExpansionDistanceInMeters": "100",
+                "directFetcher": "pbfFetcher",
+                "fetcher": "pbfFetcher"
+            }
+        },
+        "fetchers":
+        {
+            "pbfFetcher":
+            {
+                "atlasProvider": "pbfRawAtlasProvider"
+            }
+        },
+        "atlasProviders":
+        {
+            "pbfRawAtlasProvider":
+            {
+                "className": "org.openstreetmap.atlas.mutator.configuration.parsing.provider.file.PbfRawAtlasProvider",
+                "providerConfiguration":
+                {
+                    "pbfNode": "",
+                    "pbfWay": "highway=motorway | highway=trunk",
+                    "pbfRelation": "",
+                    "pbfScheme": "zz/xx/yy/zz-xx-yy.pbf"
+                }
+            }
+        }
+    },
+    "AddSomeTag":
+    {
+        "className": "AtlasChangeGeneratorAddTag",
+        "enabled": true,
+        "dynamicAtlas":
+        {
+            "generation": "simpleDynamicAtlasPolicy",
+            "application": "simpleDynamicAtlasPolicy"
+        },
+        "tag":
+        {
+            "key": "someKey",
+            "value": "someValue"
+        }
+    }
+}
