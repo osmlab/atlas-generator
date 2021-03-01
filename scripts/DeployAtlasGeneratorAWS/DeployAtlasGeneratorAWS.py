@@ -380,7 +380,7 @@ class DeployAtlasScriptOnAws(object):
         """
         return ['spark-submit',
                 '--deploy-mode', 'cluster',
-                '--master', 'yarn-cluster',
+                '--master', 'yarn',
                 '--class', self.app['main_class'],
                 self.s3jar,
                 '-output={}/output'.format(self.atlas_destination_folder),

@@ -19,7 +19,7 @@
    },
    "aws":{
       "emr":{
-         "version":"emr-5.31.0",
+         "version":"emr-6.2.0",
          "software":[
             {
                "Name":"Hadoop"
@@ -41,7 +41,7 @@
          },
          "core":{
             "type":"r5d.2xlarge",
-            "count":130,
+            "count":5,
             "market":"ON_DEMAND"
          }
       },
@@ -53,6 +53,32 @@
       }
    },
    "spark":[
+      {
+         "Classification": "hadoop-env",
+         "Configurations": [
+               {
+                  "Classification": "export",
+                  "Configurations": [],
+                  "Properties": {
+                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64"
+                  }
+               }
+         ],
+         "Properties": {}
+      },
+      {
+         "Classification": "spark-env",
+         "Configurations": [
+               {
+                  "Classification": "export",
+                  "Configurations": [],
+                  "Properties": {
+                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64"
+                  }
+               }
+         ],
+         "Properties": {}
+      },
       {
          "Classification":"yarn-site",
          "Properties":{
@@ -69,6 +95,7 @@
       {
          "Classification":"spark-defaults",
          "Properties":{
+            "spark.executorEnv.JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
             "spark.executor.memory":"48g",
             "spark.driver.memory":"48g",
             "spark.driver.cores":"5",
@@ -83,7 +110,7 @@
             "spark.executor.userClassPathFirst":"true",
             "spark.scheduler.mode":"FIFO",
             "spark.executor.memoryOverhead":"8g",
-            "spark.executor.instances":"129"
+            "spark.executor.instances":"10"
          }
       }
    ],
