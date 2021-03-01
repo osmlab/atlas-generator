@@ -60,7 +60,8 @@
                   "Classification": "export",
                   "Configurations": [],
                   "Properties": {
-                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64"
+                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
+                     "JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions"
                   }
                }
          ],
@@ -73,7 +74,8 @@
                   "Classification": "export",
                   "Configurations": [],
                   "Properties": {
-                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64"
+                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
+                     "JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions"
                   }
                }
          ],
@@ -96,6 +98,7 @@
          "Classification":"spark-defaults",
          "Properties":{
             "spark.executorEnv.JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
+            "spark.executorEnv.JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions",
             "spark.executor.memory":"48g",
             "spark.driver.memory":"48g",
             "spark.driver.cores":"5",

@@ -258,7 +258,16 @@ class DeployAtlasScriptOnAws(object):
                     'TerminationProtected': False,
                     # optional. default is empty in configuration.json
                     'Ec2SubnetId': self.emr['region']['subnet'],
+                    'Ec2KeyName': 'aiannicelli-key',
                 },
+                BootstrapActions=[
+                    {
+                        'Name': 'Run jdk11bootstrap1',
+                        'ScriptBootstrapAction': {
+                            'Path': 's3://cosmos-atlas-dev/Atlas_Generation/utils/script/jdk11bootstrap1',
+                        }
+                    },
+                ],
                 Configurations=self.spark_config,
                 JobFlowRole='EMR_EC2_DefaultRole',
                 ServiceRole='EMR_DefaultRole',
@@ -352,7 +361,7 @@ class DeployAtlasScriptOnAws(object):
                 if index != len(self.country_list) - 1:
                     steps.append(self.emr_step_template("CONTINUE", step[0]))
                 else:
-                    steps.append(self.emr_step_template("TERMINATE_CLUSTER", step[0]))
+                    steps.append(self.emr_step_template("CONTINUE", step[0]))
         except TypeError as e:
             terminate(e)
         return steps
