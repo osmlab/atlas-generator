@@ -258,7 +258,6 @@ class DeployAtlasScriptOnAws(object):
                     'TerminationProtected': False,
                     # optional. default is empty in configuration.json
                     'Ec2SubnetId': self.emr['region']['subnet'],
-                    'Ec2KeyName': 'aiannicelli-key',
                 },
                 BootstrapActions=[
                     {
