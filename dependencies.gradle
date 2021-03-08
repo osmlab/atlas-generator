@@ -5,7 +5,8 @@ project.ext.versions = [
     spark: '3.0.1',
     snappy: '1.1.1.6',
     atlas_checkstyle: '5.6.9',
-    jline: '3.7.0'
+    jline: '3.7.0',
+    hadoop: '3.2.1-amzn-1'
 ]
 
 project.ext.packages = [
