@@ -41,7 +41,7 @@
          },
          "core":{
             "type":"r5d.2xlarge",
-            "count":5,
+            "count":130,
             "market":"ON_DEMAND"
          }
       },
@@ -113,7 +113,7 @@
             "spark.executor.userClassPathFirst":"true",
             "spark.scheduler.mode":"FIFO",
             "spark.executor.memoryOverhead":"8g",
-            "spark.executor.instances":"10"
+            "spark.executor.instances":"129"
          }
       }
    ],
