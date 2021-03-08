@@ -21,9 +21,12 @@ import org.openstreetmap.atlas.streaming.compression.Compressor;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
-import org.openstreetmap.atlas.streaming.resource.OutputStreamWritableResource;
+import org.openstreetmap.atlas.streaming.resource.InputStreamResourceCloseable;
+import org.openstreetmap.atlas.streaming.resource.OutputStreamWritableResourceCloseable;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.ResourceCloseable;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
+import org.openstreetmap.atlas.streaming.resource.WritableResourceCloseable;
 import org.openstreetmap.atlas.utilities.collections.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -215,18 +218,24 @@ public final class FileSystemHelper
     }
 
     /**
+     * This may return an {@link AutoCloseable} resource. This should be checked and closed when it
+     * is no longer needed.
+     *
      * @param path
      *            The path to create the resource from
      * @param configuration
      *            The configuration defining the {@link FileSystem}
      * @return A {@link Resource} coming from the appropriate {@link FileSystem}
      */
-    public static Resource resource(final String path, final Map<String, String> configuration)
+    public static ResourceCloseable resource(final String path,
+            final Map<String, String> configuration)
     {
         final Path hadoopPath = new Path(path);
-        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
+        // This is closed by the ResourceCloseable
+        final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
+        try
         {
-            final InputStreamResource resource = new InputStreamResource(() ->
+            final InputStreamResourceCloseable resource = new InputStreamResourceCloseable(() ->
             {
                 try
                 {
@@ -241,7 +250,8 @@ public final class FileSystemHelper
                 {
                     throw new CoreException(UNABLE_TO_OPEN, hadoopPath, e);
                 }
-            }).withName(hadoopPath.getName());
+            }, fileSystem);
+            resource.withName(hadoopPath.getName());
 
             if (hadoopPath.getName().endsWith(FileSuffix.GZIP.toString()))
             {
@@ -363,12 +373,15 @@ public final class FileSystemHelper
      *            The configuration defining the {@link FileSystem}
      * @return A {@link WritableResource} coming from the appropriate {@link FileSystem}
      */
-    public static WritableResource writableResource(final String path,
+    public static WritableResourceCloseable writableResource(final String path,
             final Map<String, String> configuration)
     {
         final Path hadoopPath = new Path(path);
-        try (FileSystem fileSystem = new FileSystemCreator().get(path, configuration))
+        // This is closed by the WriteableResourceCloseable
+        final FileSystem fileSystem = new FileSystemCreator().get(path, configuration);
+        try
         {
+            // Closed by the WritableResourceCloseable
             final OutputStream out;
             try
             {
@@ -379,7 +392,8 @@ public final class FileSystemHelper
                 throw new CoreException(UNABLE_TO_OPEN, hadoopPath, e);
             }
 
-            final OutputStreamWritableResource resource = new OutputStreamWritableResource(out);
+            final OutputStreamWritableResourceCloseable resource = new OutputStreamWritableResourceCloseable(
+                    out, fileSystem, out);
             resource.setName(hadoopPath.getName());
             if (resource.isGzipped())
             {
@@ -407,6 +421,7 @@ public final class FileSystemHelper
     {
         try
         {
+            // This doesn't actually use an AutoCloseable resource in InputStreamResource
             final InputStreamResource resource = new InputStreamResource(() ->
             {
                 try

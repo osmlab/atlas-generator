@@ -10,6 +10,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.prep.PreparedPolygon;
+import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -17,6 +18,7 @@ import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMapArchiver;
 import org.openstreetmap.atlas.geography.converters.jts.JtsPolygonConverter;
 import org.openstreetmap.atlas.geography.sharding.Shard;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
+import org.openstreetmap.atlas.streaming.resource.ResourceCloseable;
 import org.openstreetmap.atlas.utilities.collections.Iterables;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
@@ -88,8 +90,15 @@ public abstract class ShardedSparkJob extends SparkJob
         final Sharding sharding = AtlasSharding.forString(shardingType, configuration());
         final String countryShapes = (String) command.get(COUNTRY_SHAPES);
         logger.info("Reading country boundaries from {}", countryShapes);
-        final CountryBoundaryMap worldBoundaries = new CountryBoundaryMapArchiver()
-                .read(resource(countryShapes));
+        final CountryBoundaryMap worldBoundaries;
+        try (ResourceCloseable resource = resource(countryShapes))
+        {
+            worldBoundaries = new CountryBoundaryMapArchiver().read(resource);
+        }
+        catch (final Exception e)
+        {
+            throw new CoreException("Could not read {}", countryShapes, e);
+        }
         logger.info("Done Reading {} country boundaries from {}", worldBoundaries.size(),
                 countryShapes);
 
