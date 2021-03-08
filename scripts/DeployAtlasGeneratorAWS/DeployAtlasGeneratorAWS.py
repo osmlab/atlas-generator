@@ -261,9 +261,9 @@ class DeployAtlasScriptOnAws(object):
                 },
                 BootstrapActions=[
                     {
-                        'Name': 'Run jdk11bootstrap1',
+                        'Name': 'Run jdk11bootstrap',
                         'ScriptBootstrapAction': {
-                            'Path': 's3://cosmos-atlas-dev/Atlas_Generation/utils/script/jdk11bootstrap1',
+                            'Path': 's3://cosmos-atlas-dev/Atlas_Generation/utils/script/jdk11bootstrap',
                         }
                     },
                 ],
