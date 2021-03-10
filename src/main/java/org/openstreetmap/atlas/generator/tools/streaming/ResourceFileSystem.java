@@ -32,6 +32,7 @@ import org.openstreetmap.atlas.streaming.resource.File;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.ResourceCloseable;
 import org.openstreetmap.atlas.streaming.resource.StringResource;
 import org.openstreetmap.atlas.streaming.resource.WritableResource;
 import org.openstreetmap.atlas.utilities.collections.StringList;
@@ -147,7 +148,7 @@ public class ResourceFileSystem extends FileSystem
         return getAtlas(path).orElseThrow(() -> new CoreException("{} not found.", path));
     }
 
-    public static Optional<Resource> getResource(final String path)
+    public static Optional<ResourceCloseable> getResource(final String path)
     {
         if (!path.startsWith(SCHEME + "://"))
         {
@@ -157,7 +158,7 @@ public class ResourceFileSystem extends FileSystem
         return Optional.ofNullable(SparkJob.resource(path, simpleconfiguration()));
     }
 
-    public static Resource getResourceOrElse(final String path)
+    public static ResourceCloseable getResourceOrElse(final String path)
     {
         return getResource(path).orElseThrow(() -> new CoreException("{} not found.", path));
     }

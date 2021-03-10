@@ -11,7 +11,7 @@ import org.openstreetmap.atlas.geography.sharding.DynamicTileSharding;
 import org.openstreetmap.atlas.geography.sharding.GeoHashSharding;
 import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.geography.sharding.SlippyTileSharding;
-import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.ResourceCloseable;
 import org.openstreetmap.atlas.utilities.collections.StringList;
 
 /**
@@ -60,13 +60,19 @@ public final class AtlasSharding
         }
         if ("dynamic".equals(split.get(0)))
         {
-            final Resource shardingResource = SparkJob.resource(split.get(1),
-                    ConfigurationConverter.hadoopToMapConfiguration(configuration));
-            if (shardingResource == null)
+            try (ResourceCloseable shardingResource = SparkJob.resource(split.get(1),
+                    ConfigurationConverter.hadoopToMapConfiguration(configuration)))
             {
-                throw new CoreException("Sharding resource does not exist: {}", sharding);
+                if (shardingResource == null)
+                {
+                    throw new CoreException("Sharding resource does not exist: {}", sharding);
+                }
+                return new DynamicTileSharding(shardingResource);
             }
-            return new DynamicTileSharding(shardingResource);
+            catch (final Exception e)
+            {
+                throw new CoreException(e.getMessage());
+            }
         }
         throw new CoreException("Sharding type {} is not recognized.", split.get(0));
     }

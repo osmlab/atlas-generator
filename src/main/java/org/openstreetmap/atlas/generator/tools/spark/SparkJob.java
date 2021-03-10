@@ -29,10 +29,9 @@ import org.openstreetmap.atlas.generator.tools.spark.converters.SparkOptionsStri
 import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTools;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
 import org.openstreetmap.atlas.streaming.compression.Decompressor;
-import org.openstreetmap.atlas.streaming.resource.AbstractResource;
 import org.openstreetmap.atlas.streaming.resource.FileSuffix;
-import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
-import org.openstreetmap.atlas.streaming.resource.Resource;
+import org.openstreetmap.atlas.streaming.resource.InputStreamResourceCloseable;
+import org.openstreetmap.atlas.streaming.resource.ResourceCloseable;
 import org.openstreetmap.atlas.streaming.resource.http.GetResource;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
 import org.openstreetmap.atlas.utilities.runtime.Command;
@@ -79,19 +78,33 @@ public abstract class SparkJob extends Command implements Serializable
 
     private transient JavaSparkContext context;
 
-    public static Resource resource(final String path, final Map<String, String> configurationMap)
+    /**
+     * Get resources from a path
+     *
+     * @param path
+     *            The resource path
+     * @param configurationMap
+     *            The configuration for {@link FileSystemCreator#get(String, Configuration)}
+     * @return A {@link ResourceCloseable} (this should be closed on finish)
+     */
+    public static ResourceCloseable resource(final String path,
+            final Map<String, String> configurationMap)
     {
         if (path.startsWith("http"))
         {
             return new GetResource(path);
         }
-        try (FileSystem fileSystem = new FileSystemCreator().get(path, configurationMap))
+        // This is closed by the ResourceCloseable class or is closed when an exception is thrown or
+        // when there is no object
+        final FileSystem fileSystem = new FileSystemCreator().get(path, configurationMap);
+        try
         {
             if (!fileSystem.exists(new Path(path)))
             {
+                fileSystem.close();
                 return null;
             }
-            final AbstractResource resource = new InputStreamResource(() ->
+            final InputStreamResourceCloseable resource = new InputStreamResourceCloseable(() ->
             {
                 try
                 {
@@ -101,7 +114,7 @@ public abstract class SparkJob extends Command implements Serializable
                 {
                     throw new CoreException("Unable to open {}", path, e);
                 }
-            });
+            }, fileSystem);
             if (path.endsWith(FileSuffix.GZIP.toString()))
             {
                 resource.setDecompressor(Decompressor.GZIP);
@@ -111,6 +124,15 @@ public abstract class SparkJob extends Command implements Serializable
         }
         catch (final Exception e)
         {
+            try
+            {
+                fileSystem.close();
+            }
+            catch (final IOException ioException)
+            {
+                // don't throw, since we are already throwing an exception
+                logger.error("FileSystem failed to close", ioException);
+            }
             throw new CoreException("Could not open resource {}", path, e);
         }
     }
@@ -287,7 +309,7 @@ public abstract class SparkJob extends Command implements Serializable
      *            The path to open (in an URL format)
      * @return The resource at this path
      */
-    protected Resource resource(final String path)
+    protected ResourceCloseable resource(final String path)
     {
         return resource(path, configurationMap());
     }
