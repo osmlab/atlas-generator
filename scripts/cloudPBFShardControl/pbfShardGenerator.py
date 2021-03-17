@@ -385,6 +385,7 @@ class PBFShardCtl:
             batchFile.close()
 
         while len(procList):
+            time.sleep(1)
             retryCount = self.cleanProcs(procList, retryCount)
 
         # Move final pbfs to the final pbf directory structure
