@@ -54,15 +54,8 @@ public class PersistenceTools
         catch (final Exception e)
         {
             logger.error(e);
-            if (e instanceof RuntimeException)
-            {
-                throw (RuntimeException) e;
-            }
-            else
-            {
-                throw new CoreException("Could not close {}", e,
-                        SparkFileHelper.combine(input, BOUNDARIES_FILE));
-            }
+            throw new CoreException("Could not close {}",
+                    SparkFileHelper.combine(input, BOUNDARIES_FILE), e);
         }
     }
 
