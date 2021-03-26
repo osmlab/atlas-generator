@@ -52,6 +52,7 @@ def parse_args():
         parser.add_argument('--config', help="Path to configuration.json file.")
         parser.add_argument('--jar', help="S3 path to Atlas jar file.")
         parser.add_argument('--log', help="S3 path for EMR logs.")
+        parser.add_argument('--bootstrap', help="S3 path for EMR bootstrap script.")
         parser.add_argument('--pbf', help="S3 path to Sharded PBF input folder.", required=True)
         parser.add_argument('--output', help="S3 path to Atlas output folder.", required=True)
         parser.add_argument('--util', help="S3 path to Atlas util files.")
@@ -160,6 +161,7 @@ class DeployAtlasScriptOnAws(object):
         self.s3bucket = None
         self.s3jar = None
         self.s3log = None
+        self.s3bootstrap = None
         self.s3util = None
 
         self.emr_client = boto3.client(
@@ -196,6 +198,7 @@ class DeployAtlasScriptOnAws(object):
         self.s3bucket = self.args.bucket if self.args.bucket else get_key_val(self.s3, 'bucket')
         self.s3jar = self.args.jar if self.args.jar else get_key_val(self.s3, 'atlas_jar')
         self.s3log = self.args.log if self.args.log else get_key_val(self.s3, 'logging')
+        self.s3bootstrap = self.args.bootstrap if self.args.bootstrap else get_key_val(self.s3, 'bootstrap')
         self.s3util = self.args.util if self.args.util else get_key_val(self.s3, 'atlas_utilities')
 
     def generate_job_name(self):
@@ -261,9 +264,9 @@ class DeployAtlasScriptOnAws(object):
                 },
                 BootstrapActions=[
                     {
-                        'Name': 'Run jdk11bootstrap',
+                        'Name': 'Run bootstrap script',
                         'ScriptBootstrapAction': {
-                            'Path': 's3://cosmos-atlas-dev/Atlas_Generation/utils/script/jdk11bootstrap',
+                            'Path': self.s3bootstrap,
                         }
                     },
                 ],

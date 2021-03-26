@@ -35,7 +35,7 @@
       },
       "ec2":{
          "master":{
-            "type":"r5d.2xlarge",
+            "type":"m5.xlarge",
             "count":1,
             "market":"ON_DEMAND"
          },
@@ -48,6 +48,7 @@
       "s3":{
          "bucket":"",
          "logging":"",
+         "bootstrap":"",
          "atlas_jar":"",
          "atlas_utilities":""
       }
@@ -97,6 +98,7 @@
       {
          "Classification":"spark-defaults",
          "Properties":{
+            "spark.executor.defaultJavaOptions": "-verbose:gc -XX:OnOutOfMemoryError\u003d\u0027kill -9 %p\u0027 -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent\u003d70",
             "spark.executorEnv.JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
             "spark.executorEnv.JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions",
             "spark.executor.memory":"48g",
@@ -113,8 +115,7 @@
             "spark.executor.userClassPathFirst":"true",
             "spark.scheduler.mode":"FIFO",
             "spark.executor.memoryOverhead":"8g",
-            "spark.executor.instances":"129",
-            "spark.executor.defaultJavaOptions": "-verbose:gc -XX:OnOutOfMemoryError\u003d\u0027kill -9 %p\u0027 -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent\u003d70"
+            "spark.executor.instances":"129"
          }
       }
    ],
