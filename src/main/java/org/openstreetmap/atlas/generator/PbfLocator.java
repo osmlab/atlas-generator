@@ -87,7 +87,7 @@ public class PbfLocator implements AutoCloseable
     public PbfLocator(final PbfContext pbfContext, final Map<String, String> spark)
     {
         this.pbfContext = pbfContext;
-        this.fileSystem = new FileSystemCreator().get(this.pbfContext.getPbfPath(), spark);
+        this.fileSystem = new FileSystemCreator().create(this.pbfContext.getPbfPath(), spark);
         this.pbfFetcher = (Function<SlippyTile, Optional<LocatedPbf>> & Serializable) shard ->
         {
             final Path pbfName = new Path(SparkFileHelper.combine(this.pbfContext.getPbfPath(),

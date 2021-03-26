@@ -39,6 +39,60 @@ public class FileSystemCreator
      *            The {@link Configuration}
      * @return The corresponding {@link FileSystem}
      */
+    public FileSystem create(final String path, final Configuration configuration)
+    {
+        try
+        {
+            return FileSystem.newInstance(new URI(path), configuration);
+        }
+        catch (final Exception e)
+        {
+            throw new CoreException("Could not create FileSystem.", e);
+        }
+    }
+
+    /**
+     * Create a {@link FileSystem} from an agnostic configuration map
+     *
+     * @param path
+     *            The path that defines the {@link FileSystem}
+     * @param configuration
+     *            The agnostic configuration map
+     * @return The corresponding {@link FileSystem}
+     */
+    public FileSystem create(final String path, final Map<String, String> configuration)
+    {
+        final Configuration conf = new Configuration();
+        for (final Map.Entry<String, String> entry : configuration.entrySet())
+        {
+            conf.set(entry.getKey(), entry.getValue());
+        }
+        return create(path, conf);
+    }
+
+    /**
+     * Create a {@link FileSystem} from a {@link SparkConf}
+     *
+     * @param path
+     *            The path that defines the {@link FileSystem}
+     * @param configuration
+     *            The {@link SparkConf}
+     * @return The corresponding {@link FileSystem}
+     */
+    public FileSystem create(final String path, final SparkConf configuration)
+    {
+        return create(path, SPARK_CONF_TO_HADOOP_CONFIGURATION_CONVERTER.convert(configuration));
+    }
+
+    /**
+     * Get or Create a {@link FileSystem} from a Hadoop {@link Configuration}
+     *
+     * @param path
+     *            The path that defines the {@link FileSystem}
+     * @param configuration
+     *            The {@link Configuration}
+     * @return The corresponding {@link FileSystem}
+     */
     public FileSystem get(final String path, final Configuration configuration)
     {
         try
@@ -57,7 +111,7 @@ public class FileSystemCreator
     }
 
     /**
-     * Create a {@link FileSystem} from an agnostic configuration map
+     * Get or Create a {@link FileSystem} from an agnostic configuration map
      *
      * @param path
      *            The path that defines the {@link FileSystem}
@@ -76,7 +130,7 @@ public class FileSystemCreator
     }
 
     /**
-     * Create a {@link FileSystem} from a {@link SparkConf}
+     * Get or Create a {@link FileSystem} from a {@link SparkConf}
      *
      * @param path
      *            The path that defines the {@link FileSystem}

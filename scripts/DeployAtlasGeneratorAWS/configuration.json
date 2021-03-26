@@ -113,7 +113,8 @@
             "spark.executor.userClassPathFirst":"true",
             "spark.scheduler.mode":"FIFO",
             "spark.executor.memoryOverhead":"8g",
-            "spark.executor.instances":"129"
+            "spark.executor.instances":"129",
+            "spark.executor.defaultJavaOptions": "-verbose:gc -XX:OnOutOfMemoryError\u003d\u0027kill -9 %p\u0027 -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent\u003d70"
          }
       }
    ],
