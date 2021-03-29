@@ -31,7 +31,7 @@ public class FileSystemCreator
     }
 
     /**
-     * Get or Create a {@link FileSystem} from a Hadoop {@link Configuration}
+     * Create a {@link FileSystem} from a Hadoop {@link Configuration}
      *
      * @param path
      *            The path that defines the {@link FileSystem}
@@ -52,7 +52,7 @@ public class FileSystemCreator
     }
 
     /**
-     * Get or Create a {@link FileSystem} from an agnostic configuration map
+     * Create a {@link FileSystem} from an agnostic configuration map
      *
      * @param path
      *            The path that defines the {@link FileSystem}
@@ -71,7 +71,7 @@ public class FileSystemCreator
     }
 
     /**
-     * Get or Create a {@link FileSystem} from a {@link SparkConf}
+     * Create a {@link FileSystem} from a {@link SparkConf}
      *
      * @param path
      *            The path that defines the {@link FileSystem}
