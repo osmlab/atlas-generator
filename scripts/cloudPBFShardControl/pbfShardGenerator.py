@@ -16,7 +16,7 @@ import time
 from typing import List, TextIO, Tuple
 
 
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 
 
 def setup_logging(default_level=logging.INFO):
@@ -303,10 +303,38 @@ class PBFShardCtl:
                     f.write(f"{pbf_file_name} {config_file_name}\n")
             logger.info("osmium batch file %s generated.", batch_file_name)
 
+    def cleanProcs(self, procList, retryCount):
+        for p, cFile in procList:
+            result = p.poll()
+            if result is None:
+                continue
+            procList.remove((p, cFile))
+            if result == 0:
+                logger.debug("removing completed process {} ....".format(p.args))
+                continue
+            # process finished in error - see if we can retry
+            if retryCount <= 0:
+                finish("osmium process {} failed: {}".format(p.args, result), result)
+            retryCount = retryCount - 1
+            logger.warning(f"osmium process {p.args} completed: {result} - retrying")
+            logFile = open(
+                os.path.join(self.logDir, os.path.splitext(cFile)[0] + ".log"),
+                "wb",
+            )
+            try:
+                p2 = subprocess.Popen(p.args, stdout=logFile, stderr=logFile)
+                logger.debug("adding process {} ....".format(p2.args))
+                procList.append((p2, cFile))
+            finally:
+                logFile.close()
+
+        return retryCount
+
     def processOsmiumBatch(self, batchFilePath: str) -> int:
         """
         Execute osmium extract pass based on a batch file given as input parameter
         """
+        retryCount = 10
         batchFile = open(batchFilePath, "r")
         try:
             procList = []
@@ -318,21 +346,12 @@ class PBFShardCtl:
                 # only start a maximum number of processes in parallel
                 while len(procList) >= self.maxOsmiumProcesses:
                     logger.debug(
-                        "waiting to spawn more. processes: {} ....".format(len(procList))
+                        "waiting to spawn more. processes: {} ....".format(
+                            len(procList)
+                        )
                     )
                     time.sleep(1)
-                    for p in procList:
-                        r = p.poll()
-                        if r == 0:
-                            logger.debug(
-                                "removing completed process {} ....".format(p.args)
-                            )
-                            procList.remove(p)
-                        elif r is not None:
-                            finish(
-                                "ERROR: osmium process {} completed: {}".format(p.args, r),
-                                r,
-                            )
+                    retryCount = self.cleanProcs(procList, retryCount)
 
                 # create a log file from the config file
                 logFile = open(
@@ -359,16 +378,15 @@ class PBFShardCtl:
                         stderr=logFile,
                     )
                     logger.debug("adding process {} ....".format(p.args))
-                    procList.append(p)
+                    procList.append((p, configFile))
                 finally:
                     logFile.close()
         finally:
             batchFile.close()
 
-        for p in procList:
-            r = p.wait()
-            if r:
-                finish("ERROR: osmium process {} completed: {}".format(p.args, r), r)
+        while len(procList):
+            time.sleep(1)
+            retryCount = self.cleanProcs(procList, retryCount)
 
         # Move final pbfs to the final pbf directory structure
         for tmpFilePath in glob.iglob(self.tmpDir + "*final.osm.pbf"):
