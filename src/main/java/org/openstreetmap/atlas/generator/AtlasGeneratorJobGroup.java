@@ -5,7 +5,6 @@ import java.util.List;
 import org.apache.hadoop.mapred.lib.MultipleOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasCountryStatisticsOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasFeatureChangeOutput;
-import org.openstreetmap.atlas.generator.persistence.MultipleAtlasOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasProtoOutputFormat;
 import org.openstreetmap.atlas.generator.persistence.MultipleAtlasStatisticsOutputFormat;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
@@ -16,20 +15,25 @@ import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
  */
 public enum AtlasGeneratorJobGroup
 {
-    RAW(0, "Raw Atlas Creation", "rawAtlas", Atlas.class, MultipleAtlasOutputFormat.class),
-    SLICED(1, "Sliced Atlas Creation", "slicedAtlas", Atlas.class, MultipleAtlasOutputFormat.class),
+    RAW(0, "Raw Atlas Creation", "rawAtlas", Atlas.class, MultipleAtlasProtoOutputFormat.class),
+    SLICED(
+            1,
+            "Sliced Atlas Creation",
+            "slicedAtlas",
+            Atlas.class,
+            MultipleAtlasProtoOutputFormat.class),
     SLICED_SUB(
             2,
             "Multipolygon Relation Sub Atlas Creation",
             "multipolygonRelationSubAtlas",
             Atlas.class,
-            MultipleAtlasOutputFormat.class),
+            MultipleAtlasProtoOutputFormat.class),
     EDGE_SUB(
             4,
             "Edge-only Sub Atlas Creation",
             "edgeOnlySubAtlas",
             Atlas.class,
-            MultipleAtlasOutputFormat.class),
+            MultipleAtlasProtoOutputFormat.class),
     WAY_SECTIONED_PBF(
             5,
             "Way Sectioned Atlas Creation",
@@ -54,13 +58,13 @@ public enum AtlasGeneratorJobGroup
             "Taggable Filtered SubAtlas Creation",
             "filteredOutput",
             Atlas.class,
-            MultipleAtlasOutputFormat.class),
+            MultipleAtlasProtoOutputFormat.class),
     CONFIGURED_FILTERED_OUTPUT(
             10,
             "Configured Filtered SubAtlas Creation",
             "configuredOutput",
             Atlas.class,
-            MultipleAtlasOutputFormat.class);
+            MultipleAtlasProtoOutputFormat.class);
 
     private final String description;
     private final Integer identifier;
