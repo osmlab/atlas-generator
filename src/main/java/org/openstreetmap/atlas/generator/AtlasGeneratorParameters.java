@@ -101,16 +101,16 @@ public final class AtlasGeneratorParameters
             "Whether to run the shard statistics and country statistics", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
 
-    public static ConfiguredFilter getConfiguredFilterFrom(final String name, final String path,
-            final Map<String, String> configurationMap)
-    {
-        return getConfiguredFilterFrom(name, SparkJob.resource(path, configurationMap));
-    }
-
     public static ConfiguredFilter getConfiguredFilterFrom(final String name,
             final Resource configurationResource)
     {
         return ConfiguredFilter.from(name, getStandardConfigurationFrom(configurationResource));
+    }
+
+    public static ConfiguredFilter getConfiguredFilterFrom(final String name, final String path,
+            final Map<String, String> configurationMap)
+    {
+        return getConfiguredFilterFrom(name, SparkJob.resource(path, configurationMap));
     }
 
     public static BridgeConfiguredFilter getConfiguredFilterFrom(final String root,
@@ -152,28 +152,28 @@ public final class AtlasGeneratorParameters
         return filters;
     }
 
-    public static StandardConfiguration getStandardConfigurationFrom(final String path,
-            final Map<String, String> configurationMap)
-    {
-        return getStandardConfigurationFrom(SparkJob.resource(path, configurationMap));
-    }
-
     public static StandardConfiguration getStandardConfigurationFrom(
             final Resource configurationResource)
     {
         return new StandardConfiguration(configurationResource);
     }
 
-    public static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
+    public static StandardConfiguration getStandardConfigurationFrom(final String path,
             final Map<String, String> configurationMap)
     {
-        return getTaggableFilterFrom(SparkJob.resource(path, configurationMap));
+        return getStandardConfigurationFrom(SparkJob.resource(path, configurationMap));
     }
 
     public static ConfiguredTaggableFilter getTaggableFilterFrom(
             final Resource configurationResource)
     {
         return new ConfiguredTaggableFilter(getStandardConfigurationFrom(configurationResource));
+    }
+
+    public static ConfiguredTaggableFilter getTaggableFilterFrom(final String path,
+            final Map<String, String> configurationMap)
+    {
+        return getTaggableFilterFrom(SparkJob.resource(path, configurationMap));
     }
 
     public static boolean runStatistics(final CommandMap command)
@@ -232,6 +232,9 @@ public final class AtlasGeneratorParameters
         {
             atlasLoadingOption.setRelationSlicingFilter(getConfiguredFilterFrom("",
                     AtlasLoadingOption.ATLAS_RELATION_SLICING_FILTER_NAME,
+                    new StringResource(slicingConfiguration)));
+            atlasLoadingOption.setRelationSlicingConsolidateFilter(getConfiguredFilterFrom("",
+                    AtlasLoadingOption.ATLAS_RELATION_SLICING_CONSOLIDATE_FILTER_NAME,
                     new StringResource(slicingConfiguration)));
         }
 
