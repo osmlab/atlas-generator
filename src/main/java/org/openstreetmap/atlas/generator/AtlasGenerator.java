@@ -1,5 +1,6 @@
 package org.openstreetmap.atlas.generator;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,8 @@ import org.openstreetmap.atlas.generator.tools.spark.persistence.PersistenceTool
 import org.openstreetmap.atlas.geography.atlas.Atlas;
 import org.openstreetmap.atlas.geography.atlas.change.FeatureChange;
 import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
+import org.openstreetmap.atlas.geography.atlas.items.ItemType;
+import org.openstreetmap.atlas.geography.atlas.items.Relation;
 import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
 import org.openstreetmap.atlas.geography.atlas.sub.AtlasCutType;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
@@ -187,8 +190,12 @@ public class AtlasGenerator extends SparkJob
                 .buildAtlasLoadingOption(broadcastBoundaries.getValue(),
                         broadcastLoadingOptions.getValue())
                 .getRelationSlicingFilter();
+        final Predicate<AtlasEntity> slicedRelationFilter = (Predicate<AtlasEntity> & Serializable) entity -> entity
+                .getType().equals(ItemType.RELATION) && ((Relation) entity).isGeometric()
+                && slicingFilter.test(entity);
         final JavaPairRDD<String, Atlas> relationSubAtlasRDD = countryRawAtlasRDD
-                .mapToPair(AtlasGeneratorHelper.subatlas(slicingFilter, AtlasCutType.SILK_CUT))
+                .mapToPair(
+                        AtlasGeneratorHelper.subatlas(slicedRelationFilter, AtlasCutType.SILK_CUT))
                 .filter(tuple -> tuple._2() != null);
         relationSubAtlasRDD.cache();
         saveAsHadoop(relationSubAtlasRDD, AtlasGeneratorJobGroup.SLICED_SUB, output);
