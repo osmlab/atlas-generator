@@ -43,11 +43,6 @@ public class FileSystemCreator
     {
         try
         {
-            final FileSystem fileSystem = FileSystem.get(new URI(path), configuration);
-            if (fileSystem != null)
-            {
-                return fileSystem;
-            }
             return FileSystem.newInstance(new URI(path), configuration);
         }
         catch (final Exception e)

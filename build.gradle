@@ -63,6 +63,7 @@ configurations
         // Hadoop and Spark are way too fat.
         exclude group: 'org.apache.hadoop'
         exclude group: 'org.apache.spark'
+        exclude group: 'org.slf4j', module: 'slf4j-api'
     }
 	aqlLintTask
 }

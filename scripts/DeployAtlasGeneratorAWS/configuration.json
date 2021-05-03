@@ -10,7 +10,7 @@
             "slicingConfiguration": "what-relations-are-dynamically-expanded.json"
          },
          "border": {
-            "countryShapes": "osm_world_boundaries.txt.gz"
+            "countryShapes": "osm_world_boundaries.atlas.6.3.8.txt.gz"
          },
          "other": {
 
@@ -19,7 +19,7 @@
    },
    "aws":{
       "emr":{
-         "version":"emr-5.31.0",
+         "version":"emr-6.2.0",
          "software":[
             {
                "Name":"Hadoop"
@@ -48,11 +48,40 @@
       "s3":{
          "bucket":"",
          "logging":"",
+         "bootstrap":"",
          "atlas_jar":"",
          "atlas_utilities":""
       }
    },
    "spark":[
+      {
+         "Classification": "hadoop-env",
+         "Configurations": [
+               {
+                  "Classification": "export",
+                  "Configurations": [],
+                  "Properties": {
+                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
+                     "JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions"
+                  }
+               }
+         ],
+         "Properties": {}
+      },
+      {
+         "Classification": "spark-env",
+         "Configurations": [
+               {
+                  "Classification": "export",
+                  "Configurations": [],
+                  "Properties": {
+                     "JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
+                     "JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions"
+                  }
+               }
+         ],
+         "Properties": {}
+      },
       {
          "Classification":"yarn-site",
          "Properties":{
@@ -69,6 +98,9 @@
       {
          "Classification":"spark-defaults",
          "Properties":{
+            "spark.executor.defaultJavaOptions": "-verbose:gc -XX:OnOutOfMemoryError\u003d\u0027kill -9 %p\u0027 -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent\u003d70",
+            "spark.executorEnv.JAVA_HOME": "/usr/lib/jvm/java-11-amazon-corretto.x86_64",
+            "spark.executorEnv.JAVA_OPTS": "-XX:+IgnoreUnrecognizedVMOptions",
             "spark.executor.memory":"48g",
             "spark.driver.memory":"48g",
             "spark.driver.cores":"5",
