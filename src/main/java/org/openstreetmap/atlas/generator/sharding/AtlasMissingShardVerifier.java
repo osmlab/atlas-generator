@@ -65,6 +65,10 @@ public class AtlasMissingShardVerifier extends Command
     private static final Switch<Integer> RETRY_QUERY_COUNT = new Switch<>("numSplitQuery",
             "The number of parts to split the query into if it fails", Integer::new,
             Optionality.OPTIONAL, "2");
+    private static final Switch<Set<String>> NODE_IGNORE_SET = new Switch<>("nodeIgnoreList",
+            "A comma separated list of OSM Node IDs for the verifier to ignore",
+            input -> new HashSet<>(StringList.split(input, ",").getUnderlyingList()),
+            Optionality.OPTIONAL, "");
 
     public static StringList createQueryList(final CountryBoundaryMap boundaries,
             final Set<CountryShard> missingCountryShards, final int numQueries)
@@ -103,6 +107,106 @@ public class AtlasMissingShardVerifier extends Command
     public static void main(final String[] args)
     {
         new AtlasMissingShardVerifier().run(args);
+    }
+
+    public static int verifier(final CountryBoundaryMap boundaries,
+            final Set<CountryShard> missingCountryShardsUntrimmed, final File output,
+            final String server, final HttpHost proxy, final ConfiguredTaggableFilter filter,
+            final Integer numRetryQueries, final Set<String> nodeIgnoreSet)
+    {
+        int returnCode = 0;
+        final Set<CountryShard> missingCountryShards = removeShardsWithZeroIntersection(
+                missingCountryShardsUntrimmed, boundaries);
+        final String primaryQuery = createPrimaryQuery(boundaries, missingCountryShards);
+        final OverpassClient client = new OverpassClient(server, proxy);
+        try (SafeBufferedWriter writer = output.writer())
+        {
+            final List<OverpassOsmNode> nodes = client.nodesFromQuery(primaryQuery).stream()
+                    // Filter out nodes from the ignore list
+                    .filter(node -> !nodeIgnoreSet.contains(node.getIdentifier()))
+                    .collect(Collectors.toList());
+            final List<OverpassOsmWay> ways = client.waysFromQuery(primaryQuery);
+            if (client.hasTooMuchResponseData())
+            {
+                logger.warn(
+                        "The overpass query returned too much data. This means that there's potentially"
+                                + "large amounts of data missing! Rerunning with smaller queries.");
+                client.resetTooMuchDataError();
+                final StringList splitQueries = createQueryList(boundaries, missingCountryShards,
+                        numRetryQueries);
+                nodes.clear();
+                ways.clear();
+                for (final String query : splitQueries)
+                {
+                    nodes.addAll(client.nodesFromQuery(query));
+                    ways.addAll(client.waysFromQuery(query));
+                }
+            }
+            if (client.hasTooMuchResponseData())
+            {
+                throw new CoreException("The overpass query had to much data, even when split "
+                        + numRetryQueries + " times. There is lots of data missing!");
+            }
+            if (client.hasUnknownError())
+            {
+                throw new CoreException(
+                        "The overpass query encountered an error. Validation has failed.");
+            }
+            final STRtree nodeTree = initializeNodeTree(nodes);
+            final STRtree wayTree = initializeWayTree(nodes, ways);
+            for (final CountryShard countryShard : missingCountryShards)
+            {
+                final Clip clip = intersectionClip(countryShard, boundaries);
+                final MultiPolygon clipMulti = clip.getClipMultiPolygon();
+                final Rectangle clipBounds = clipMulti.bounds();
+                @SuppressWarnings("unchecked")
+                final List<OverpassOsmNode> nodeList = nodeTree.query(clipBounds.asEnvelope());
+                // Prune extra nodes returned by STRtree that might not actually be contained within
+                // clipBounds
+                nodeList.removeIf(node -> !clipBounds.fullyGeometricallyEncloses(
+                        Location.forString(node.getLatitude() + "," + node.getLongitude())));
+                @SuppressWarnings("unchecked")
+                final List<OverpassOsmWay> wayList = wayTree.query(clipBounds.asEnvelope());
+                // Filter out ways that aren't ingested into atlas
+                wayList.stream().filter(way -> !filter.test(Taggable.with(way.getTags())))
+                        .forEach(way ->
+                        {
+                            nodeList.removeIf(node -> way.getNodeIdentifiers()
+                                    .contains(node.getIdentifier()));
+                        });
+                // Loop over the remaining nodes, which now consist of only nodes that should be
+                // ingested into atlas
+                // If a node is found within the intersection of the country boundary and shard
+                // bounds then the shard should have been built, so break and list the shard
+                for (final OverpassOsmNode node : nodeList)
+                {
+                    final Location nodeLocation = Location
+                            .forString(node.getLatitude() + "," + node.getLongitude());
+                    if (clipMulti.fullyGeometricallyEncloses(nodeLocation))
+                    {
+                        returnCode = -1;
+                        writer.writeLine(countryShard.toString());
+                        writer.writeLine(
+                                "Boundary/Shard intersection zone: " + clipMulti.toString());
+                        writer.writeLine("Id of node that should have been imported: "
+                                + node.getIdentifier());
+                        writer.writeLine("Node Location: " + nodeLocation.toString() + "\n");
+                        logger.info("{} is missing!", countryShard);
+                        break;
+                    }
+                }
+            }
+        }
+        catch (final Exception e)
+        {
+            logger.error("Error!", e);
+            return -1;
+        }
+        if (returnCode == 0)
+        {
+            logger.info("No shards are missing!");
+        }
+        return returnCode;
     }
 
     private static String createPrimaryQuery(final CountryBoundaryMap boundaries,
@@ -192,103 +296,6 @@ public class AtlasMissingShardVerifier extends Command
         return missingCountryShards;
     }
 
-    public int verifier(final CountryBoundaryMap boundaries,
-            final Set<CountryShard> missingCountryShardsUntrimmed, final File output,
-            final String server, final HttpHost proxy, final ConfiguredTaggableFilter filter,
-            final Integer numRetryQueries)
-    {
-        int returnCode = 0;
-        final Set<CountryShard> missingCountryShards = removeShardsWithZeroIntersection(
-                missingCountryShardsUntrimmed, boundaries);
-        final String primaryQuery = createPrimaryQuery(boundaries, missingCountryShards);
-        final OverpassClient client = new OverpassClient(server, proxy);
-        try (SafeBufferedWriter writer = output.writer())
-        {
-            final List<OverpassOsmNode> nodes = client.nodesFromQuery(primaryQuery);
-            final List<OverpassOsmWay> ways = client.waysFromQuery(primaryQuery);
-            if (client.hasTooMuchResponseData())
-            {
-                logger.warn(
-                        "The overpass query returned too much data. This means that there's potentially"
-                                + "large amounts of data missing! Rerunning with smaller queries.");
-                client.resetTooMuchDataError();
-                final StringList splitQueries = createQueryList(boundaries, missingCountryShards,
-                        numRetryQueries);
-                nodes.clear();
-                ways.clear();
-                for (final String query : splitQueries)
-                {
-                    nodes.addAll(client.nodesFromQuery(query));
-                    ways.addAll(client.waysFromQuery(query));
-                }
-            }
-            if (client.hasTooMuchResponseData())
-            {
-                throw new CoreException("The overpass query had to much data, even when split "
-                        + numRetryQueries + " times. There is lots of data missing!");
-            }
-            if (client.hasUnknownError())
-            {
-                throw new CoreException(
-                        "The overpass query encountered an error. Validation has failed.");
-            }
-            final STRtree nodeTree = initializeNodeTree(nodes);
-            final STRtree wayTree = initializeWayTree(nodes, ways);
-            for (final CountryShard countryShard : missingCountryShards)
-            {
-                final Clip clip = intersectionClip(countryShard, boundaries);
-                final MultiPolygon clipMulti = clip.getClipMultiPolygon();
-                final Rectangle clipBounds = clipMulti.bounds();
-                @SuppressWarnings("unchecked")
-                final List<OverpassOsmNode> nodeList = nodeTree.query(clipBounds.asEnvelope());
-                // Prune extra nodes returned by STRtree that might not actually be contained within
-                // clipBounds
-                nodeList.removeIf(node -> !clipBounds.fullyGeometricallyEncloses(
-                        Location.forString(node.getLatitude() + "," + node.getLongitude())));
-                @SuppressWarnings("unchecked")
-                final List<OverpassOsmWay> wayList = wayTree.query(clipBounds.asEnvelope());
-                // Filter out ways that aren't ingested into atlas
-                wayList.stream().filter(way -> !filter.test(Taggable.with(way.getTags())))
-                        .forEach(way ->
-                        {
-                            nodeList.removeIf(node -> way.getNodeIdentifiers()
-                                    .contains(node.getIdentifier()));
-                        });
-                // Loop over the remaining nodes, which now consist of only nodes that should be
-                // ingested into atlas
-                // If a node is found within the intersection of the country boundary and shard
-                // bounds then the shard should have been built, so break and list the shard
-                for (final OverpassOsmNode node : nodeList)
-                {
-                    final Location nodeLocation = Location
-                            .forString(node.getLatitude() + "," + node.getLongitude());
-                    if (clipMulti.fullyGeometricallyEncloses(nodeLocation))
-                    {
-                        returnCode = -1;
-                        writer.writeLine(countryShard.toString());
-                        writer.writeLine(
-                                "Boundary/Shard intersection zone: " + clipMulti.toString());
-                        writer.writeLine("Id of node that should have been imported: "
-                                + node.getIdentifier());
-                        writer.writeLine("Node Location: " + nodeLocation.toString() + "\n");
-                        logger.info("{} is missing!", countryShard);
-                        break;
-                    }
-                }
-            }
-        }
-        catch (final Exception e)
-        {
-            logger.error("Error!", e);
-            return -1;
-        }
-        if (returnCode == 0)
-        {
-            logger.info("No shards are missing!");
-        }
-        return returnCode;
-    }
-
     @Override
     protected int onRun(final CommandMap command)
     {
@@ -318,6 +325,7 @@ public class AtlasMissingShardVerifier extends Command
         final String server = (String) command.get(OVERPASS_SERVER);
         final StringList proxySettings = (StringList) command.get(PROXY_SETTINGS);
         final Integer numRetryQueries = (Integer) command.get(RETRY_QUERY_COUNT);
+        final Set<String> nodeIgnoreSet = (Set<String>) command.get(NODE_IGNORE_SET);
         HttpHost proxy = null;
         if (proxySettings != null)
         {
@@ -336,7 +344,7 @@ public class AtlasMissingShardVerifier extends Command
         try
         {
             returnCode = verifier(boundaries, missingCountryShards, output, server, proxy,
-                    wayFilter, numRetryQueries);
+                    wayFilter, numRetryQueries, nodeIgnoreSet);
         }
         catch (final Exception e)
         {
@@ -350,6 +358,6 @@ public class AtlasMissingShardVerifier extends Command
     protected SwitchList switches()
     {
         return new SwitchList().with(BOUNDARIES, OUTPUT, MISSING_SHARDS, OVERPASS_SERVER,
-                PROXY_SETTINGS, WAY_FILTER, RETRY_QUERY_COUNT);
+                PROXY_SETTINGS, WAY_FILTER, RETRY_QUERY_COUNT, NODE_IGNORE_SET);
     }
 }
