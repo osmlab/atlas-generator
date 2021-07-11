@@ -19,6 +19,7 @@ import org.openstreetmap.atlas.utilities.collections.StringList;
 import org.openstreetmap.atlas.utilities.configuration.ConfiguredFilter;
 import org.openstreetmap.atlas.utilities.configuration.StandardConfiguration;
 import org.openstreetmap.atlas.utilities.conversion.StringConverter;
+import org.openstreetmap.atlas.utilities.runtime.Command;
 import org.openstreetmap.atlas.utilities.runtime.Command.Optionality;
 import org.openstreetmap.atlas.utilities.runtime.Command.Switch;
 import org.openstreetmap.atlas.utilities.runtime.Command.SwitchList;
@@ -100,6 +101,8 @@ public final class AtlasGeneratorParameters
     public static final Switch<Boolean> STATISTICS = new Switch<>("statistics",
             "Whether to run the shard statistics and country statistics", Boolean::parseBoolean,
             Optionality.OPTIONAL, "false");
+    public static final Switch<Boolean> KEEP_ALL = new Command.Flag("keepAll",
+            "Keep all objects, overrides any filters!");
 
     public static ConfiguredFilter getConfiguredFilterFrom(final String name,
             final Resource configurationResource)
@@ -219,6 +222,10 @@ public final class AtlasGeneratorParameters
                     getTaggableFilterFrom(new StringResource(pbfWayConfiguration)));
         }
 
+        if (Boolean.TRUE.equals(Boolean.parseBoolean(properties.get(KEEP_ALL.getName()))))
+        {
+            atlasLoadingOption.setKeepAll(true);
+        }
         final String pbfRelationConfiguration = properties
                 .get(PBF_RELATION_CONFIGURATION.getName());
         if (pbfRelationConfiguration != null)
@@ -275,6 +282,10 @@ public final class AtlasGeneratorParameters
         propertyMap.put(SLICING_CONFIGURATION.getName(), slicingConfiguration == null ? null
                 : SparkJob.resource(slicingConfiguration, sparkContext).all());
 
+        final Boolean keepAll = (Boolean) command.get(KEEP_ALL);
+        propertyMap.put(KEEP_ALL.getName(),
+                keepAll == null ? KEEP_ALL.getDefault().toString() : keepAll.toString());
+
         return propertyMap;
     }
 
@@ -287,7 +298,7 @@ public final class AtlasGeneratorParameters
                 ATLAS_SCHEME, LINE_DELIMITED_GEOJSON_OUTPUT,
                 SHOULD_INCLUDE_FILTERED_OUTPUT_CONFIGURATION,
                 PersistenceTools.COPY_SHARDING_AND_BOUNDARIES, CONFIGURED_FILTER_OUTPUT,
-                CONFIGURED_FILTER_NAME, STATISTICS);
+                CONFIGURED_FILTER_NAME, STATISTICS, KEEP_ALL);
     }
 
     private AtlasGeneratorParameters()
