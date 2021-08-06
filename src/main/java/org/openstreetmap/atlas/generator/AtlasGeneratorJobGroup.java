@@ -15,6 +15,12 @@ import org.openstreetmap.atlas.geography.atlas.statistics.AtlasStatistics;
  */
 public enum AtlasGeneratorJobGroup
 {
+    AUGMENTED(
+            0,
+            "AUGMENTED Atlas Creation",
+            "augmentedAtlas",
+            Atlas.class,
+            MultipleAtlasProtoOutputFormat.class),
     RAW(0, "Raw Atlas Creation", "rawAtlas", Atlas.class, MultipleAtlasProtoOutputFormat.class),
     SLICED(
             1,
