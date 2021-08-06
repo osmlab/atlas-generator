@@ -156,7 +156,6 @@ public class AtlasGenerator extends SparkJob
 
         final CountryBoundaryMap boundaries = boundaries(countries, command);
 
-        boundaries.countryBoundary(output);
         // Generate country-shard generation tasks
         final Time timer = Time.now();
         final List<AtlasGenerationTask> tasks = generateTasks(countries, boundaries, sharding);

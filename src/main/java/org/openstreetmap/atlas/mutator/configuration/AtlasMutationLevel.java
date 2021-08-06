@@ -15,9 +15,7 @@ import java.util.stream.Collectors;
 import org.apache.spark.broadcast.Broadcast;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.tools.spark.utilities.SparkFileHelper;
-import org.openstreetmap.atlas.geography.Location;
 import org.openstreetmap.atlas.geography.atlas.Atlas;
-import org.openstreetmap.atlas.geography.atlas.complete.CompletePoint;
 import org.openstreetmap.atlas.geography.atlas.dynamic.policy.DynamicAtlasPolicy;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.boundary.CountryShardListing;
@@ -109,10 +107,6 @@ public class AtlasMutationLevel implements Serializable
                 ConfiguredAtlasChangeGenerator::getDynamicAtlasPolicyGeneration);
         this.dynamicAtlasPolicyApplication = dynamicAtlasPolicy(mutators,
                 ConfiguredAtlasChangeGenerator::getDynamicAtlasPolicyApplication);
-        this.dynamicAtlasPolicyApplication.getEntitiesToConsiderForExpansion()
-                .test(new CompletePoint(0L, Location.CENTER, new HashMap<>(), new HashSet<>()));
-        this.dynamicAtlasPolicyGeneration.getEntitiesToConsiderForExpansion()
-                .test(new CompletePoint(0L, Location.CENTER, new HashMap<>(), new HashSet<>()));
         this.inputDependenciesToProvide = new HashSet<>();
         this.addMutationTags = true;
         this.broadcastVariables = new HashMap<>();
@@ -599,11 +593,6 @@ public class AtlasMutationLevel implements Serializable
         return result.iterator().next();
     }
 
-    private String getIntermediateOutput(final String output)
-    {
-        return getIntermediateOutput(output, this.levelIndex);
-    }
-
     private String getIntermediateOutput(final String output, final int index)
     {
         return getIntermediateOutput(output, getName(this.countryGroup, index));
@@ -612,6 +601,11 @@ public class AtlasMutationLevel implements Serializable
     private String getIntermediateOutput(final String output, final String built)
     {
         return SparkFileHelper.combine(output, INTERMEDIATE_FOLDER_NAME, built);
+    }
+
+    private String getIntermediateOutput(final String output)
+    {
+        return getIntermediateOutput(output, this.levelIndex);
     }
 
     private String getParentAtlasPath()
