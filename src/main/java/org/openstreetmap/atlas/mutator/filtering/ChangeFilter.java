@@ -557,8 +557,8 @@ public class ChangeFilter implements Function<Change, Optional<Change>>
                 .filter(featureChange -> featureChange.afterViewIsFull() || this.atlas
                         .entity(featureChange.getIdentifier(), featureChange.getItemType()) != null)
                 // Strip second degree edges
-                .filter(featureChange -> overlap(initialShardBounds, change).test(featureChange)
-                        && !filteredGeometricRelationChanges.contains(featureChange))
+                .filter(featureChange -> overlap(initialShardBounds, change).test(featureChange))
+                .filter(featureChange -> !filteredGeometricRelationChanges.contains(featureChange))
                 // Strip large relation FCs from other shards
                 .filter(shouldKeepExtraneousFeatureChange(change, initialShardNames))
                 // Collect
@@ -581,12 +581,12 @@ public class ChangeFilter implements Function<Change, Optional<Change>>
                         .contains(AtlasEntityKey.from(entity.getType(), entity.getIdentifier())))
                 .filter(entity -> !filteredGeometricRelationChanges.stream()
                         .anyMatch(featureChange -> featureChange.getItemType().equals(ItemType.EDGE)
-                                && featureChange.getIdentifier() == entity.getIdentifier())
-                        && !overlap(initialShardBounds, change)
-                                // Here this first FeatureChange is meaningless, just used
-                                // to be able to
-                                // call the overlaps method on the specific atlas entity.
-                                .test(FeatureChange.add(CompleteEntity.from(entity))))
+                                && featureChange.getIdentifier() == entity.getIdentifier()))
+                .filter(entity -> !overlap(initialShardBounds, change)
+                        // Here this first FeatureChange is meaningless, just used
+                        // to be able to
+                        // call the overlaps method on the specific atlas entity.
+                        .test(FeatureChange.add(CompleteEntity.from(entity))))
                 .map(entity -> FeatureChange.remove(CompleteEntity.shallowFrom(entity),
                         this.atlas));
         final Iterable<FeatureChange> result = new MultiIterable<>(filteredChanges,

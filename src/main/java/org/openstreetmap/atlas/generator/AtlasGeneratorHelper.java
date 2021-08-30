@@ -42,7 +42,6 @@ import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
 import org.openstreetmap.atlas.geography.atlas.items.ItemType;
 import org.openstreetmap.atlas.geography.atlas.items.Relation;
 import org.openstreetmap.atlas.geography.atlas.items.Relation.Ring;
-import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.sectioning.AtlasSectionProcessor;
 import org.openstreetmap.atlas.geography.atlas.raw.slicing.RawAtlasSlicer;
@@ -113,51 +112,6 @@ public final class AtlasGeneratorHelper implements Serializable
 
     @SuppressWarnings("unchecked")
     public static Function<Shard, Optional<Atlas>> atlasFetcher(
-            final HadoopAtlasFileCache lineSlicedSubAtlasCache, final Atlas initialShardAtlas,
-            final CountryBoundaryMap boundaries, final String countryBeingSliced,
-            final Shard initialShard)
-    {
-        // & Serializable is very important as that function will be passed around by Spark, and
-        // functions are not serializable by default.
-        return (Function<Shard, Optional<Atlas>> & Serializable) shard ->
-        {
-            final StringList countriesForShardList = boundaries
-                    .countryCodesOverlappingWith(shard.bounds());
-            final Set<String> countriesForShard = new HashSet<>();
-            final AtlasResourceLoader loader = new AtlasResourceLoader();
-            countriesForShardList.forEach(countriesForShard::add);
-
-            final Set<Atlas> atlases = new HashSet<>();
-            // Multi-atlas all remaining sliced water relation data together and return that
-            countriesForShard.forEach(country ->
-            {
-                if (initialShard.equals(shard) && countryBeingSliced.equals(country))
-                {
-                    logger.debug(
-                            "While slicing {}, adding initial atlas for shard {} and country {}",
-                            countryBeingSliced, shard, country);
-                    atlases.add(initialShardAtlas);
-                }
-                else
-                {
-                    final Optional<Resource> cachedAtlas = lineSlicedSubAtlasCache.get(country,
-                            shard);
-                    if (cachedAtlas.isPresent())
-                    {
-                        logger.debug(
-                                "{}: Cache hit, loading sliced subAtlas for Shard {} and country {}",
-                                countryBeingSliced, shard, country);
-                        atlases.add(loader.load(cachedAtlas.get()));
-                    }
-                }
-            });
-            return atlases.isEmpty() ? Optional.empty()
-                    : Optional.ofNullable(new MultiAtlas(atlases));
-        };
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Function<Shard, Optional<Atlas>> atlasFetcher(
             final HadoopAtlasFileCache subAtlasCache, final HadoopAtlasFileCache atlasCache,
             final String countryBeingSliced, final Shard initialShard)
     {
@@ -213,32 +167,32 @@ public final class AtlasGeneratorHelper implements Serializable
     {
         return (Serializable & PairFunction<Tuple2<String, Tuple2<Atlas, org.apache.spark.api.java.Optional<Set<Tuple2<Long, MultiPolygon>>>>>, String, Atlas>) tuple ->
         {
-            final Atlas rawAtlas = tuple._2._1;
-            if (!tuple._2()._2.isPresent())
+            final Atlas rawAtlas = tuple._2()._1();
+            if (!tuple._2()._2().isPresent())
             {
-                return new Tuple2<>(tuple._1, rawAtlas);
+                return new Tuple2<>(tuple._1(), rawAtlas);
             }
-            final Set<Tuple2<Long, MultiPolygon>> relationGeometryPairs = tuple._2._2.get();
+            final Set<Tuple2<Long, MultiPolygon>> relationGeometryPairs = tuple._2()._2().get();
             final Set<FeatureChange> changes = new HashSet<>();
             for (final Tuple2<Long, MultiPolygon> relationGeometryPair : relationGeometryPairs)
             {
-                if (rawAtlas.relation(relationGeometryPair._1) != null)
+                if (rawAtlas.relation(relationGeometryPair._1()) != null)
                 {
                     final CompleteRelation updated = CompleteRelation
-                            .from(rawAtlas.relation(relationGeometryPair._1));
-                    updated.withMultiPolygonGeometry(relationGeometryPair._2);
+                            .from(rawAtlas.relation(relationGeometryPair._1()));
+                    updated.withMultiPolygonGeometry(relationGeometryPair._2());
                     changes.add(FeatureChange.add(updated, rawAtlas));
                 }
             }
             if (changes.isEmpty())
             {
-                return new Tuple2<>(tuple._1, rawAtlas);
+                return new Tuple2<>(tuple._1(), rawAtlas);
             }
             else
             {
                 final ChangeBuilder builder = new ChangeBuilder().addAll(changes);
                 final ChangeAtlas changeAtlas = new ChangeAtlas(rawAtlas, builder.get());
-                return new Tuple2<>(tuple._1, changeAtlas.cloneToPackedAtlas());
+                return new Tuple2<>(tuple._1(), changeAtlas.cloneToPackedAtlas());
             }
         };
     }
@@ -599,7 +553,7 @@ public final class AtlasGeneratorHelper implements Serializable
             }
             catch (final Throwable e) // NOSONAR
             {
-                logger.warn("Sectioning had error, probably was null atlas",
+                logger.error("Sectioning had error, probably was null atlas",
                         new CoreException(ERROR_MESSAGE,
                                 AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
                                 countryShardName, e));
