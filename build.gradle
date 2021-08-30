@@ -65,7 +65,6 @@ configurations
         exclude group: 'org.apache.spark'
         exclude group: 'org.slf4j', module: 'slf4j-api'
     }
-	aqlLintTask
 }
 
 dependencies
@@ -80,7 +79,6 @@ dependencies
 
     shaded project.configurations.getByName('compile')
 
-	aqlLintTask packages.atlas
 }
 
 task shaded(type: Jar){
