@@ -249,17 +249,14 @@ public class ChangeFilter implements Function<Change, Optional<Change>>
         };
     }
 
-    private boolean geometricRelationChanges(final FeatureChange featureChange, final Change change)
+    private boolean geometricRelationChanges(final FeatureChange featureChange)
     {
         if (featureChange.getItemType().equals(ItemType.EDGE)
                 && featureChange.getChangeType().equals(ChangeType.ADD)
-                && featureChange.getAfterView().relations() != null)
+                && featureChange.getAfterView().relations() != null && featureChange.getAfterView()
+                        .relations().stream().anyMatch(Relation::isGeometric))
         {
-            if (featureChange.getAfterView().relations().stream()
-                    .anyMatch(relation -> relation.isGeometric()))
-            {
-                return true;
-            }
+            return true;
         }
         return false;
     }
@@ -549,7 +546,7 @@ public class ChangeFilter implements Function<Change, Optional<Change>>
                 .map(Shard::getName).collect(Collectors.toSet());
         final List<FeatureChange> filteredGeometricRelationChanges = change.changes()
                 // Strip large relation FCs from other shards
-                .filter(featureChange -> geometricRelationChanges(featureChange, change))
+                .filter(featureChange -> geometricRelationChanges(featureChange))
                 // Collect
                 .collect(Collectors.toList());
         final List<FeatureChange> filteredChanges = change.changes()
@@ -579,8 +576,8 @@ public class ChangeFilter implements Function<Change, Optional<Change>>
                 .stream(new MultiIterable<>(this.atlas.edges(), this.atlas.relations()))
                 .filter(entity -> !filteredChangeIdentifiers
                         .contains(AtlasEntityKey.from(entity.getType(), entity.getIdentifier())))
-                .filter(entity -> !filteredGeometricRelationChanges.stream()
-                        .anyMatch(featureChange -> featureChange.getItemType().equals(ItemType.EDGE)
+                .filter(entity -> filteredGeometricRelationChanges.stream().noneMatch(
+                        featureChange -> featureChange.getItemType().equals(ItemType.EDGE)
                                 && featureChange.getIdentifier() == entity.getIdentifier()))
                 .filter(entity -> !overlap(initialShardBounds, change)
                         // Here this first FeatureChange is meaningless, just used

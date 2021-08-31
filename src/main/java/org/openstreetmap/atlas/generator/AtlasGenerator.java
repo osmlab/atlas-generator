@@ -188,7 +188,7 @@ public class AtlasGenerator extends SparkJob
 
         // Make a pair of relations to member linework and filter any null atlases
         final JavaPairRDD<Long, Map<Ring, Iterable<PolyLine>>> geometricRelationRDD = countryRawAtlasRDD
-                .flatMapToPair(pair -> AtlasGeneratorHelper.generateGeometricRelations(pair))
+                .flatMapToPair(AtlasGeneratorHelper::generateGeometricRelations)
                 .reduceByKey(AtlasGeneratorHelper.mergeRelationMembers(),
                         this.getContext().getConf().getInt("spark.executor.instances", 1));
 

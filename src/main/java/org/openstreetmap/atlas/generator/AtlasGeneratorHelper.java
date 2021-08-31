@@ -337,8 +337,7 @@ public final class AtlasGeneratorHelper implements Serializable
             final Tuple2<String, Atlas> tuple)
     {
         final Atlas atlas = tuple._2;
-        return StreamSupport
-                .stream(atlas.relations(relation -> relation.isGeometric()).spliterator(), true)
+        return StreamSupport.stream(atlas.relations(Relation::isGeometric).spliterator(), true)
                 .map(relation ->
                 {
                     final Map<Ring, Iterable<PolyLine>> outersInnersMap = new EnumMap<>(
@@ -377,8 +376,7 @@ public final class AtlasGeneratorHelper implements Serializable
                         outersInnersMap.put(Ring.INNER, inners);
                         outersInnersMap.put(Ring.OUTER, outers);
                     });
-                    return new Tuple2<Long, Map<Ring, Iterable<PolyLine>>>(relation.getIdentifier(),
-                            outersInnersMap);
+                    return new Tuple2<>(relation.getIdentifier(), outersInnersMap);
                 }).collect(Collectors.toList()).iterator();
     }
 
@@ -557,7 +555,7 @@ public final class AtlasGeneratorHelper implements Serializable
                         new CoreException(ERROR_MESSAGE,
                                 AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
                                 countryShardName, e));
-                return new Tuple2<String, Atlas>(tuple._1(), null);
+                return new Tuple2<>(tuple._1(), null);
             }
 
             logger.info(FINISHED_MESSAGE, AtlasGeneratorJobGroup.WAY_SECTIONED_PBF.getDescription(),
@@ -663,8 +661,6 @@ public final class AtlasGeneratorHelper implements Serializable
             // Grab the tuple contents
             final String countryShardName = getCountryShard(tuple._1()).getName();
             final Atlas originalAtlas = tuple._2();
-            logger.info("Starting sub Atlas for for Atlas {}", originalAtlas.getName());
-            final Time start = Time.now();
             try
             {
                 // Slice the Atlas
