@@ -1,0 +1,8 @@
+boto3
+botocore
+geojson
+tqdm
+
+# Dev dependencies
+boto3-stubs[s3]
+mypy_boto3_builder
