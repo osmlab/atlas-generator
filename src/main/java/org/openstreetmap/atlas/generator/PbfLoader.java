@@ -124,9 +124,18 @@ public class PbfLoader implements AutoCloseable, Serializable
                     Atlas shardPbfSlice = null;
                     try
                     {
-                        shardPbfSlice = new RawAtlasGenerator(locatedPbf.getResource(),
-                                this.atlasLoadingOption, pbfLoadingArea).withMetaData(metaData)
-                                        .build();
+                        final RawAtlasGenerator rawAtlasGenerator = new RawAtlasGenerator(
+                                locatedPbf.getResource(), this.atlasLoadingOption, pbfLoadingArea)
+                                        .withMetaData(metaData);
+                        // The keepAll option is primarily used for QA. Don't trim.
+                        if (this.atlasLoadingOption.isKeepAll())
+                        {
+                            shardPbfSlice = rawAtlasGenerator.buildNoTrim();
+                        }
+                        else
+                        {
+                            shardPbfSlice = rawAtlasGenerator.build();
+                        }
                     }
                     catch (final Exception e)
                     {

@@ -1,1 +1,0 @@
-update atlas.point set point.addTag(test: 'abc') where point.hasIds(3537469748000000, 3573968508000000, 3622788298000000)

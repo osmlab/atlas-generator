@@ -27,7 +27,7 @@ import com.google.gson.JsonObject;
 /**
  * Configurable object that can provide a fetcher, i.e. a function that, provided a {@link Shard},
  * can return an {@link Optional} of {@link Atlas}.
- * 
+ *
  * @author matthieun
  */
 public final class ConfiguredAtlasFetcher implements Serializable
@@ -247,6 +247,11 @@ public final class ConfiguredAtlasFetcher implements Serializable
             final Optional<Atlas> atlasOption = this.atlasProvider.apply(country, shardSource);
             if (atlasOption.isPresent())
             {
+                if (this.subAtlas.getName()
+                        .equalsIgnoreCase(ConfiguredSubAtlas.UNCHANGED.getName()))
+                {
+                    return atlasOption;
+                }
                 return this.subAtlas.apply(atlasOption.get());
             }
             return Optional.empty();

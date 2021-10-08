@@ -175,9 +175,9 @@ public class AtlasGeneratorIntegrationTest
                 ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_233).isPresent());
         Assert.assertTrue(
                 ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_234).isPresent());
-        Assert.assertEquals(402, Iterables.size(
+        Assert.assertEquals(405, Iterables.size(
                 ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_234).lines()));
-        Assert.assertEquals(336, Iterables.size(
+        Assert.assertEquals(339, Iterables.size(
                 ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_233).lines()));
 
         Assert.assertTrue(ResourceFileSystem
@@ -253,9 +253,9 @@ public class AtlasGeneratorIntegrationTest
                 ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_DDSQ).isPresent());
         Assert.assertTrue(
                 ResourceFileSystem.getResource(LINE_DELIMITED_GEOJSON_OUTPUT_DDSR).isPresent());
-        Assert.assertEquals(700, Iterables.size(
+        Assert.assertEquals(703, Iterables.size(
                 ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_DDSQ).lines()));
-        Assert.assertEquals(2, Iterables.size(
+        Assert.assertEquals(5, Iterables.size(
                 ResourceFileSystem.getResourceOrElse(LINE_DELIMITED_GEOJSON_OUTPUT_DDSR).lines()));
 
         Assert.assertTrue(ResourceFileSystem
@@ -283,7 +283,7 @@ public class AtlasGeneratorIntegrationTest
                 ResourceFileSystem.getResource(CONFIGURED_OUTPUT_FILTER_NAME_2_DDSR).isPresent());
     }
 
-    void dump()
+    protected void dump()
     {
         // This is used for local testing. If a developer adds a local file system path in this
         // environment variable, the result of the job will be entirely copied to the specified
