@@ -5,10 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.Validate;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openstreetmap.atlas.exception.CoreException;
@@ -21,9 +18,6 @@ import org.openstreetmap.atlas.geography.atlas.complete.CompleteEdge;
 import org.openstreetmap.atlas.geography.atlas.items.AtlasEntity;
 import org.openstreetmap.atlas.geography.sharding.GeoHashSharding;
 import org.openstreetmap.atlas.mutator.configuration.mutators.ConfiguredAtlasChangeGenerator;
-import org.openstreetmap.atlas.mutator.configuration.mutators.aql.SecureAqlChangeGenerator;
-import org.openstreetmap.atlas.mutator.configuration.mutators.aql.config.AqlConfigInfo;
-import org.openstreetmap.atlas.mutator.configuration.util.consts.AqlConstants;
 import org.openstreetmap.atlas.mutator.testing.ConfiguredBroadcastableAtlasSharding;
 import org.openstreetmap.atlas.streaming.resource.InputStreamResource;
 import org.openstreetmap.atlas.utilities.collections.Maps;
@@ -152,39 +146,6 @@ public class AtlasMutatorConfigurationTest
     public void testLoadConfigurationNotMutatorEnabled()
     {
         countryToMutationLevels("testNotMutatorEnabled.json");
-    }
-
-    @Test
-    public void testLoadConfigurationWithAql()
-    {
-        final String secret = "dummy_secret";
-        System.setProperty(AqlConstants.SYSTEM_KEY, secret);
-
-        final Map<String, List<AtlasMutationLevel>> countryToMutationLevels = countryToMutationLevels(
-                "testLoadConfigurationWithAql.json");
-
-        final List<AtlasMutationLevel> atlasMutationLevels = countryToMutationLevels.get(XYZ);
-        log.info("atlasMutationLevels: {}", atlasMutationLevels);
-        Validate.notEmpty(atlasMutationLevels);
-        Assert.assertEquals(5, atlasMutationLevels.size());
-
-        IntStream.range(2, 5).forEach(index ->
-        {
-            final AtlasMutationLevel atlasMutationLevelN = atlasMutationLevels.get(index);
-            final Set<ConfiguredAtlasChangeGenerator> mutators = atlasMutationLevelN.getMutators();
-            log.info("mutators: {}.", mutators);
-            Assert.assertEquals(1, mutators.size());
-            final ConfiguredAtlasChangeGenerator configuredAtlasChangeGenerator = mutators
-                    .iterator().next();
-            Assert.assertEquals(SecureAqlChangeGenerator.class,
-                    configuredAtlasChangeGenerator.getClass());
-
-            final SecureAqlChangeGenerator aqlChangeGenerator = (SecureAqlChangeGenerator) configuredAtlasChangeGenerator;
-            final List<AqlConfigInfo> aqlConfigInfos = aqlChangeGenerator.getAqlConfigInfos();
-
-            Assert.assertTrue(!CollectionUtils.isEmpty(aqlConfigInfos));
-            Assert.assertTrue(aqlConfigInfos.size() >= 1);
-        });
     }
 
     @Test
