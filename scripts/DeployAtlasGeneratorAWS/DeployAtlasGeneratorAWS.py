@@ -57,6 +57,7 @@ def parse_args():
         parser.add_argument('--output', help="S3 path to Atlas output folder.", required=True)
         parser.add_argument('--util', help="S3 path to Atlas util files.")
         parser.add_argument('--zone', default=AWS_REGION, help="EMR zone e.g. us-west-2")
+        parser.add_argument('--keepall', default=False, action="store_true", help="keep all flag. (Default: False)")
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument('--country', help="Specify country Alpha-3 ISO codes.")
         group.add_argument('--region', help="Country region e.g. America, Europe.")
@@ -200,6 +201,7 @@ class DeployAtlasScriptOnAws(object):
         self.s3log = self.args.log if self.args.log else get_key_val(self.s3, 'logging')
         self.s3bootstrap = self.args.bootstrap if self.args.bootstrap else get_key_val(self.s3, 'bootstrap')
         self.s3util = self.args.util if self.args.util else get_key_val(self.s3, 'atlas_utilities')
+        self.keepall = "-keepAll" if self.args.keepall else ""
 
     def generate_job_name(self):
         """
@@ -400,6 +402,7 @@ class DeployAtlasScriptOnAws(object):
                 '-pbfSharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
                 '-pbfs={}'.format(self.osm_pbf_folder),
                 '-sharding=dynamic@{}/sharding.txt'.format(self.osm_pbf_folder),
+                self.keepall,
                 ] + self.generate_atlas_param()
 
     def instance_group_template(self, name, market, role):
