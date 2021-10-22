@@ -20,6 +20,7 @@ import org.openstreetmap.atlas.geography.atlas.multi.MultiAtlas;
 import org.openstreetmap.atlas.geography.atlas.packed.PackedAtlas;
 import org.openstreetmap.atlas.geography.atlas.pbf.AtlasLoadingOption;
 import org.openstreetmap.atlas.geography.atlas.raw.creation.RawAtlasGenerator;
+import org.openstreetmap.atlas.geography.atlas.sub.AtlasCutType;
 import org.openstreetmap.atlas.geography.boundary.CountryBoundaryMap;
 import org.openstreetmap.atlas.geography.clipping.Clip.ClipType;
 import org.openstreetmap.atlas.geography.converters.jts.JtsMultiPolygonConverter;
@@ -135,6 +136,12 @@ public class PbfLoader implements AutoCloseable, Serializable
                         else
                         {
                             shardPbfSlice = rawAtlasGenerator.build();
+                            final Optional<Atlas> sub = shardPbfSlice.subAtlas(shard.bounds(),
+                                    AtlasCutType.SILK_CUT);
+                            if (sub.isPresent())
+                            {
+                                shardPbfSlice = rawAtlasGenerator.build();
+                            }
                         }
                     }
                     catch (final Exception e)
