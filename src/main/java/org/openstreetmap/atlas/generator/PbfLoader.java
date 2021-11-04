@@ -140,7 +140,7 @@ public class PbfLoader implements AutoCloseable, Serializable
                                     AtlasCutType.SILK_CUT);
                             if (sub.isPresent())
                             {
-                                shardPbfSlice = rawAtlasGenerator.build();
+                                shardPbfSlice = sub.get();
                             }
                         }
                     }
