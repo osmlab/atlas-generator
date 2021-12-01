@@ -368,6 +368,7 @@ class PBFShardCtl:
                         [
                             "osmium",
                             "extract",
+                            "--set-bounds",
                             "-vO",
                             "-c{}".format(os.path.join(self.osmiumCfgDir, configFile)),
                             "-d{}".format(self.tmpDir),
