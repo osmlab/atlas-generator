@@ -8,7 +8,6 @@ import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.log4j.Logger;
 import org.openstreetmap.atlas.exception.CoreException;
 import org.openstreetmap.atlas.generator.sharding.AtlasSharding;
 import org.openstreetmap.atlas.generator.tools.spark.SparkJob;
@@ -19,6 +18,8 @@ import org.openstreetmap.atlas.geography.sharding.Sharding;
 import org.openstreetmap.atlas.streaming.resource.ResourceCloseable;
 import org.openstreetmap.atlas.utilities.runtime.Command.Optionality;
 import org.openstreetmap.atlas.utilities.runtime.Command.Switch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author matthieun
@@ -37,7 +38,7 @@ public class PersistenceTools
 
     private static final Integer BUFFER_SIZE = 4 * 1024;
     private final Map<String, String> configurationMap;
-    private static final Logger logger = Logger.getLogger(PersistenceTools.class);
+    private static final Logger logger = LoggerFactory.getLogger(PersistenceTools.class);
 
     public PersistenceTools(final Map<String, String> configurationMap)
     {
@@ -53,7 +54,7 @@ public class PersistenceTools
         }
         catch (final Exception e)
         {
-            logger.error(e);
+            logger.error("Could not close file", e);
             throw new CoreException("Could not close {}",
                     SparkFileHelper.combine(input, BOUNDARIES_FILE), e);
         }
