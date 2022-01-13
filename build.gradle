@@ -23,7 +23,8 @@ targetCompatibility=11
 
 repositories
 {
-    mavenCentral()
+    // mavenCentral()
+	maven { url "https://repo1.maven.org/maven2/"}
     // For geotools
     maven { url "http://repo.osgeo.org/repository/release/" }
     // For Spark CDH
