@@ -23,7 +23,6 @@ targetCompatibility=11
 
 repositories
 {
-    // mavenCentral()
     maven {
         url "https://repo.maven.apache.org/maven2/"
         artifactUrls "https://repo.maven.apache.org/maven2/"
