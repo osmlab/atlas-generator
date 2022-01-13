@@ -36,7 +36,7 @@ jobs:
 
 # Quality Checks
     - name: Quality checks (No tests)
-      run: JAVA_TOOL_OPTIONS=-Dhttps.protocols=TLSv1.3 ./gradlew jar check -x test -x integrationTest
+      run: JAVA_TOOL_OPTIONS=-Dhttps.protocols=TLSv1.2 ./gradlew jar check -x test -x integrationTest
     - name: Tests
       run: ./gradlew check build
     - name: Sonar
