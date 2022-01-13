@@ -23,9 +23,9 @@ targetCompatibility=11
 
 repositories
 {
-    mavenCentral()
     // For geotools
     maven { url "http://repo.osgeo.org/repository/release/" }
+	mavenCentral()
     // For Spark CDH
     maven { url "https://repository.cloudera.com/content/repositories/releases/" }
     // For jetty (through spark)
