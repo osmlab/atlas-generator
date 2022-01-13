@@ -25,12 +25,12 @@ repositories
 {
     // mavenCentral()
     maven {
-        url "https://repo1.maven.org/maven2/"
-        artifactUrls "https://repo1.maven.org/maven2/"
-        artifactUrls "http://repo.osgeo.org/repository/release/"
+        url "https://repo.maven.apache.org/maven2/"
+        artifactUrls "https://repo.maven.apache.org/maven2/"
+        artifactUrls "https://repo.osgeo.org/repository/release/"
     }
     // For geotools
-    maven { url "http://repo.osgeo.org/repository/release/" }
+    maven { url "https://repo.osgeo.org/repository/release/" }
     // For Spark CDH
     maven { url "https://repository.cloudera.com/content/repositories/releases/" }
     // For jetty (through spark)
