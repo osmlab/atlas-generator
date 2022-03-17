@@ -603,7 +603,7 @@ public final class AtlasMutatorHelper implements Serializable
                             return new AtlasMetaData(metaData.getSize(), false,
                                     metaData.getCodeVersion().orElse(null),
                                     metaData.getDataVersion().orElse(null), country,
-                                    metaData.getShardName().orElse(null), metaData.getTags());
+                                    countryShard.getShard().getName(), metaData.getTags());
                         }
                     };
                     source.preemptiveLoad();
