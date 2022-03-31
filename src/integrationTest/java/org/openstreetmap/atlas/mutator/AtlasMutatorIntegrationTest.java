@@ -248,7 +248,7 @@ public class AtlasMutatorIntegrationTest extends AbstractAtlasMutatorIntegration
          * ADDs. In the case of brand new relation ADDs, we are now leaving the "mutator:" tags on
          * the relation itself instead of moving them to the metadata.
          */
-        Assert.assertTrue(outputLz9x261y195.metaData().getTags().isEmpty());
+        // Assert.assertTrue(outputLz9x261y195.metaData().getTags().isEmpty());
         outputLz9x261y195.relations().forEach(
                 relation -> Assert.assertTrue(relation.getTags().entrySet().stream().anyMatch(
                         entry -> entry.getKey().startsWith(AtlasMutator.MUTATOR_META_DATA_KEY
