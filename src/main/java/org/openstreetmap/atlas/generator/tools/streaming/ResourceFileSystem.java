@@ -47,12 +47,16 @@ import org.slf4j.LoggerFactory;
 public class ResourceFileSystem extends FileSystem
 {
     public static final String SCHEME = "resource";
-    public static final String RESOURCE_FILE_SYSTEM_CONFIGURATION = "fs." + SCHEME + ".impl";
+    public static final String RESOURCE_FILE_SYSTEM_CONFIGURATION = "fs."
+            + ResourceFileSystem.SCHEME + ".impl";
     private static final Logger logger = LoggerFactory.getLogger(ResourceFileSystem.class);
     // The store that contains all the known resources in the file system
     private static final Map<String, Resource> STORE = new ConcurrentHashMap<>();
-    private static final Statistics STATISTICS_INTERNAL = new Statistics(SCHEME);
+    private static final Statistics STATISTICS_INTERNAL = new Statistics(ResourceFileSystem.SCHEME);
     private static Class<?> clazz = null;
+
+    // 128 MiB
+    private static final Long DEFAULT_BLOCK_SIZE = 128L * 1024L * 1024L;
 
     private URI uri;
     private Path workingDirectory;
@@ -68,36 +72,36 @@ public class ResourceFileSystem extends FileSystem
             input.copyTo(newInput);
             input = newInput;
         }
-        addResource(path, input);
+        ResourceFileSystem.addResource(path, input);
     }
 
     public static void addResource(final String path, final String name, final boolean gzipIt)
     {
-        if (clazz == null)
+        if (ResourceFileSystem.clazz == null)
         {
             throw new CoreException("Need to register a class to find the resource!");
         }
-        addResource(path, name, gzipIt, clazz);
+        ResourceFileSystem.addResource(path, name, gzipIt, ResourceFileSystem.clazz);
     }
 
     public static void addResource(final String name, final Resource resource)
     {
-        STORE.put(name, resource);
+        ResourceFileSystem.STORE.put(name, resource);
     }
 
     public static void addResource(final String path, final String name)
     {
-        addResource(path, name, false);
+        ResourceFileSystem.addResource(path, name, false);
     }
 
     public static void addResourceContents(final String path, final String contents)
     {
-        addResource(path, new StringResource(contents));
+        ResourceFileSystem.addResource(path, new StringResource(contents));
     }
 
     public static void clear()
     {
-        STORE.clear();
+        ResourceFileSystem.STORE.clear();
     }
 
     public static SparkConf configuredConf()
@@ -105,7 +109,8 @@ public class ResourceFileSystem extends FileSystem
         // TODO replace with inclusive language once
         // https://issues.apache.org/jira/browse/SPARK-32333 is completed
         final SparkConf result = new SparkConf();
-        result.set(RESOURCE_FILE_SYSTEM_CONFIGURATION, ResourceFileSystem.class.getCanonicalName());
+        result.set(ResourceFileSystem.RESOURCE_FILE_SYSTEM_CONFIGURATION,
+                ResourceFileSystem.class.getCanonicalName());
         result.set("spark.master", "local");
         result.set("spark.app.name", "appName");
         return result;
@@ -114,24 +119,26 @@ public class ResourceFileSystem extends FileSystem
     public static Configuration configuredConfiguration()
     {
         final Configuration result = new Configuration();
-        result.set(RESOURCE_FILE_SYSTEM_CONFIGURATION, ResourceFileSystem.class.getCanonicalName());
+        result.set(ResourceFileSystem.RESOURCE_FILE_SYSTEM_CONFIGURATION,
+                ResourceFileSystem.class.getCanonicalName());
         return result;
     }
 
     public static void dumpToDisk(final File folder)
     {
-        files().forEach(file ->
+        ResourceFileSystem.files().forEach(file ->
         {
-            final String subPath = file.substring(String.valueOf(SCHEME + "://").length());
+            final String subPath = file
+                    .substring(String.valueOf(ResourceFileSystem.SCHEME + "://").length());
             final File output = folder.child(subPath);
             output.withCompressor(Compressor.NONE);
-            STORE.get(file).copyTo(output);
+            ResourceFileSystem.STORE.get(file).copyTo(output);
         });
     }
 
     public static Set<String> files()
     {
-        return STORE.keySet();
+        return ResourceFileSystem.STORE.keySet();
     }
 
     public static Optional<PackedAtlas> getAtlas(final String path)
@@ -140,35 +147,39 @@ public class ResourceFileSystem extends FileSystem
         {
             throw new CoreException("Cannot read resource {} as an Atlas.", path);
         }
-        return getResource(path).map(PackedAtlas::load);
+        return ResourceFileSystem.getResource(path).map(PackedAtlas::load);
     }
 
     public static PackedAtlas getAtlasOrElse(final String path)
     {
-        return getAtlas(path).orElseThrow(() -> new CoreException("{} not found.", path));
+        return ResourceFileSystem.getAtlas(path)
+                .orElseThrow(() -> new CoreException("{} not found.", path));
     }
 
     public static Optional<ResourceCloseable> getResource(final String path)
     {
-        if (!path.startsWith(SCHEME + "://"))
+        if (!path.startsWith(ResourceFileSystem.SCHEME + "://"))
         {
             throw new CoreException("Cannot read resource {} in a {}", path,
                     ResourceFileSystem.class.getSimpleName());
         }
-        return Optional.ofNullable(SparkJob.resource(path, simpleconfiguration()));
+        return Optional
+                .ofNullable(SparkJob.resource(path, ResourceFileSystem.simpleconfiguration()));
     }
 
     public static ResourceCloseable getResourceOrElse(final String path)
     {
-        return getResource(path).orElseThrow(() -> new CoreException("{} not found.", path));
+        return ResourceFileSystem.getResource(path)
+                .orElseThrow(() -> new CoreException("{} not found.", path));
     }
 
     public static void printContents()
     {
-        if (logger.isInfoEnabled())
+        if (ResourceFileSystem.logger.isInfoEnabled())
         {
-            files().forEach(file -> logger.info("{} (length: {})", file,
-                    getResource(file)
+            ResourceFileSystem.files().forEach(file -> ResourceFileSystem.logger.info(
+                    "{} (length: {})", file,
+                    ResourceFileSystem.getResource(file)
                             .orElseThrow(() -> new CoreException("{} could not be found.", file))
                             .length()));
         }
@@ -182,13 +193,14 @@ public class ResourceFileSystem extends FileSystem
     public static Map<String, String> simpleconfiguration()
     {
         final Map<String, String> result = new HashMap<>();
-        result.put(RESOURCE_FILE_SYSTEM_CONFIGURATION, ResourceFileSystem.class.getCanonicalName());
+        result.put(ResourceFileSystem.RESOURCE_FILE_SYSTEM_CONFIGURATION,
+                ResourceFileSystem.class.getCanonicalName());
         return result;
     }
 
     public ResourceFileSystem()
     {
-        setConf(configuredConfiguration());
+        setConf(ResourceFileSystem.configuredConfiguration());
     }
 
     @Override
@@ -203,30 +215,30 @@ public class ResourceFileSystem extends FileSystem
             final boolean overwrite, final int bufferSize, final short replication,
             final long blockSize, final Progressable progress) throws IOException
     {
-        if (STORE.containsKey(hadoopPath.toString()))
+        if (ResourceFileSystem.STORE.containsKey(hadoopPath.toString()))
         {
             delete(hadoopPath, false);
         }
         final String name = hadoopPath.toString();
         final WritableResource resource = new ByteArrayResource().withName(name);
-        STORE.put(name, resource);
-        return new FSDataOutputStream(resource.write(), STATISTICS_INTERNAL);
+        ResourceFileSystem.STORE.put(name, resource);
+        return new FSDataOutputStream(resource.write(), ResourceFileSystem.STATISTICS_INTERNAL);
     }
 
     @Override
     public boolean delete(final Path hadoopPath, final boolean recursive) throws IOException
     {
-        STORE.remove(hadoopPath.toString());
+        ResourceFileSystem.STORE.remove(hadoopPath.toString());
         return true;
     }
 
     @Override
     public FileStatus getFileStatus(final Path hadoopPath) throws IOException
     {
-        final Resource resource = STORE.get(hadoopPath.toString());
+        final Resource resource = ResourceFileSystem.STORE.get(hadoopPath.toString());
         if (resource == null)
         {
-            for (final String filePath : STORE.keySet())
+            for (final String filePath : ResourceFileSystem.STORE.keySet())
             {
                 if (filePath.startsWith(hadoopPath.toString()))
                 {
@@ -235,7 +247,8 @@ public class ResourceFileSystem extends FileSystem
             }
             throw new FileNotFoundException();
         }
-        return new FileStatus(resource.length(), false, 1, Long.MAX_VALUE, 0, hadoopPath);
+        return new FileStatus(resource.length(), false, 1, getDefaultBlockSize(hadoopPath), 0,
+                hadoopPath);
     }
 
     @Override
@@ -270,12 +283,14 @@ public class ResourceFileSystem extends FileSystem
     {
         final List<FileStatus> result = new ArrayList<>();
         final String prefix = hadoopPath.toString();
-        for (final String filePath : STORE.keySet())
+        for (final String filePath : ResourceFileSystem.STORE.keySet())
         {
             if (filePath.equals(prefix))
             {
+                final long resourceLength = ResourceFileSystem.STORE.get(filePath).length();
                 // This is the simple case, return the entire path as a new fileStatus
-                result.add(new FileStatus(0, false, 0, 0, 0, new Path(filePath)));
+                result.add(new FileStatus(resourceLength, false, 0, getDefaultBlockSize(hadoopPath),
+                        0, new Path(filePath)));
             }
             else if (filePath.startsWith(prefix))
             {
@@ -285,8 +300,10 @@ public class ResourceFileSystem extends FileSystem
 
                 if (numberOfRemainingSlashes == 1)
                 {
+                    final long resourceLength = ResourceFileSystem.STORE.get(filePath).length();
                     // If there's only one remaining slash, return the full filePath
-                    result.add(new FileStatus(0, false, 0, 0, 0, new Path(filePath)));
+                    result.add(new FileStatus(resourceLength, false, 0,
+                            getDefaultBlockSize(hadoopPath), 0, new Path(filePath)));
                 }
                 else if (numberOfRemainingSlashes > 1)
                 {
@@ -319,7 +336,7 @@ public class ResourceFileSystem extends FileSystem
     public FSDataInputStream open(final Path hadoopPath, final int bufferSize) throws IOException
     {
         final String name = hadoopPath.toString();
-        final Resource resource = STORE.get(name);
+        final Resource resource = ResourceFileSystem.STORE.get(name);
         if (resource == null)
         {
             throw new FileNotFoundException("Path does not exist or is a directory: " + hadoopPath);
@@ -354,15 +371,15 @@ public class ResourceFileSystem extends FileSystem
             }
             destinationName = destinationName + appendName;
         }
-        if (STORE.containsKey(sourceName))
+        if (ResourceFileSystem.STORE.containsKey(sourceName))
         {
-            if (STORE.containsKey(destinationName))
+            if (ResourceFileSystem.STORE.containsKey(destinationName))
             {
                 delete(new Path(destinationName), false);
             }
-            final Resource resource = STORE.get(sourceName);
-            STORE.put(destinationName, resource);
-            STORE.remove(sourceName);
+            final Resource resource = ResourceFileSystem.STORE.get(sourceName);
+            ResourceFileSystem.STORE.put(destinationName, resource);
+            ResourceFileSystem.STORE.remove(sourceName);
         }
         return true;
     }
