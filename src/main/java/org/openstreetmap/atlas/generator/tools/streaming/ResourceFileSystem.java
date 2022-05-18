@@ -235,7 +235,8 @@ public class ResourceFileSystem extends FileSystem
             }
             throw new FileNotFoundException();
         }
-        return new FileStatus(resource.length(), false, 1, Long.MAX_VALUE, 0, hadoopPath);
+        return new FileStatus(resource.length(), false, 1, getDefaultBlockSize(hadoopPath), 0,
+                hadoopPath);
     }
 
     @Override
@@ -274,8 +275,10 @@ public class ResourceFileSystem extends FileSystem
         {
             if (filePath.equals(prefix))
             {
+                final long resourceLength = STORE.get(filePath).length();
                 // This is the simple case, return the entire path as a new fileStatus
-                result.add(new FileStatus(0, false, 0, 0, 0, new Path(filePath)));
+                result.add(new FileStatus(resourceLength, false, 0, getDefaultBlockSize(hadoopPath),
+                        0, new Path(filePath)));
             }
             else if (filePath.startsWith(prefix))
             {
@@ -285,8 +288,10 @@ public class ResourceFileSystem extends FileSystem
 
                 if (numberOfRemainingSlashes == 1)
                 {
+                    final long resourceLength = STORE.get(filePath).length();
                     // If there's only one remaining slash, return the full filePath
-                    result.add(new FileStatus(0, false, 0, 0, 0, new Path(filePath)));
+                    result.add(new FileStatus(resourceLength, false, 0,
+                            getDefaultBlockSize(hadoopPath), 0, new Path(filePath)));
                 }
                 else if (numberOfRemainingSlashes > 1)
                 {
