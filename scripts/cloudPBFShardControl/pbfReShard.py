@@ -9,8 +9,8 @@ import json
 import logging
 import math
 import os
-import shutil
 import subprocess
+from datetime import date
 from typing import List, Tuple
 
 
@@ -77,35 +77,33 @@ class PBFReShardCtl:
             shard_max_size=5
     ):
         self.releasePbfDir = release_pbf_dir
-        self.shardingFileName = sharding
         self.shardMaxSize = shard_max_size
+        self.shardingContent = os.path.join(release_pbf_dir, sharding)
         self.tmpDir = "/tmp/osmium/"
+        self.change = False
 
     @property
-    def shardingFileName(self):
-        return os.path.join(self.releasePbfDir, self.__shardingFileName)
+    def shardingContent(self):
+        return self._shardingContent
 
-    @shardingFileName.setter
-    def shardingFileName(self, sharding_file_name):
-        if os.path.exists(os.path.join(self.releasePbfDir, sharding_file_name)):
-            self.__shardingFileName = sharding_file_name
-        else:
+    @shardingContent.setter
+    def shardingContent(self, sharding_file):
+        logger.info("reading sharding tree %s.", sharding_file)
+        try:
+            with open(sharding_file, 'r') as input_file:
+                self._shardingContent = input_file.readlines()
+        except FileNotFoundError:
             finish(
-                "Sharding File '{}' doesn't exist.".format(
-                    os.path.join(self.releasePbfDir, sharding_file_name)
-                )
+                "Sharding Quadtree File '{}' doesn't exist.".format(sharding_file), -1
+            )
+        except IOError:
+            finish(
+                "Could not read '{}' file.".format(sharding_file), -1
             )
 
     @property
     def shardMaxSizeKB(self):
         return self.shardMaxSize * 1024 * 1024
-
-    @property
-    def sharding_content(self):
-        logger.info("reading sharding tree %s.", self.shardingFileName)
-        with open(self.shardingFileName, 'r') as input_file:
-            sharding_content = input_file.readlines()
-        return sharding_content
 
     def get_oversize_shard_list(self) -> List[str]:
         oversize_shard_list = []
@@ -145,32 +143,41 @@ class PBFReShardCtl:
         subprocess.run(osmium_extract_cmd, stdout=subprocess.PIPE, text=True)
 
     def update_release_folder(self, shard: "SlippyTileQuadTreeNode"):
-        for child in shard.children:
+        for child_shard in shard.children:
             final_release_dir = os.path.join(self.releasePbfDir,
-                                             str(child.tile_x), str(child.tile_y), str(child.tile_z))
+                                             str(child_shard.tile_x), str(child_shard.tile_y), str(child_shard.tile_z))
             if not os.path.exists(final_release_dir):
                 os.makedirs(final_release_dir)
-            pbf_copy_cmd = ["cp", self.tmpDir + child.pbf_file_name(), final_release_dir]
-            logger.info("copy %s to %s.", child.pbf_file_name(), final_release_dir)
+            pbf_copy_cmd = ["cp", self.tmpDir + child_shard.pbf_file_name(), final_release_dir]
+            logger.info("copy %s to %s.", child_shard.pbf_file_name(), final_release_dir)
             subprocess.run(pbf_copy_cmd, stdout=subprocess.PIPE, text=True)
 
     def update_sharding_tree(self, shard: "SlippyTileQuadTreeNode"):
         # Handle last line to prevent IndexError
-        if shard.name() in self.sharding_content[-1] and "+" not in self.sharding_content[-1]:
-            print(f"Found {shard.name} in last line: {self.sharding_content[-1]}")
-            self.sharding_content[-1] = shard.name() + "+\n"
+        if shard.name()+"\n" in self.shardingContent[-1] and "+" not in self.shardingContent[-1]:
+            print(f"Found {shard.name} in last line: {self.shardingContent[-1]}")
+            self.shardingContent[-1] = shard.name() + "+\n"
             for child in shard.children:
-                self.sharding_content.append(f"{child.tile_z}-{child.tile_x}-{shard.tile_y}\n")
-            changes = True
+                self.shardingContent.append(f"{child.tile_z}-{child.tile_x}-{shard.tile_y}\n")
+            self.change = True
         else:
-            for index, line in enumerate(self.sharding_content):
-                if shard.name() in line and "+" not in line:
-                    print(f"Found {shard.name()} in line {index}: {line}.  Breaking shard up...")
-                    self.sharding_content[index] = shard.name() + "+\n"
+            for index, line in enumerate(self.shardingContent):
+                if shard.name() + "\n" in line and not shard.is_leaf():
+                    logger.info("found %s in line %s. updating sharding tree", shard.name(), index)
+                    # print(f"Found {shard.name()} in line {index}: {line}. Updating sharding tree")
+                    self.shardingContent[index] = shard.name() + "+\n"
                     for child in shard.children:
-                        self.sharding_content.append(f"{child.tile_z}-{child.tile_x}-{shard.tile_y}\n")
-                    changes = True
+                        self.shardingContent.append(f"{child.tile_z}-{child.tile_x}-{shard.tile_y}\n")
+                    self.change = True
                     break
+
+    def apply_sharding_changes(self):
+        if self.change:
+            logger.info("creating new sharding tree file")
+            shard_date = date.today().strftime("%Y%m%d")
+            new_sharding_quadtree_file = f"sharding_quadtree_{shard_date}.txt"
+            with open(os.path.join(self.tmpDir, new_sharding_quadtree_file), 'w') as output_file:
+                output_file.writelines(self.shardingContent)
 
     def execute(self):
         oversize_shard_list = self.get_oversize_shard_list()
@@ -181,6 +188,8 @@ class PBFReShardCtl:
             self.gen_osmium_extract_cmd(shard_extract_config, oversizeShard)
             self.update_release_folder(shard_obj)
             self.update_sharding_tree(shard_obj)
+        self.apply_sharding_changes()
+        logger.info("done!")
 
 
 class SlippyTileQuadTreeNode:
@@ -238,6 +247,9 @@ class SlippyTileQuadTreeNode:
 
     def pbf_file_name(self) -> str:
         return f"{self.name()}.pbf"
+
+    def is_leaf(self) -> bool:
+        return len(self.children) == 0
 
 
 logger = setup_logging()
