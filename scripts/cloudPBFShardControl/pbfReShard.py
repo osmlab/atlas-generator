@@ -9,6 +9,7 @@ import json
 import logging
 import math
 import os
+import shutil
 import subprocess
 from datetime import date
 from typing import List, Tuple
@@ -106,6 +107,9 @@ class PBFReShardCtl:
         return self.shardMaxSize * 1024 * 1024
 
     def get_oversize_shard_list(self) -> List[str]:
+        """
+        Collect shards that are larger than max size.
+        """
         oversize_shard_list = []
         for path, subdirs, files in os.walk(self.releasePbfDir):
             for file in files:
@@ -114,6 +118,12 @@ class PBFReShardCtl:
         return oversize_shard_list
 
     def gen_osmium_extract_config(self, shard: "SlippyTileQuadTreeNode") -> str:
+        """
+        Create osmium pbf extract config strategy.
+        @:param shard: SlippyTileQuadTreeNode object
+        @:return str: path to extract config json file
+        """
+
         config = {
             # a hardcoded default value; can be overwritten when running osmium
             "directory": self.tmpDir
@@ -139,23 +149,42 @@ class PBFReShardCtl:
         return osmium_config_file_name
 
     def gen_osmium_extract_cmd(self, config_file_name, shard_path):
+        """
+        execute osmium extract commend
+        :param config_file_name: osmium extract strategy json file
+        :param shard_path: output directory
+        """
         osmium_extract_cmd = ["osmium", "extract", "-c", self.tmpDir + config_file_name, shard_path]
         subprocess.run(osmium_extract_cmd, stdout=subprocess.PIPE, text=True)
 
     def update_release_folder(self, shard: "SlippyTileQuadTreeNode"):
+        """
+        copy generated shards to pbf release folder
+        :param shard: SlippyTileQuadTreeNode object
+        """
         for child_shard in shard.children:
             final_release_dir = os.path.join(self.releasePbfDir,
-                                             str(child_shard.tile_x), str(child_shard.tile_y), str(child_shard.tile_z))
+                                             str(child_shard.tile_z), str(child_shard.tile_x), str(child_shard.tile_y))
             if not os.path.exists(final_release_dir):
                 os.makedirs(final_release_dir)
+            # copy generated shards to pbf release folder
             pbf_copy_cmd = ["cp", self.tmpDir + child_shard.pbf_file_name(), final_release_dir]
             logger.info("copy %s to %s.", child_shard.pbf_file_name(), final_release_dir)
             subprocess.run(pbf_copy_cmd, stdout=subprocess.PIPE, text=True)
+        # delete oversize shard form pbf release folder
+        logger.info("delete shard %s from %s.", shard.pbf_file_name(),
+                    os.path.join(self.releasePbfDir, str(shard.tile_z),
+                                 str(shard.tile_x), str(shard.tile_y)))
+        shutil.rmtree(os.path.join(self.releasePbfDir, str(shard.tile_z), str(shard.tile_x), str(shard.tile_y)))
 
     def update_sharding_tree(self, shard: "SlippyTileQuadTreeNode"):
+        """
+        update sharding quad tree content according to sharding extract
+        :param shard: SlippyTileQuadTreeNode object
+        """
         # Handle last line to prevent IndexError
-        if shard.name()+"\n" in self.shardingContent[-1] and "+" not in self.shardingContent[-1]:
-            print(f"Found {shard.name} in last line: {self.shardingContent[-1]}")
+        if shard.name() + "\n" in self.shardingContent[-1] and "+" not in self.shardingContent[-1]:
+            print(f"Found {shard.name()} in last line: {self.shardingContent[-1]}")
             self.shardingContent[-1] = shard.name() + "+\n"
             for child in shard.children:
                 self.shardingContent.append(f"{child.tile_z}-{child.tile_x}-{shard.tile_y}\n")
@@ -164,7 +193,6 @@ class PBFReShardCtl:
             for index, line in enumerate(self.shardingContent):
                 if shard.name() + "\n" in line and not shard.is_leaf():
                     logger.info("found %s in line %s. updating sharding tree", shard.name(), index)
-                    # print(f"Found {shard.name()} in line {index}: {line}. Updating sharding tree")
                     self.shardingContent[index] = shard.name() + "+\n"
                     for child in shard.children:
                         self.shardingContent.append(f"{child.tile_z}-{child.tile_x}-{shard.tile_y}\n")
@@ -172,14 +200,26 @@ class PBFReShardCtl:
                     break
 
     def apply_sharding_changes(self):
+        """
+        create new sharding.txt file
+        """
         if self.change:
             logger.info("creating new sharding tree file")
             shard_date = date.today().strftime("%Y%m%d")
             new_sharding_quadtree_file = f"sharding_quadtree_{shard_date}.txt"
             with open(os.path.join(self.tmpDir, new_sharding_quadtree_file), 'w') as output_file:
                 output_file.writelines(self.shardingContent)
+            # copy generated shards to pbf release folder
+            pbf_copy_cmd = ["cp", self.tmpDir + new_sharding_quadtree_file, self.shardingContent]
+            logger.info("copy %s to %s.", self.tmpDir + new_sharding_quadtree_file, self.releasePbfDir)
+            subprocess.run(pbf_copy_cmd, stdout=subprocess.PIPE, text=True)
+        else:
+            logger.info("all shards are less then %smb", self.shardMaxSize)
 
     def execute(self):
+        """
+        execute re-sharding steps.
+        """
         oversize_shard_list = self.get_oversize_shard_list()
         for oversizeShard in oversize_shard_list:
             shard_obj = SlippyTileQuadTreeNode.read(oversizeShard)
@@ -189,7 +229,7 @@ class PBFReShardCtl:
             self.update_release_folder(shard_obj)
             self.update_sharding_tree(shard_obj)
         self.apply_sharding_changes()
-        logger.info("done!")
+        finish()
 
 
 class SlippyTileQuadTreeNode:
