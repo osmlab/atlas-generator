@@ -3,6 +3,8 @@
 
 """
 this script will search pbf release folder for shards that above certain size (default 5mb) and re-shards them locally.
+@author: Vladimir Lemberg
+@history: 06/10/2022 Created
 """
 import argparse
 import json
@@ -70,18 +72,37 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def copy_command(input_file: str, output_file: str):
+    """
+    execute unix copy command
+    :param input_file:
+    :param output_file:
+    """
+    pbf_copy_cmd = ["cp", input_file, output_file]
+    logger.info("copy %s to %s.", input_file, output_file)
+    try:
+        subprocess.run(pbf_copy_cmd, stdout=subprocess.PIPE, text=True)
+    except subprocess.CalledProcessError as e:
+        finish(e.output, -1)
+
+
 class PBFReShardCtl:
     def __init__(
             self,
             release_pbf_dir="",
-            sharding="sharding.txt",
+            sharding_file="sharding.txt",
             shard_max_size=5
     ):
         self.releasePbfDir = release_pbf_dir
+        self.shardingFile = sharding_file
         self.shardMaxSize = shard_max_size
-        self.shardingContent = os.path.join(release_pbf_dir, sharding)
+        self.shardingContent = self.shardingFileName
         self.tmpDir = "/tmp/osmium/"
         self.change = False
+
+    @property
+    def shardingFileName(self):
+        return os.path.join(self.releasePbfDir, self.shardingFile)
 
     @property
     def shardingContent(self):
@@ -93,14 +114,8 @@ class PBFReShardCtl:
         try:
             with open(sharding_file, 'r') as input_file:
                 self._shardingContent = input_file.readlines()
-        except FileNotFoundError:
-            finish(
-                "Sharding Quadtree File '{}' doesn't exist.".format(sharding_file), -1
-            )
-        except IOError:
-            finish(
-                "Could not read '{}' file.".format(sharding_file), -1
-            )
+        except (IOError, OSError) as e:
+            finish(e.output, -1)
 
     @property
     def shardMaxSizeKB(self):
@@ -209,10 +224,10 @@ class PBFReShardCtl:
             new_sharding_quadtree_file = f"sharding_quadtree_{shard_date}.txt"
             with open(os.path.join(self.tmpDir, new_sharding_quadtree_file), 'w') as output_file:
                 output_file.writelines(self.shardingContent)
-            # copy generated shards to pbf release folder
-            pbf_copy_cmd = ["cp", self.tmpDir + new_sharding_quadtree_file, self.shardingContent]
-            logger.info("copy %s to %s.", self.tmpDir + new_sharding_quadtree_file, self.releasePbfDir)
-            subprocess.run(pbf_copy_cmd, stdout=subprocess.PIPE, text=True)
+            # copy original sharding file
+            copy_command(self.shardingFileName, os.path.join(self.releasePbfDir, f"sharding_original_{shard_date}.txt"))
+            # copy generated sharding file to pbf release folder
+            copy_command(self.tmpDir + new_sharding_quadtree_file, self.shardingFileName)
         else:
             logger.info("all shards are less then %smb", self.shardMaxSize)
 
