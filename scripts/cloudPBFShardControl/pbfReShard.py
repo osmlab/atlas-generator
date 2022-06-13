@@ -7,13 +7,13 @@ this script will search pbf release folder for shards that above certain size (d
 @history: 06/10/2022 Created
 """
 import argparse
+import datetime
 import json
 import logging
 import math
 import os
 import shutil
 import subprocess
-from datetime import date
 from typing import List, Tuple
 
 
@@ -82,8 +82,8 @@ def copy_command(input_file: str, output_file: str):
     logger.info("copy %s to %s.", input_file, output_file)
     try:
         subprocess.run(pbf_copy_cmd, stdout=subprocess.PIPE, text=True)
-    except subprocess.CalledProcessError as e:
-        finish(e.output, -1)
+    except subprocess.CalledProcessError as error:
+        finish(error, -1)
 
 
 class PBFReShardCtl:
@@ -114,8 +114,8 @@ class PBFReShardCtl:
         try:
             with open(sharding_file, 'r') as input_file:
                 self._shardingContent = input_file.readlines()
-        except (IOError, OSError) as e:
-            finish(e.output, -1)
+        except (IOError, OSError) as error:
+            finish(error, -1)
 
     @property
     def shardMaxSizeKB(self):
@@ -157,9 +157,11 @@ class PBFReShardCtl:
 
             osmium_config_file_name = f"{shard.pbf_file_name()}.extracts.json"
             osmium_config_path = os.path.join(self.tmpDir, osmium_config_file_name)
-
-            with open(osmium_config_path, "w") as f:
-                json.dump(config, f, indent=2)
+            try:
+                with open(osmium_config_path, "w") as f:
+                    json.dump(config, f, indent=2)
+            except (IOError, OSError) as error:
+                finish(error, -1)
         logger.info("osmium extract config %s generated.", osmium_config_file_name)
         return osmium_config_file_name
 
@@ -220,7 +222,7 @@ class PBFReShardCtl:
         """
         if self.change:
             logger.info("creating new sharding tree file")
-            shard_date = date.today().strftime("%Y%m%d")
+            shard_date = datetime.datetime.now().strftime("%Y%m%d%H%M")
             new_sharding_quadtree_file = f"sharding_quadtree_{shard_date}.txt"
             with open(os.path.join(self.tmpDir, new_sharding_quadtree_file), 'w') as output_file:
                 output_file.writelines(self.shardingContent)
@@ -231,10 +233,19 @@ class PBFReShardCtl:
         else:
             logger.info("all shards are less then %smb", self.shardMaxSize)
 
+    def preparation(self):
+        """
+        execute preprocessing steps.
+        """
+        if os.path.exists(self.tmpDir):
+            shutil.rmtree(self.tmpDir)
+        os.makedirs(self.tmpDir)
+
     def execute(self):
         """
         execute re-sharding steps.
         """
+        self.preparation()
         oversize_shard_list = self.get_oversize_shard_list()
         for oversizeShard in oversize_shard_list:
             shard_obj = SlippyTileQuadTreeNode.read(oversizeShard)
