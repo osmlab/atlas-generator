@@ -222,12 +222,13 @@ class PBFReShardCtl:
         """
         if self.change:
             logger.info("creating new sharding tree file")
-            shard_date = datetime.datetime.now().strftime("%Y%m%d%H%M")
-            new_sharding_quadtree_file = f"sharding_quadtree_{shard_date}.txt"
+            re_shard_date = datetime.datetime.now().strftime("%Y%m%d%H%M")
+            new_sharding_quadtree_file = f"sharding_quadtree_{re_shard_date}.txt"
             with open(os.path.join(self.tmpDir, new_sharding_quadtree_file), 'w') as output_file:
                 output_file.writelines(self.shardingContent)
             # copy original sharding file
-            copy_command(self.shardingFileName, os.path.join(self.releasePbfDir, f"sharding_original_{shard_date}.txt"))
+            copy_command(self.shardingFileName,
+                         os.path.join(self.releasePbfDir, f"{self.shardingFileName}.{re_shard_date}"))
             # copy generated sharding file to pbf release folder
             copy_command(self.tmpDir + new_sharding_quadtree_file, self.shardingFileName)
         else:
