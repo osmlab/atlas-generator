@@ -62,6 +62,13 @@ public class ResourceFileSystemTest
             Assert.assertEquals(1, fileStatuses.size());
             Assert.assertEquals(longDirectoryPath, fileStatuses.get(0).getPath().toString());
             Assert.assertFalse(fileStatuses.get(0).isDirectory());
+            Assert.assertEquals(3, fileStatuses.get(0).getLen());
+
+            fileStatuses = Arrays.asList(fileSystem.listStatus(new Path(simpleFilePath)));
+            Assert.assertEquals(1, fileStatuses.size());
+            Assert.assertEquals(simpleFilePath, fileStatuses.get(0).getPath().toString());
+            Assert.assertFalse(fileStatuses.get(0).isDirectory());
+            Assert.assertEquals(3, fileStatuses.get(0).getLen());
         }
         catch (final IOException e)
         {
