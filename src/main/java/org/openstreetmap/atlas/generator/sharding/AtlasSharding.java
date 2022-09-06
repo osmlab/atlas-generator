@@ -71,7 +71,7 @@ public final class AtlasSharding
             }
             catch (final Exception e)
             {
-                throw new CoreException(e.getMessage());
+                throw new CoreException("Unable to parse sharding {}", sharding, e);
             }
         }
         throw new CoreException("Sharding type {} is not recognized.", split.get(0));
