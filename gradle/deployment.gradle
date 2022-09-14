@@ -27,8 +27,10 @@ project.afterEvaluate {
             mavenJava(MavenPublication)
             {
                 from components.java
-                // artifact javadocJar
-                // artifact sourcesJar
+                artifact javadocJar
+                artifact sourcesJar
+                artifact shaded
+                artifact fat
                 pom
                 {
                     name = project_name
