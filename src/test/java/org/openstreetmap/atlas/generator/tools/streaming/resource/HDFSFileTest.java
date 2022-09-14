@@ -3,7 +3,6 @@ package org.openstreetmap.atlas.generator.tools.streaming.resource;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -124,8 +123,7 @@ public class HDFSFileTest
             {
                 throwable = throwable.getCause();
             }
-            assertSame(IOException.class, throwable.getClass());
-            assertEquals("Not supported", throwable.getMessage());
+            assertEquals("Append is not supported by ChecksumFileSystem", throwable.getMessage());
             // Appending is not currently supported, but when it is, the code outside this catch
             // block will run
             return;
