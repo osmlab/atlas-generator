@@ -91,8 +91,6 @@ public class ShardedAtlasRDDLoader
      * @param configurationMap
      *            - configuration
      * @return Atlas
-     * @throws CoreException
-     *             potential CoreException while reading files
      */
     public static Atlas loadOneAtlasShard(final String country, final String shardName,
             final String atlasDirectory, final Map<String, String> configurationMap)
